@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS form_pengajuan (
+                                              id BIGSERIAL PRIMARY KEY ,
+                                              induk_organisasi VARCHAR(255) NOT NULL,
+                                              nomor_induk VARCHAR(100) NOT NULL,
+                                              jumlah_anggota INT NOT NULL,
+                                              daerah VARCHAR(50) NOT NULL,
+                                              berlaku_dari DATE NOT NULL,
+                                              berlaku_sampai DATE NOT NULL,
+                                              nama VARCHAR(100) NOT NULL,
+                                              tanggal_lahir VARCHAR(100) NOT NULL,
+                                              jenis_kelamin VARCHAR(100) NOT NULL,
+                                              alamat TEXT,
+                                              profesi VARCHAR(255) NOT NULL,
+                                              dibuat_di VARCHAR(50) NOT NULL,
+                                              dokumen_pendukung JSONB,
+                                              tertanda JSONB,
+                                              status VARCHAR(20) NOT NULL,
+                                              keterangan VARCHAR(255) NOT NULL,
+                                              created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                              updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

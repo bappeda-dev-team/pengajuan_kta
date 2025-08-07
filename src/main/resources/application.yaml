@@ -1,0 +1,95 @@
+spring:
+  application:
+    name: pengajuan_kta
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/pengajuan_kta
+    username: majapahit
+    password: Madiun@123
+    hikari:
+      connection-timeout: 2000
+      maximum-pool-size: 5
+
+  flyway:
+    url: ${spring.datasource.url}
+    user: ${spring.datasource.username}
+    password: ${spring.datasource.password}
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        access:
+          strategy: field
+        use-new-id-generator-mappings: false
+
+  security:
+    user:
+      name: admin
+      password: admin123
+
+  docker:
+    compose:
+      enabled: false
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 50MB
+      file-size-threshold: 2KB
+      location: ${java.io.tmpdir}
+      resolve-lazily: false
+
+server:
+  port: 8080
+  servlet:
+    context-path: /kta/api
+  tomcat:
+    allow-encoded-slashes: true
+
+logging:
+  level:
+    root: warn
+    org:
+      hibernate:
+        SQL: DEBUG
+        type:
+          descriptor:
+            sql:
+              BasicBinder: TRACE
+        transaction: DEBUG
+        orm:
+          jdbc:
+            bind: TRACE
+      springdoc: DEBUG
+      springframework:
+        web: DEBUG
+        security: DEBUG
+      flywaydb: INFO
+    io:
+      swagger: DEBUG
+    cc:
+      kertaskerja:
+        manrisk_fraud: INFO
+        aop: DEBUG
+
+cloudflare:
+  r2:
+    base-url: "https://7aa9bbf17ef2077fc32fdadafbb1e76d.r2.cloudflarestorage.com"
+    bucket: "kertaskerja-bucket-1"
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    tryItOutEnabled: true
+    disable-swagger-default-url: true
+  override-with-generic-response: false
+  show-actuator: false
