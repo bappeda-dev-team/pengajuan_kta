@@ -23,7 +23,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -146,7 +145,7 @@ public ResponseEntity<ApiResponse<?>> saveDataWithFiles(
                         System.out.println("File size: " + file.getSize() + " bytes");
                         System.out.println("Content type: " + file.getContentType());
                         
-                        String url = r2StorageService.uploadFile(file);
+                        String url = r2StorageService.upload(file);
                         
                         DokumenPendukungDTO dokumen = DokumenPendukungDTO.builder()
                                 .url(url)
@@ -158,7 +157,6 @@ public ResponseEntity<ApiResponse<?>> saveDataWithFiles(
                         System.out.println("File uploaded successfully: " + url);
                     } catch (Exception e) {
                         System.err.println("Failed to upload file: " + file.getOriginalFilename());
-                        e.printStackTrace();
                         return ResponseEntity.internalServerError().body(
                             ApiResponse.error(500, "Failed to upload file: " + file.getOriginalFilename() + ". Error: " + e.getMessage())
                         );
@@ -181,7 +179,6 @@ public ResponseEntity<ApiResponse<?>> saveDataWithFiles(
             }
         } catch (Exception e) {
             System.err.println("Failed to parse tertanda JSON: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.badRequest().body(
                 ApiResponse.error(400, "Invalid tertanda JSON format: " + e.getMessage())
             );
@@ -246,8 +243,7 @@ public ResponseEntity<ApiResponse<?>> saveDataWithFiles(
         System.err.println("=== UNEXPECTED ERROR ===");
         System.err.println("Error class: " + e.getClass().getName());
         System.err.println("Error message: " + e.getMessage());
-        e.printStackTrace();
-        
+
         return ResponseEntity.internalServerError().body(
             ApiResponse.error(500, "Error processing request: " + e.getMessage())
         );
@@ -289,7 +285,7 @@ public ResponseEntity<ApiResponse<?>> saveDataWithFilesV2(
         if (files != null && !files.isEmpty()) {
             for (MultipartFile file : files) {
                 if (file != null && !file.isEmpty()) {
-                    String url = r2StorageService.uploadFile(file);
+                    String url = r2StorageService.upload(file);
                     
                     DokumenPendukungDTO dokumen = DokumenPendukungDTO.builder()
                             .url(url)

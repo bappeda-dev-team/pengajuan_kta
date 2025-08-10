@@ -12,19 +12,26 @@ import java.net.URI;
 
 @Configuration
 public class R2ClientConfig {
+    private final CloudFlareProperties props;
+
+    public R2ClientConfig(CloudFlareProperties props) {
+        this.props = props;
+    }
+
 
     @Bean
-    public S3Client s3Client() {
-        String accessKey = "28f20a0e4545504c62097e0b6610ff46";
-        String secretKey = "458651d94bc92e54f6d2b62b5dd33b9b2c8f22b51f945ab3fa873fb1ce7518aa";
-
-        AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
-
+    public S3Client r2Client() {
         return S3Client.builder()
-                .endpointOverride(URI.create("https://7aa9bbf17ef2077fc32fdadafbb1e76d.r2.cloudflarestorage.com"))
-                .credentialsProvider(StaticCredentialsProvider.create(credentials))
+                .credentialsProvider(
+                    StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(props.getAccessKey(), props.getSecretKey())
+                    )
+                 )
+                .endpointOverride(URI.create(props.getEndpoint()))
                 .region(Region.of("auto"))
-                .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
+                .serviceConfiguration(S3Configuration.builder()
+                                      .pathStyleAccessEnabled(true)
+                                      .build())
                 .build();
     }
 }

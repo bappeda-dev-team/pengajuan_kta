@@ -1,88 +1,36 @@
 package cc.kertaskerja.pengajuan_kta.service.CloudStorage;
 
-import org.springframework.beans.factory.annotation.Value;
+import cc.kertaskerja.pengajuan_kta.config.CloudFlareProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 
 @Service
 public class R2StorageService {
 
-    private final S3Client s3Client;
+    private final S3Client r2Client;
+    private final CloudFlareProperties props;
 
-    @Value("${cloudflare.r2.bucket:}")
-    private String bucketName;
-
-    @Value("${cloudflare.r2.base-url:}")
-    private String baseUrl;
-
-    public R2StorageService(S3Client s3Client) {
-        this.s3Client = s3Client;
+    public R2StorageService(S3Client r2Client, CloudFlareProperties props) {
+        this.r2Client = r2Client;
+        this.props = props;
     }
 
-    public void upload(String key, String content) {
-        validateConfiguration();
-        PutObjectRequest putRequest = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(key)
-                .build();
+    public String upload(MultipartFile file) throws IOException {
+        String key = file.getOriginalFilename();
 
-        s3Client.putObject(putRequest, RequestBody.fromString(content));
-    }
+        r2Client.putObject(
+                          PutObjectRequest.builder()
+                          .bucket(props.getBucket())
+                          .key(key)
+                          .contentType(file.getContentType())
+                          .build(),
+                        software.amazon.awssdk.core.sync.RequestBody.fromBytes(file.getBytes())
+        );
 
-    public String uploadFile(MultipartFile file) throws IOException {
-        validateConfiguration();
-        
-        String key = generateUniqueKey(file.getOriginalFilename());
-        
-        PutObjectRequest putRequest = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(key)
-                .contentType(file.getContentType())
-                .build();
-
-        s3Client.putObject(putRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
-        
-        return baseUrl + "/" + key;
-    }
-
-    private void validateConfiguration() {
-        if (bucketName == null || bucketName.trim().isEmpty()) {
-            throw new RuntimeException("R2 bucket name is not configured. Please set cloudflare.r2.bucket property.");
-        }
-        if (baseUrl == null || baseUrl.trim().isEmpty()) {
-            throw new RuntimeException("R2 base URL is not configured. Please set cloudflare.r2.base-url property.");
-        }
-    }
-
-    private String generateUniqueKey(String originalFilename) {
-        String extension = "";
-        if (originalFilename != null && originalFilename.contains(".")) {
-            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        }
-        return "dokumen-pendukung/" + UUID.randomUUID().toString() + extension;
-    }
-
-    public String download(String key) {
-        validateConfiguration();
-        
-        GetObjectRequest getRequest = GetObjectRequest.builder()
-                .bucket(bucketName)
-                .key(key)
-                .build();
-
-        try (var response = s3Client.getObject(getRequest)) {
-            return new String(response.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+        return props.getEndpoint() + "/" + props.getBucket() + "/" + key;
     }
 }
