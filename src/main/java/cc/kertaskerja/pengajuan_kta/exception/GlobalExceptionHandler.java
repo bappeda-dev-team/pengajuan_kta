@@ -1,6 +1,7 @@
 package cc.kertaskerja.pengajuan_kta.exception;
 
 import cc.kertaskerja.pengajuan_kta.dto.ApiResponse;
+import cc.kertaskerja.pengajuan_kta.exception.BadRequestException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -15,8 +16,6 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.springframework.web.multipart.MaxUploadSizeExceededException;
-import org.springframework.web.multipart.MultipartException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,13 +31,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ApiResponse<Object>> handleBadRequestException(
-            BadRequestException ex, HttpServletRequest request) {
+          BadRequestException ex, HttpServletRequest request) {
 
         logger.warning("Bad Request Exception: " + ex.getMessage());
 
         ApiResponse<Object> response = ApiResponse.error(
-                HttpStatus.BAD_REQUEST.value(),
-                ex.getMessage()
+              HttpStatus.BAD_REQUEST.value(),
+              ex.getMessage()
         );
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -46,7 +45,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(
-            MethodArgumentNotValidException ex, HttpServletRequest request) {
+          MethodArgumentNotValidException ex, HttpServletRequest request) {
 
         logger.warning("Validation Exception: " + ex.getMessage());
 
@@ -58,9 +57,9 @@ public class GlobalExceptionHandler {
         });
 
         ApiResponse<Map<String, String>> response = ApiResponse.error(
-                HttpStatus.BAD_REQUEST.value(),
-                validationErrors,
-                "Validation failed"
+              HttpStatus.BAD_REQUEST.value(),
+              validationErrors,
+              "Validation failed"
         );
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -68,7 +67,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleConstraintViolationException(
-            ConstraintViolationException ex, HttpServletRequest request) {
+          ConstraintViolationException ex, HttpServletRequest request) {
 
         logger.warning("Constraint Violation Exception: " + ex.getMessage());
 
@@ -82,9 +81,9 @@ public class GlobalExceptionHandler {
         }
 
         ApiResponse<Map<String, String>> response = ApiResponse.error(
-                HttpStatus.BAD_REQUEST.value(),
-                validationErrors,
-                "Constraint validation failed"
+              HttpStatus.BAD_REQUEST.value(),
+              validationErrors,
+              "Constraint validation failed"
         );
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -92,13 +91,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Object>> handleHttpMessageNotReadableException(
-            HttpMessageNotReadableException ex, HttpServletRequest request) {
+          HttpMessageNotReadableException ex, HttpServletRequest request) {
 
         logger.warning("HTTP Message Not Readable Exception: " + ex.getMessage());
 
         ApiResponse<Object> response = ApiResponse.error(
-                HttpStatus.BAD_REQUEST.value(),
-                "Invalid JSON format or malformed request body"
+              HttpStatus.BAD_REQUEST.value(),
+              "Invalid JSON format or malformed request body"
         );
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -106,16 +105,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Object>> handleMethodArgumentTypeMismatchException(
-            MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+          MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
 
         logger.warning("Method Argument Type Mismatch Exception: " + ex.getMessage());
 
         String message = String.format("Invalid value '%s' for parameter '%s'. Expected type: %s",
-                ex.getValue(), ex.getName(), ex.getRequiredType().getSimpleName());
+              ex.getValue(), ex.getName(), ex.getRequiredType().getSimpleName());
 
         ApiResponse<Object> response = ApiResponse.error(
-                HttpStatus.BAD_REQUEST.value(),
-                message
+              HttpStatus.BAD_REQUEST.value(),
+              message
         );
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -123,16 +122,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiResponse<Object>> handleMissingServletRequestParameterException(
-            MissingServletRequestParameterException ex, HttpServletRequest request) {
+          MissingServletRequestParameterException ex, HttpServletRequest request) {
 
         logger.warning("Missing Servlet Request Parameter Exception: " + ex.getMessage());
 
         String message = String.format("Required parameter '%s' of type '%s' is missing",
-                ex.getParameterName(), ex.getParameterType());
+              ex.getParameterName(), ex.getParameterType());
 
         ApiResponse<Object> response = ApiResponse.error(
-                HttpStatus.BAD_REQUEST.value(),
-                message
+              HttpStatus.BAD_REQUEST.value(),
+              message
         );
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
@@ -140,7 +139,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Object>> handleDataIntegrityViolationException(
-            DataIntegrityViolationException ex, HttpServletRequest request) {
+          DataIntegrityViolationException ex, HttpServletRequest request) {
 
         logger.warning("Data Integrity Violation Exception: " + ex.getMessage());
 
@@ -150,93 +149,24 @@ public class GlobalExceptionHandler {
         }
 
         ApiResponse<Object> response = ApiResponse.error(
-                HttpStatus.BAD_REQUEST.value(),
-                message
+              HttpStatus.BAD_REQUEST.value(),
+              message
         );
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-    }
-
-    @ExceptionHandler(MultipartException.class)
-    public ResponseEntity<ApiResponse<Object>> handleMultipartException(
-            MultipartException ex, HttpServletRequest request) {
-
-        logger.severe("=== MULTIPART EXCEPTION DEBUG ===");
-        logger.severe("Request URI: " + request.getRequestURI());
-        logger.severe("Content-Type: " + request.getContentType());
-        logger.severe("Content-Length: " + request.getContentLength());
-        logger.severe("Exception Message: " + ex.getMessage());
-        logger.severe("Exception Class: " + ex.getClass().getName());
-        
-        // Log the full stack trace
-        logger.severe("Full Stack Trace:");
-        ex.printStackTrace();
-        
-        if (ex.getCause() != null) {
-            logger.severe("Root Cause: " + ex.getCause().getMessage());
-            logger.severe("Root Cause Class: " + ex.getCause().getClass().getName());
-        }
-        
-        // Enhanced specific error detection
-        String specificMessage = "Error processing multipart request";
-        String userFriendlyMessage = "Invalid file upload request";
-        
-        if (ex.getMessage().contains("attachment") || ex.getMessage().contains("boundary")) {
-            specificMessage = "Invalid multipart format - missing or incorrect boundary";
-            userFriendlyMessage = "Please ensure your request has proper multipart format";
-        } else if (ex.getMessage().contains("size") || ex.getMessage().contains("exceed")) {
-            specificMessage = "File size exceeds the allowed limit";
-            userFriendlyMessage = "File size is too large. Maximum allowed size is 10MB";
-        } else if (ex.getMessage().contains("encoding")) {
-            specificMessage = "Character encoding issue in multipart data";
-            userFriendlyMessage = "Please check the character encoding of your request";
-        } else if (ex.getMessage().contains("parse") || ex.getMessage().contains("malformed")) {
-            specificMessage = "Malformed multipart request structure";
-            userFriendlyMessage = "The multipart request format is invalid";
-        }
-        
-        String detailedMessage = specificMessage + ": " + ex.getMessage();
-        
-        if (ex.getCause() != null) {
-            detailedMessage += " Root cause: " + ex.getCause().getMessage();
-        }
-
-        // Log the user-friendly message for monitoring
-        logger.info("User-friendly error: " + userFriendlyMessage);
-
-        ApiResponse<Object> response = ApiResponse.error(
-        HttpStatus.BAD_REQUEST.value(),
-        userFriendlyMessage // Use user-friendly message for client
-        );
-
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-    }
-
-    @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<ApiResponse<Object>> handleMaxUploadSizeExceededException(
-            MaxUploadSizeExceededException ex, HttpServletRequest request) {
-
-        logger.severe("File size exceeds limit: " + ex.getMessage());
-
-        ApiResponse<Object> response = ApiResponse.error(
-                HttpStatus.PAYLOAD_TOO_LARGE.value(),
-                "File size exceeds the maximum allowed limit"
-        );
-
-        return new ResponseEntity<>(response, HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
     // ========== 401 UNAUTHORIZED EXCEPTIONS ==========
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ApiResponse<Object>> handleUnauthorizedException(
-            UnauthorizedException ex, HttpServletRequest request) {
+          UnauthorizedException ex, HttpServletRequest request) {
 
         logger.warning("Unauthorized Exception: " + ex.getMessage());
 
         ApiResponse<Object> response = ApiResponse.error(
-                HttpStatus.UNAUTHORIZED.value(),
-                ex.getMessage()
+              HttpStatus.UNAUTHORIZED.value(),
+              ex.getMessage()
         );
 
         return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
@@ -245,13 +175,13 @@ public class GlobalExceptionHandler {
     // ========== 403 FORBIDDEN EXCEPTIONS ==========
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ApiResponse<Object>> handleForbiddenException(
-            ForbiddenException ex, HttpServletRequest request) {
+          ForbiddenException ex, HttpServletRequest request) {
 
         logger.warning("Forbidden Exception: " + ex.getMessage());
 
         ApiResponse<Object> response = ApiResponse.error(
-                HttpStatus.FORBIDDEN.value(), // 403
-                ex.getMessage()
+              HttpStatus.FORBIDDEN.value(), // 403
+              ex.getMessage()
         );
 
         return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
@@ -262,14 +192,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Object>> handleResourceNotFoundException(
-            ResourceNotFoundException ex, HttpServletRequest request) {
+          ResourceNotFoundException ex, HttpServletRequest request) {
 
         logger.warning("Resource not found at " + request.getRequestURI() + ": " + ex.getMessage());
 
         ApiResponse<Object> response = ApiResponse.error(
-                HttpStatus.NOT_FOUND.value(),
-                ex.getMessage(),
-                null
+              HttpStatus.NOT_FOUND.value(),
+              ex.getMessage(),
+              null
         );
 
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
@@ -279,13 +209,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InternalServerException.class)
     public ResponseEntity<ApiResponse<Object>> handleInternalServerException(
-            InternalServerException ex, HttpServletRequest request) {
+          InternalServerException ex, HttpServletRequest request) {
 
         logger.severe("Internal Server Exception: " + ex.getMessage());
 
         ApiResponse<Object> response = ApiResponse.error(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                ex.getMessage()
+              HttpStatus.INTERNAL_SERVER_ERROR.value(),
+              ex.getMessage()
         );
 
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -293,13 +223,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ApiResponse<Object>> handleDataAccessException(
-            DataAccessException ex, HttpServletRequest request) {
+          DataAccessException ex, HttpServletRequest request) {
 
         logger.severe("Data Access Exception: " + ex.getMessage());
 
         ApiResponse<Object> response = ApiResponse.error(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Database operation failed. Please try again later."
+              HttpStatus.INTERNAL_SERVER_ERROR.value(),
+              "Database operation failed. Please try again later."
         );
 
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -307,13 +237,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity<ApiResponse<Object>> handleNullPointerException(
-            NullPointerException ex, HttpServletRequest request) {
+          NullPointerException ex, HttpServletRequest request) {
 
         logger.severe("Null Pointer Exception: " + ex.getMessage());
 
         ApiResponse<Object> response = ApiResponse.error(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "An unexpected error occurred. Please contact support."
+              HttpStatus.INTERNAL_SERVER_ERROR.value(),
+              "An unexpected error occurred. Please contact support."
         );
 
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -321,13 +251,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Object>> handleRuntimeException(
-            RuntimeException ex, HttpServletRequest request) {
+          RuntimeException ex, HttpServletRequest request) {
 
         logger.severe("Runtime Exception: " + ex.getMessage());
 
         ApiResponse<Object> response = ApiResponse.error(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "An unexpected runtime error occurred: " + ex.getMessage()
+              HttpStatus.INTERNAL_SERVER_ERROR.value(),
+              "An unexpected runtime error occurred: " + ex.getMessage()
         );
 
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -335,15 +265,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGenericException(
-            Exception ex, HttpServletRequest request) {
+          Exception ex, HttpServletRequest request) {
 
         logger.severe("Generic Exception: " + ex.getMessage());
 
         ApiResponse<Object> response = ApiResponse.error(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "An unexpected error occurred. Please contact support if the problem persists."
+              HttpStatus.INTERNAL_SERVER_ERROR.value(),
+              "An unexpected error occurred. Please contact support if the problem persists."
         );
 
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
+
