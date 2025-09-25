@@ -1,4 +1,4 @@
-package cc.kertaskerja.pengajuan_kta.service.CloudStorage;
+package cc.kertaskerja.pengajuan_kta.service.global.CloudStorage;
 
 import cc.kertaskerja.pengajuan_kta.config.CloudFlareProperties;
 import org.springframework.stereotype.Service;
@@ -23,12 +23,12 @@ public class R2StorageService {
         String key = file.getOriginalFilename();
 
         r2Client.putObject(
-                          PutObjectRequest.builder()
-                          .bucket(props.getBucket())
-                          .key(key)
-                          .contentType(file.getContentType())
-                          .build(),
-                        software.amazon.awssdk.core.sync.RequestBody.fromBytes(file.getBytes())
+              PutObjectRequest.builder()
+                    .bucket(props.getBucket())
+                    .key(key)
+                    .contentType(file.getContentType())
+                    .build(),
+              software.amazon.awssdk.core.sync.RequestBody.fromBytes(file.getBytes())
         );
 
         return props.getEndpoint() + "/" + props.getBucket() + "/" + key;

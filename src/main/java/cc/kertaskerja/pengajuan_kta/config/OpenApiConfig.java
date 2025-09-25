@@ -12,13 +12,12 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
-                .info(new Info()
-                        .title("Pengajuan KTA Service")
-                        .version("1.0.0")
-                        .description("API untuk Pengajuan KTA")
-                        .contact(new Contact()
-                                .name("API Support")
-                                .email("support@example.com")));
+              .info(new Info()
+                    .title("Laporan API Service")
+                    .version("1.0.0")
+                    .description("API untuk Koleksi Laporan Kertas Kerja")
+                    .contact(new Contact()
+                          .name("API Support")
+                          .email("support@example.com")));
     }
 }
-

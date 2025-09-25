@@ -1,8 +1,9 @@
 package cc.kertaskerja.pengajuan_kta.entity;
 
-import cc.kertaskerja.pengajuan_kta.dto.DokumenPendukungDTO;
 import cc.kertaskerja.pengajuan_kta.dto.TertandaDTO;
+import cc.kertaskerja.pengajuan_kta.enums.StatusEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -10,9 +11,10 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
-import java.sql.Date;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "form_pengajuan")
@@ -26,6 +28,9 @@ public class FormPengajuan {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, unique = true, updatable = false)
+    private UUID uuid = UUID.randomUUID();
 
     @Column(name = "induk_organisasi", nullable = false)
     private String indukOrganisasi;
@@ -64,18 +69,20 @@ public class FormPengajuan {
     private String dibuatDi;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "dokumen_pendukung", columnDefinition = "jsonb")
-    private List<DokumenPendukungDTO> dokumenPendukung;
-
-    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "tertanda", columnDefinition = "jsonb", nullable = false)
     private TertandaDTO tertanda;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)
-    private String status;
+    private StatusEnum status;
 
     @Column(name = "keterangan", nullable = false)
     private String keterangan;
+
+    // Changed from @OneToOne to @OneToMany to match the @ManyToOne in FilePendukung
+    @OneToMany(mappedBy = "formPengajuan", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<FilePendukung> filePendukung;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

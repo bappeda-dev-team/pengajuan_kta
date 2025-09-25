@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS form_pengajuan (
                                               id BIGSERIAL PRIMARY KEY ,
+                                              uuid UUID NOT NULL UNIQUE,
                                               induk_organisasi VARCHAR(255) NOT NULL,
                                               nomor_induk VARCHAR(100) NOT NULL,
                                               jumlah_anggota INT NOT NULL,
