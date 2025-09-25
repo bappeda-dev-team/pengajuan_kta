@@ -1,15 +1,20 @@
 package cc.kertaskerja.pengajuan_kta.service;
 
-import cc.kertaskerja.pengajuan_kta.dto.FormPengajuanDTO;
+import cc.kertaskerja.pengajuan_kta.dto.FilePendukungDTO;
+import cc.kertaskerja.pengajuan_kta.dto.FormPengajuanReqDTO;
+import cc.kertaskerja.pengajuan_kta.dto.FormPengajuanResDTO;
 import cc.kertaskerja.pengajuan_kta.dto.TertandaDTO;
 import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
 import cc.kertaskerja.pengajuan_kta.entity.FormPengajuan;
+import cc.kertaskerja.pengajuan_kta.enums.StatusEnum;
 import cc.kertaskerja.pengajuan_kta.repository.FilePendukungRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FormPengajuanRepository;
+import cc.kertaskerja.pengajuan_kta.service.global.CloudStorage.R2StorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.sql.Date;
 import java.util.UUID;
@@ -19,11 +24,12 @@ import java.util.UUID;
 public class FormPengajuanServiceImpl implements FormPengajuanService {
     private final FormPengajuanRepository formPengajuanRepository;
     private final FilePendukungRepository filePendukungRepository;
+    private final R2StorageService r2StorageService;
     private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
-    public FormPengajuanDTO saveData(FormPengajuanDTO dto) {
+    public FormPengajuanResDTO saveData(FormPengajuanReqDTO dto) {
         FormPengajuan entity = FormPengajuan.builder()
               .uuid(UUID.randomUUID())
               .indukOrganisasi(dto.getInduk_organisasi())
@@ -39,36 +45,42 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
               .profesi(dto.getProfesi())
               .dibuatDi(dto.getDibuat_di())
               .tertanda(dto.getTertanda())
-              .status(dto.getStatus() != null ? dto.getStatus() : "DRAFT")
+              .status(StatusEnum.PENDING)
               .keterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-")
               .build();
 
         FormPengajuan saved = formPengajuanRepository.save(entity);
 
-        return objectMapper.convertValue(saved, FormPengajuanDTO.class);
+        return objectMapper.convertValue(saved, FormPengajuanResDTO.class);
     }
 
     @Override
     @Transactional
-    public FormPengajuanDTO.FilePendukung uploadFile(FormPengajuanDTO.FilePendukung dto) {
+    public FilePendukungDTO uploadAndSaveFile(MultipartFile file, String formUuid, String namaFile) {
         try {
-            // 1. Find the FormPengajuan by UUID
-            UUID formUuidParsed = UUID.fromString(dto.getForm_uuid());
-            FormPengajuan formPengajuan = formPengajuanRepository.findByUuid(formUuidParsed)
-                  .orElseThrow(() -> new RuntimeException("Form with UUID " + dto.getForm_uuid() + " not found"));
+            // 1. Upload file ke R2
+            String fileUrl = r2StorageService.upload(file);
 
-            // 2. Create and save FilePendukung entity
+            // 2. Gunakan namaFile dari request atau fallback ke original filename
+            String finalNamaFile = namaFile != null ? namaFile : file.getOriginalFilename();
+
+            // 3. Cari FormPengajuan berdasarkan UUID
+            UUID formUuidParsed = UUID.fromString(formUuid);
+            FormPengajuan formPengajuan = formPengajuanRepository.findByUuid(formUuidParsed)
+                  .orElseThrow(() -> new RuntimeException("Form with UUID " + formUuid + " not found"));
+
+            // 4. Simpan metadata ke database
             FilePendukung filePendukung = FilePendukung.builder()
-                  .fileUrl(dto.getFile_url())
-                  .namaFile(dto.getNama_file())
+                  .fileUrl(fileUrl)
+                  .namaFile(finalNamaFile)
                   .formPengajuan(formPengajuan)
                   .build();
 
             FilePendukung savedFile = filePendukungRepository.save(filePendukung);
 
-            // 3. Return the DTO
-            return FormPengajuanDTO.FilePendukung.builder()
-                  .form_uuid(dto.getForm_uuid())
+            // 5. Return DTO
+            return FilePendukungDTO.builder()
+                  .form_uuid(formUuid)
                   .file_url(savedFile.getFileUrl())
                   .nama_file(savedFile.getNamaFile())
                   .build();
@@ -80,11 +92,11 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
     @Override
     @Transactional(readOnly = true)
-    public FormPengajuanDTO findByUuidWithFiles(UUID uuid) {
+    public FormPengajuanResDTO findByUuidWithFiles(UUID uuid) {
         FormPengajuan formPengajuan = formPengajuanRepository.findByUuidWithFiles(uuid)
               .orElseThrow(() -> new RuntimeException("Form with UUID " + uuid + " not found"));
 
-        return FormPengajuanDTO.builder()
+        return FormPengajuanResDTO.builder()
               .uuid(formPengajuan.getUuid())
               .induk_organisasi(formPengajuan.getIndukOrganisasi())
               .nomor_induk(formPengajuan.getNomorInduk())
@@ -98,7 +110,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
               .alamat(formPengajuan.getAlamat())
               .profesi(formPengajuan.getProfesi())
               .dibuat_di(formPengajuan.getDibuatDi())
-              .status(formPengajuan.getStatus())
+              .status(formPengajuan.getStatus() != null ? formPengajuan.getStatus().name() : null)
               .keterangan(formPengajuan.getKeterangan())
               .tertanda(TertandaDTO.builder()
                     .nama(formPengajuan.getTertanda().getNama())
@@ -108,7 +120,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                     .pangkat(formPengajuan.getTertanda().getPangkat())
                     .build())
               .file_pendukung(formPengajuan.getFilePendukung().stream()
-                    .map(file -> FormPengajuanDTO.FilePendukung.builder()
+                    .map(file -> FormPengajuanResDTO.FilePendukung.builder()
                           .form_uuid(file.getFormPengajuan().getUuid().toString())
                           .file_url(file.getFileUrl())
                           .nama_file(file.getNamaFile())

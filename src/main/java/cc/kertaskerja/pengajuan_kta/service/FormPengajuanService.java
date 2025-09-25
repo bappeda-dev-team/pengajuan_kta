@@ -1,16 +1,18 @@
 package cc.kertaskerja.pengajuan_kta.service;
 
-import cc.kertaskerja.pengajuan_kta.dto.FormPengajuanDTO;
+import cc.kertaskerja.pengajuan_kta.dto.FilePendukungDTO;
+import cc.kertaskerja.pengajuan_kta.dto.FormPengajuanReqDTO;
+import cc.kertaskerja.pengajuan_kta.dto.FormPengajuanResDTO;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
 public interface FormPengajuanService {
-    FormPengajuanDTO saveData(FormPengajuanDTO formPengajuanDTO);
+    FormPengajuanResDTO saveData(FormPengajuanReqDTO formPengajuanDTO);
 
-    FormPengajuanDTO.FilePendukung uploadFile(FormPengajuanDTO.FilePendukung dto);
+    FilePendukungDTO uploadAndSaveFile(MultipartFile file, String formUuid, String namaFile);
 
-    FormPengajuanDTO findByUuidWithFiles(UUID uuid);
+    FormPengajuanResDTO findByUuidWithFiles(UUID uuid);
 }

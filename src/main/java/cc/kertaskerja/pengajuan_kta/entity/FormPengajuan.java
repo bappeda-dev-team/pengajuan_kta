@@ -1,6 +1,7 @@
 package cc.kertaskerja.pengajuan_kta.entity;
 
 import cc.kertaskerja.pengajuan_kta.dto.TertandaDTO;
+import cc.kertaskerja.pengajuan_kta.enums.StatusEnum;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -71,8 +72,9 @@ public class FormPengajuan {
     @Column(name = "tertanda", columnDefinition = "jsonb", nullable = false)
     private TertandaDTO tertanda;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)
-    private String status;
+    private StatusEnum status;
 
     @Column(name = "keterangan", nullable = false)
     private String keterangan;

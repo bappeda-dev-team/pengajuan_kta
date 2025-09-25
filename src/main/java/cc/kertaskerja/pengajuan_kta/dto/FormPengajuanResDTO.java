@@ -19,65 +19,25 @@ import java.util.UUID;
 @Builder
 @JsonInclude(JsonInclude.Include.ALWAYS) // always show fields
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class FormPengajuanDTO {
+public class FormPengajuanResDTO {
     private UUID uuid;
-
-    @NotBlank(message = "Nama Induk Organisasi harus diisi")
-    @JsonProperty("induk_organisasi")
     private String induk_organisasi;
-
-    @NotBlank(message = "Harap masukkan Nomor Induk")
-    @JsonProperty("nomor_induk")
     private String nomor_induk;
-
-    @NotBlank(message = "Masukkan jumlah anggota")
-    @JsonProperty("jumlah_anggota")
     private String jumlah_anggota;
-
-    @NotBlank(message = "Nama daerah (kab/kota) wajib diisi")
-    @JsonProperty("daerah")
     private String daerah;
-
-    @NotNull(message = "Tanggal berlaku dari wajib diisi")
-    @JsonProperty("berlaku_dari")
     private Date berlaku_dari;
-
-    @NotNull(message = "Tanggal berlaku sampai wajib diisi")
-    @JsonProperty("berlaku_sampai")
     private Date berlaku_sampai;
-
-    @NotBlank(message = "Nama wajib diisi")
-    @JsonProperty("nama")
     private String nama;
-
-    @NotBlank(message = "Wajib mengisi tanggal lahir")
-    @JsonProperty("tanggal_lahir")
     private String tanggal_lahir;
-
-    @NotBlank(message = "Wajib mengisi jenis kelamin")
-    @JsonProperty("jenis_kelamin")
     private String jenis_kelamin;
-
-    @NotBlank(message = "Alamat wajib diisi")
-    @JsonProperty("alamat")
     private String alamat;
-
-    @NotBlank(message = "Profesi tidak boleh kosong")
-    @JsonProperty("profesi")
     private String profesi;
-
-    @NotBlank(message = "Wajib mengisi tempat daerah dibuat")
-    @JsonProperty("dibuat_di")
     private String dibuat_di;
-
-    @Valid
-    @NotNull(message = "Pegawai tidak boleh kosong!")
     private TertandaDTO tertanda;
-
     private String status;
     private String keterangan;
 
-    private List<FilePendukung> file_pendukung; // add this to show files
+    private List<FilePendukung> file_pendukung;
 
     @Data
     @Builder
