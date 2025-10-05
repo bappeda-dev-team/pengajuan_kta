@@ -68,7 +68,7 @@ public class FormPengajuanController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PostMapping("/upload-and-save")
+    @PostMapping("/upload/save")
     @Operation(summary = "Upload file ke R2 storage dan simpan metadata ke database")
     public ResponseEntity<ApiResponse<?>> uploadAndSaveFile(@RequestParam("file") MultipartFile file,
                                                           @RequestParam("form_uuid") String formUuid,
@@ -79,7 +79,7 @@ public class FormPengajuanController {
         return ResponseEntity.ok(ApiResponse.created(result));
     }
 
-    @GetMapping("/{uuid}")
+    @GetMapping("/file/{uuid}")
     @Operation(summary = "Ambil data pengajuan KTA berdasarkan uuid")
     public ResponseEntity<ApiResponse<FormPengajuanResDTO>> getFormByUuid(@PathVariable UUID uuid) {
         FormPengajuanResDTO result = formPengajuanService.findByUuidWithFiles(uuid);
