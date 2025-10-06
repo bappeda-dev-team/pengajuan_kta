@@ -46,3 +46,23 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+bootBuildImage {
+    imageName = "${project.name}"
+    environment = ["BP_JVM_VERSION" : "21.*"]
+
+    if (System.getProperty( "os.arch" ).toLowerCase().startsWith('aarch')) {
+        builder = "paketobuildpacks/builder-jammy-buildpackless-tiny"
+        buildpacks = [ "docker.io/paketobuildpacks/java" ]
+    } else {
+        builder = "docker.io/paketobuildpacks/builder-jammy-tiny"
+    }
+
+    docker {
+        publishRegistry {
+            username = project.findProperty("registryUsername")
+            password = project.findProperty("registryToken")
+            url = project.findProperty("registryUrl")
+        }
+    }
+}
