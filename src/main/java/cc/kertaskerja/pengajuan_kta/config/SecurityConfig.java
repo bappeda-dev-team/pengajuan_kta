@@ -21,30 +21,32 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-              .csrf(AbstractHttpConfigurer::disable)
-              .cors(Customizer.withDefaults())
-              .authorizeHttpRequests(authz -> authz
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                    // Swagger
-                    .requestMatchers(
-                          "/swagger-ui/**",
-                          "/swagger-ui.html",
-                          "/v3/api-docs/**",
-                          "/swagger-resources/**",
-                          "/webjars/**"
-                    ).permitAll()
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
+                .authorizeHttpRequests(authz -> authz
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Swagger
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
 
-                    // API public (opsional)
-                    .requestMatchers(
-                          "/api/public/**",
-                          "/actuator/**",
-                          "/api/external/**"
-                    ).permitAll()
+                        // API public (opsional)
+                        .requestMatchers(
+                                "/api/public/**",
+                                "/actuator/**",
+                                "/api/external/**"
+                        ).permitAll()
 
-                    // Endpoint lain wajib login
-                    .anyRequest().authenticated()
-              )
-              .httpBasic(Customizer.withDefaults()); // atau JWT-based filter
+                        // Endpoint lain wajib login
+                        .anyRequest().authenticated()
+                )
+                .httpBasic(Customizer.withDefaults())
+                .formLogin(AbstractHttpConfigurer::disable)
+                .logout(AbstractHttpConfigurer::disable);
         return http.build();
     }
 
