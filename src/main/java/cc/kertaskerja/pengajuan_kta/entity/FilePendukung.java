@@ -1,5 +1,6 @@
 package cc.kertaskerja.pengajuan_kta.entity;
 
+import cc.kertaskerja.pengajuan_kta.common.BaseAuditable;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -13,7 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FilePendukung {
+public class FilePendukung extends BaseAuditable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

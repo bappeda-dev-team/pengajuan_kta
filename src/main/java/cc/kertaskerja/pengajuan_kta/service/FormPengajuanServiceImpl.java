@@ -1,27 +1,30 @@
 package cc.kertaskerja.pengajuan_kta.service;
 
-import cc.kertaskerja.pengajuan_kta.dto.FilePendukungDTO;
-import cc.kertaskerja.pengajuan_kta.dto.FormPengajuanReqDTO;
-import cc.kertaskerja.pengajuan_kta.dto.FormPengajuanResDTO;
-import cc.kertaskerja.pengajuan_kta.dto.TertandaDTO;
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FilePendukungDTO;
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanReqDTO;
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanResDTO;
+import cc.kertaskerja.pengajuan_kta.entity.Account;
 import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
 import cc.kertaskerja.pengajuan_kta.entity.FormPengajuan;
 import cc.kertaskerja.pengajuan_kta.enums.StatusEnum;
+import cc.kertaskerja.pengajuan_kta.exception.ResourceNotFoundException;
+import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FilePendukungRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FormPengajuanRepository;
 import cc.kertaskerja.pengajuan_kta.service.global.CloudStorage.R2StorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.sql.Date;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class FormPengajuanServiceImpl implements FormPengajuanService {
+    private final AccountRepository accountRepository;
     private final FormPengajuanRepository formPengajuanRepository;
     private final FilePendukungRepository filePendukungRepository;
     private final R2StorageService r2StorageService;
@@ -29,29 +32,55 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
     @Override
     @Transactional
-    public FormPengajuanResDTO saveData(FormPengajuanReqDTO dto) {
-        FormPengajuan entity = FormPengajuan.builder()
-              .uuid(UUID.randomUUID())
-              .indukOrganisasi(dto.getInduk_organisasi())
-              .nomorInduk(dto.getNomor_induk())
-              .jumlahAnggota(Integer.parseInt(dto.getJumlah_anggota()))
-              .daerah(dto.getDaerah())
-              .berlakuDari(new Date(dto.getBerlaku_dari().getTime()))
-              .berlakuSampai(new Date(dto.getBerlaku_sampai().getTime()))
-              .nama(dto.getNama())
-              .tanggalLahir(dto.getTanggal_lahir())
-              .jenisKelamin(dto.getJenis_kelamin())
-              .alamat(dto.getAlamat())
-              .profesi(dto.getProfesi())
-              .dibuatDi(dto.getDibuat_di())
-              .tertanda(dto.getTertanda())
-              .status(StatusEnum.PENDING)
-              .keterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-")
-              .build();
+    public FormPengajuanResDTO.SaveDataResponse saveData(FormPengajuanReqDTO.SavePengajuan dto) {
+        try {
+            Account account = accountRepository.findById(dto.getUser_id())
+                  .orElseThrow(() -> new ResourceNotFoundException("Account not found for user_id: " + dto.getUser_id()));
 
-        FormPengajuan saved = formPengajuanRepository.save(entity);
+            FormPengajuan entity = FormPengajuan.builder()
+                  .account(account)
+                  .uuid(UUID.randomUUID())
+                  .indukOrganisasi(dto.getInduk_organisasi())
+                  .nomorInduk(dto.getNomor_induk())
+                  .jumlahAnggota(Integer.parseInt(dto.getJumlah_anggota()))
+                  .daerah(dto.getDaerah())
+                  .nama(dto.getNama())
+                  .tempatLahir(dto.getTempat_lahir())
+                  .tanggalLahir(dto.getTanggal_lahir())
+                  .jenisKelamin(dto.getJenis_kelamin())
+                  .alamat(dto.getAlamat())
+                  .profesi(dto.getProfesi())
+                  .dibuatDi(dto.getDibuat_di())
+                  .status(StatusEnum.PENDING) // Default value
+                  .keterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-")
+                  .build();
 
-        return objectMapper.convertValue(saved, FormPengajuanResDTO.class);
+            FormPengajuan saved = formPengajuanRepository.save(entity);
+
+            return FormPengajuanResDTO.SaveDataResponse.builder()
+                  .uuid(saved.getUuid())
+                  .induk_organisasi(saved.getIndukOrganisasi())
+                  .nomor_induk(saved.getNomorInduk())
+                  .jumlah_anggota(String.valueOf(saved.getJumlahAnggota()))
+                  .daerah(saved.getDaerah())
+                  .nama(saved.getNama())
+                  .tempat_lahir(saved.getTempatLahir())
+                  .tanggal_lahir(saved.getTanggalLahir())
+                  .jenis_kelamin(saved.getJenisKelamin())
+                  .alamat(saved.getAlamat())
+                  .profesi(saved.getProfesi())
+                  .dibuat_di(saved.getDibuatDi())
+                  .status(saved.getStatus().name())
+                  .keterangan(saved.getKeterangan())
+                  .build();
+
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("Invalid number format for jumlah_anggota", e);
+        } catch (DataIntegrityViolationException e) {
+            throw new RuntimeException("Data integrity violation. Please check NOT NULL, UNIQUE, or foreign key constraints.", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Unexpected error occurred while saving form_pengajuan", e);
+        }
     }
 
     @Override
@@ -92,19 +121,20 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
     @Override
     @Transactional(readOnly = true)
-    public FormPengajuanResDTO findByUuidWithFiles(UUID uuid) {
+    public FormPengajuanResDTO.PengajuanResponse findByUuidWithFiles(UUID uuid) {
         FormPengajuan formPengajuan = formPengajuanRepository.findByUuidWithFiles(uuid)
               .orElseThrow(() -> new RuntimeException("Form with UUID " + uuid + " not found"));
 
-        return FormPengajuanResDTO.builder()
+        return FormPengajuanResDTO.PengajuanResponse.builder()
               .uuid(formPengajuan.getUuid())
               .induk_organisasi(formPengajuan.getIndukOrganisasi())
               .nomor_induk(formPengajuan.getNomorInduk())
-              .jumlah_anggota(formPengajuan.getJumlahAnggota() != null ? formPengajuan.getJumlahAnggota().toString () : String.valueOf (0L))
+              .jumlah_anggota(formPengajuan.getJumlahAnggota() != null
+                    ? formPengajuan.getJumlahAnggota().toString()
+                    : "0")
               .daerah(formPengajuan.getDaerah())
-              .berlaku_dari(formPengajuan.getBerlakuDari())
-              .berlaku_sampai(formPengajuan.getBerlakuSampai())
               .nama(formPengajuan.getNama())
+              .tempat_lahir(formPengajuan.getTempatLahir())
               .tanggal_lahir(formPengajuan.getTanggalLahir())
               .jenis_kelamin(formPengajuan.getJenisKelamin())
               .alamat(formPengajuan.getAlamat())
@@ -112,13 +142,6 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
               .dibuat_di(formPengajuan.getDibuatDi())
               .status(formPengajuan.getStatus() != null ? formPengajuan.getStatus().name() : null)
               .keterangan(formPengajuan.getKeterangan())
-              .tertanda(TertandaDTO.builder()
-                    .nama(formPengajuan.getTertanda().getNama())
-                    .tanda_tangan(formPengajuan.getTertanda().getTanda_tangan())
-                    .jabatan(formPengajuan.getTertanda().getJabatan())
-                    .nip(formPengajuan.getTertanda().getNip())
-                    .pangkat(formPengajuan.getTertanda().getPangkat())
-                    .build())
               .file_pendukung(formPengajuan.getFilePendukung().stream()
                     .map(file -> FormPengajuanResDTO.FilePendukung.builder()
                           .form_uuid(file.getFormPengajuan().getUuid().toString())
@@ -128,5 +151,4 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                     .toList())
               .build();
     }
-
 }

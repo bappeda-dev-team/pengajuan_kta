@@ -1,6 +1,6 @@
 package cc.kertaskerja.pengajuan_kta.helper;
 
-import cc.kertaskerja.pengajuan_kta.dto.TertandaDTO;
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.TertandaDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.AttributeConverter;

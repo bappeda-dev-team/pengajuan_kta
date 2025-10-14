@@ -1,11 +1,9 @@
 package cc.kertaskerja.pengajuan_kta.controller;
 
 import cc.kertaskerja.pengajuan_kta.dto.ApiResponse;
-import cc.kertaskerja.pengajuan_kta.dto.FilePendukungDTO;
-import cc.kertaskerja.pengajuan_kta.dto.FormPengajuanReqDTO;
-import cc.kertaskerja.pengajuan_kta.dto.FormPengajuanResDTO;
-import cc.kertaskerja.pengajuan_kta.exception.BadRequestException;
-import cc.kertaskerja.pengajuan_kta.helper.Crypto;
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FilePendukungDTO;
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanReqDTO;
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanResDTO;
 import cc.kertaskerja.pengajuan_kta.service.FormPengajuanService;
 import cc.kertaskerja.pengajuan_kta.service.global.CloudStorage.R2StorageService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,11 +31,9 @@ public class FormPengajuanController {
 
     @PostMapping
     @Operation(summary = "Simpan data pengajuan KTA")
-    public ResponseEntity<ApiResponse<?>> saveData(@Valid @RequestBody FormPengajuanReqDTO dto,
-                                                   BindingResult bindingResult) {
-        if (!Crypto.isEncrypted(dto.getTertanda().getNip())) {
-            throw new BadRequestException("NIP is not encrypted: " + dto.getTertanda().getNip());
-        }
+    public ResponseEntity<ApiResponse<?>> saveData(
+          @Valid @RequestBody FormPengajuanReqDTO.SavePengajuan dto,
+          BindingResult bindingResult) {
 
         if (bindingResult.hasErrors()) {
             List<String> errorMessages = bindingResult.getFieldErrors().stream()
@@ -55,17 +51,29 @@ public class FormPengajuanController {
             return ResponseEntity.badRequest().body(errorResponse);
         }
 
-        FormPengajuanResDTO saved = formPengajuanService.saveData(dto);
+        try {
+            FormPengajuanResDTO.SaveDataResponse saved = formPengajuanService.saveData(dto);
 
-        ApiResponse<Object> response = ApiResponse.builder()
-              .success(true)
-              .statusCode(201)
-              .message("Pengajuan KTA has been saved successfully")
-              .data(saved.getUuid()) // only UUID here
-              .timestamp(LocalDateTime.now())
-              .build();
+            ApiResponse<Object> response = ApiResponse.builder()
+                  .success(true)
+                  .statusCode(201)
+                  .message("Pengajuan KTA berhasil disimpan")
+                  .data(saved.getUuid())
+                  .timestamp(LocalDateTime.now())
+                  .build();
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } catch (RuntimeException e) {
+            ApiResponse<Object> error = ApiResponse.builder()
+                  .success(false)
+                  .statusCode(400)
+                  .message(e.getMessage())
+                  .timestamp(LocalDateTime.now())
+                  .build();
+
+            return ResponseEntity.badRequest().body(error);
+        }
     }
 
     @PostMapping("/upload/save")
@@ -81,9 +89,9 @@ public class FormPengajuanController {
 
     @GetMapping("/file/{uuid}")
     @Operation(summary = "Ambil data pengajuan KTA berdasarkan uuid")
-    public ResponseEntity<ApiResponse<FormPengajuanResDTO>> getFormByUuid(@PathVariable UUID uuid) {
-        FormPengajuanResDTO result = formPengajuanService.findByUuidWithFiles(uuid);
-        ApiResponse<FormPengajuanResDTO> response = ApiResponse.success(result, "Retrieved 1 data successfully");
+    public ResponseEntity<ApiResponse<FormPengajuanResDTO.PengajuanResponse>> getFormByUuid(@PathVariable UUID uuid) {
+        FormPengajuanResDTO.PengajuanResponse result = formPengajuanService.findByUuidWithFiles(uuid);
+        ApiResponse<FormPengajuanResDTO.PengajuanResponse> response = ApiResponse.success(result, "Retrieved 1 data successfully");
 
         return ResponseEntity.ok(response);
     }

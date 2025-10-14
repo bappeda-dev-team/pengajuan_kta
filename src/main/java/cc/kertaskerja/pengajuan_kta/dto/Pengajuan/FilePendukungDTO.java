@@ -1,4 +1,4 @@
-package cc.kertaskerja.pengajuan_kta.dto;
+package cc.kertaskerja.pengajuan_kta.dto.Pengajuan;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;

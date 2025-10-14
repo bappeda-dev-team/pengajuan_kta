@@ -2,6 +2,11 @@ spring:
   application:
     name: pengajuan_kta
 
+  security:
+    user:
+      name: admin
+      password: admin123
+
   datasource:
     url: jdbc:postgresql://localhost:5432/pengajuan_kta
     username: majapahit
@@ -23,11 +28,6 @@ spring:
         access:
           strategy: field
         use-new-id-generator-mappings: false
-
-  security:
-    user:
-      name: admin
-      password: admin123
 
   docker:
     compose:
@@ -96,3 +96,8 @@ springdoc:
     disable-swagger-default-url: true
   override-with-generic-response: false
   show-actuator: false
+
+jwt:
+  # NOTE: replace with a secure random 256-bit key in production (min ~32 bytes for HS256)
+  secret: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+  expirationMillis: 3600000
