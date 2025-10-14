@@ -4,13 +4,12 @@ import cc.kertaskerja.pengajuan_kta.dto.ApiResponse;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FilePendukungDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanReqDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanResDTO;
-import cc.kertaskerja.pengajuan_kta.service.FormPengajuanService;
+import cc.kertaskerja.pengajuan_kta.service.pengajuan.FormPengajuanService;
 import cc.kertaskerja.pengajuan_kta.service.global.CloudStorage.R2StorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -31,9 +30,8 @@ public class FormPengajuanController {
 
     @PostMapping
     @Operation(summary = "Simpan data pengajuan KTA")
-    public ResponseEntity<ApiResponse<?>> saveData(
-          @Valid @RequestBody FormPengajuanReqDTO.SavePengajuan dto,
-          BindingResult bindingResult) {
+    public ResponseEntity<ApiResponse<?>> saveData(@Valid @RequestBody FormPengajuanReqDTO.SavePengajuan dto,
+                                                    BindingResult bindingResult) {
 
         if (bindingResult.hasErrors()) {
             List<String> errorMessages = bindingResult.getFieldErrors().stream()
@@ -54,15 +52,9 @@ public class FormPengajuanController {
         try {
             FormPengajuanResDTO.SaveDataResponse saved = formPengajuanService.saveData(dto);
 
-            ApiResponse<Object> response = ApiResponse.builder()
-                  .success(true)
-                  .statusCode(201)
-                  .message("Pengajuan KTA berhasil disimpan")
-                  .data(saved.getUuid())
-                  .timestamp(LocalDateTime.now())
-                  .build();
-
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            return ResponseEntity
+                  .status(201)
+                  .body(ApiResponse.created(saved.getUuid()));
 
         } catch (RuntimeException e) {
             ApiResponse<Object> error = ApiResponse.builder()
@@ -94,5 +86,44 @@ public class FormPengajuanController {
         ApiResponse<FormPengajuanResDTO.PengajuanResponse> response = ApiResponse.success(result, "Retrieved 1 data successfully");
 
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/verify/{uuid}")
+    @Operation(summary = "Verifikasi data pengajuan KTA dan update status")
+    public ResponseEntity<ApiResponse<?>> verifyData(@PathVariable UUID uuid,
+                                                      @Valid @RequestBody FormPengajuanReqDTO.VerifyPengajuan dto,
+                                                      BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            List<String> errorMessages = bindingResult.getFieldErrors().stream()
+                  .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                  .toList();
+
+            ApiResponse<List<String>> errorResponse = ApiResponse.<List<String>>builder()
+                  .success(false)
+                  .statusCode(400)
+                  .message("Validation failed")
+                  .errors(errorMessages)
+                  .timestamp(LocalDateTime.now())
+                  .build();
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        try {
+            FormPengajuanResDTO.VerifyData result = formPengajuanService.verifyDataPengajuan(dto, uuid);
+
+            return ResponseEntity.ok(ApiResponse.updated(result));
+
+        } catch (RuntimeException e) {
+            ApiResponse<Object> errorResponse = ApiResponse.builder()
+                  .success(false)
+                  .statusCode(400)
+                  .message(e.getMessage())
+                  .timestamp(LocalDateTime.now())
+                  .build();
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 }

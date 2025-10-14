@@ -1,16 +1,14 @@
 package cc.kertaskerja.pengajuan_kta.entity;
 
 import cc.kertaskerja.pengajuan_kta.common.BaseAuditable;
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.TertandaDTO;
 import cc.kertaskerja.pengajuan_kta.enums.StatusEnum;
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.LocalDateTime;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -82,6 +80,13 @@ public class FormPengajuan extends BaseAuditable {
 
     @Column(name = "keterangan", nullable = false)
     private String keterangan;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "tertanda", columnDefinition = "jsonb", nullable = false)
+    private TertandaDTO tertanda;
+
+    @Column(name = "catatan")
+    private String catatan;
 
     @OneToMany(mappedBy = "formPengajuan", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference

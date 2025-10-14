@@ -1,4 +1,4 @@
-package cc.kertaskerja.pengajuan_kta.service;
+package cc.kertaskerja.pengajuan_kta.service.pengajuan;
 
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FilePendukungDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanReqDTO;
@@ -150,5 +150,35 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                           .build())
                     .toList())
               .build();
+    }
+
+    @Override
+    @Transactional
+    public FormPengajuanResDTO.VerifyData verifyDataPengajuan(FormPengajuanReqDTO.VerifyPengajuan dto, UUID uuid) {
+        try {
+            FormPengajuan form = formPengajuanRepository.findByUuid(uuid)
+                  .orElseThrow(() -> new ResourceNotFoundException("Form pengajuan tidak ditemukan"));
+
+            form.setBerlakuDari(dto.getBerlaku_dari());
+            form.setBerlakuSampai(dto.getBerlaku_sampai());
+            form.setStatus(dto.getStatus() != null ? StatusEnum.valueOf(dto.getStatus()) : StatusEnum.PENDING);
+            form.setTertanda(dto.getTertanda());
+            form.setCatatan(dto.getCatatan());
+
+            formPengajuanRepository.save(form);
+
+            return FormPengajuanResDTO.VerifyData.builder()
+                  .berlaku_dari(form.getBerlakuDari())
+                  .berlaku_sampai(form.getBerlakuSampai())
+                  .status(form.getStatus().name())
+                  .tertanda(dto.getTertanda())
+                  .catatan(form.getCatatan())
+                  .build();
+
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Gagal memverifikasi data pengajuan: " + e.getMessage(), e);
+        }
     }
 }

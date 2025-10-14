@@ -1,4 +1,4 @@
-package cc.kertaskerja.pengajuan_kta.service;
+package cc.kertaskerja.pengajuan_kta.service.pengajuan;
 
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FilePendukungDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanReqDTO;
@@ -10,9 +10,12 @@ import java.util.UUID;
 
 @Service
 public interface FormPengajuanService {
+
     FormPengajuanResDTO.SaveDataResponse saveData(FormPengajuanReqDTO.SavePengajuan formPengajuanDTO);
 
     FilePendukungDTO uploadAndSaveFile(MultipartFile file, String formUuid, String namaFile);
 
     FormPengajuanResDTO.PengajuanResponse findByUuidWithFiles(UUID uuid);
+
+    FormPengajuanResDTO.VerifyData verifyDataPengajuan(FormPengajuanReqDTO.VerifyPengajuan dto, UUID uuid);
 }

@@ -1,5 +1,8 @@
 package cc.kertaskerja.pengajuan_kta.security;
 
+import cc.kertaskerja.pengajuan_kta.entity.Account;
+import cc.kertaskerja.pengajuan_kta.enums.StatusEnum;
+import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,6 +23,7 @@ import java.util.Map;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final AccountRepository accountRepository;
 
     @Override
     protected void doFilterInternal(
@@ -28,38 +32,52 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
           FilterChain filterChain
     ) throws ServletException, IOException {
 
-        // 1️⃣ Ambil Authorization header
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        // 2️⃣ Jika tidak ada token, lanjut tanpa autentikasi
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
-            // 3️⃣ Ambil token
             String token = authHeader.substring(7);
-
-            // 4️⃣ Parse token
             Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+
             String username = (String) claims.get("sub");
             Long uid = ((Number) claims.get("uid")).longValue();
-            String role = (String) claims.get("role");
 
-            // 5️⃣ Set autentikasi ke SecurityContext
+            Account account = accountRepository.findById(uid)
+                  .filter(a -> a.getUsername().equals(username))
+                  .orElse(null);
+
+            // 🔒 If account not found or pending, reject all non-auth requests
+            String path = request.getRequestURI();
+            boolean isAuthEndpoint = path.startsWith("/auth");
+
+            if (account == null || account.getStatus() == StatusEnum.PENDING) {
+                if (!isAuthEndpoint) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json");
+                    response.getWriter().write("""
+                        {
+                            "success": false,
+                            "statusCode": 403,
+                            "message": "Your account is pending verification. Access denied."
+                        }
+                    """);
+                    return;
+                }
+            }
+
             UsernamePasswordAuthenticationToken authentication =
                   new UsernamePasswordAuthenticationToken(username, null, null);
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
         } catch (Exception e) {
-            // Token invalid → skip authentication
             SecurityContextHolder.clearContext();
         }
 
-        // 6️⃣ Lanjut ke filter berikutnya
         filterChain.doFilter(request, response);
     }
 }

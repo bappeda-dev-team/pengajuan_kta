@@ -69,4 +69,16 @@ public class FormPengajuanResDTO {
         @NotBlank(message = "Nama file tidak boleh kosong!")
         private String nama_file;
     }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class VerifyData{
+        private Date berlaku_dari;
+        private Date berlaku_sampai;
+        private String status;
+        private TertandaDTO tertanda;
+        private String catatan;
+    }
 }

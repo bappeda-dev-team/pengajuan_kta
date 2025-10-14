@@ -16,8 +16,10 @@ CREATE TABLE IF NOT EXISTS form_pengajuan (
                                               profesi VARCHAR(255) NOT NULL,
                                               dibuat_di VARCHAR(50) NOT NULL,
                                               dokumen_pendukung JSONB,
+                                              tertanda JSONB,
                                               status VARCHAR(20) NOT NULL,
                                               keterangan VARCHAR(255) NOT NULL,
+                                              catatan VARCHAR(255),
                                               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                               updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                               CONSTRAINT fk_form_pengajuan_user_id

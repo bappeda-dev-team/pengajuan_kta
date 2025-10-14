@@ -1,9 +1,29 @@
 services:
-  postgres:
-    image: 'postgres:latest'
+  postgress:
+    image: postgres:16-alpine
+    container_name: pengajuan-kta-service
     environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+      POSTGRES_USER: majapahit
+      POSTGRES_PASSWORD: Madiun@123
+      POSTGRES_DB: pengajuan-kta
     ports:
-      - '5432'
+      - "5432:5432"
+    networks:
+      - pengajuan-kta-network
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: pengajuan-kta-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - pengajuan-kta-network
+
+networks:
+  laporan-network:
+    driver: bridge
+
+volumes:
+  db-data:

@@ -13,11 +13,11 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
               .info(new Info()
-                    .title("Laporan API Service")
+                    .title("Pengajuan KTA API Service")
                     .version("1.0.0")
-                    .description("API untuk Koleksi Laporan Kertas Kerja")
+                    .description("Pejabat Pengelola Informasi dan Dokumentasi Kabupaten Ngawi")
                     .contact(new Contact()
                           .name("API Support")
-                          .email("support@example.com")));
+                          .email("ppidkabngawi@ngawikab.go.id")));
     }
 }

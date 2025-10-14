@@ -3,6 +3,7 @@ package cc.kertaskerja.pengajuan_kta.dto.Pengajuan;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -69,5 +70,28 @@ public class FormPengajuanReqDTO {
         private String dibuat_di;
 
         private String keterangan;
+    }
+
+    @Getter
+    @Setter
+    public static class VerifyPengajuan {
+        @NotNull(message = "Tanggal berlaku dari wajib diisi")
+        @JsonProperty("berlaku_dari")
+        private Date berlaku_dari;
+
+        @NotNull(message = "Tanggal berlaku sampai wajib diisi")
+        @JsonProperty("berlaku_sampai")
+        private Date berlaku_sampai;
+
+        @Valid
+        @NotNull(message = "Kolom tertanda tidak boleh kosong!")
+        private TertandaDTO tertanda;
+
+        @NotBlank(message = "Status harap diisi!")
+        @JsonProperty("status")
+        private String status;
+
+        @JsonProperty("catatan")
+        private String catatan;
     }
 }
