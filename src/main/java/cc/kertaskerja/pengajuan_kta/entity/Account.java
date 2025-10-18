@@ -2,7 +2,6 @@ package cc.kertaskerja.pengajuan_kta.entity;
 
 import cc.kertaskerja.pengajuan_kta.common.BaseAuditable;
 import cc.kertaskerja.pengajuan_kta.enums.StatusEnum;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.util.List;

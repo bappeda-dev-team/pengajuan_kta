@@ -40,7 +40,7 @@ public class FormPengajuanController {
 
         try {
             var result = formPengajuanService.findAllDataPengajuan(authHeader);
-            return ResponseEntity.ok(ApiResponse.success(result, "Retrieved all pengajuan successfully"));
+            return ResponseEntity.ok(ApiResponse.success(result, "Retrieved " + result.size() + " data pengajuan successfully"));
         } catch (RuntimeException e) {
             var error = ApiResponse.builder()
                   .success(false)

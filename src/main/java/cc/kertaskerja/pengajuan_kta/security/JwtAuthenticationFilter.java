@@ -29,7 +29,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final AccountRepository accountRepository;
     private final TokenBlacklistService tokenBlacklistService;
 
-
     @Override
     protected void doFilterInternal(
           HttpServletRequest request,
@@ -58,7 +57,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             """);
             return;
         }
-
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
@@ -95,6 +93,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             String role = (String) claims.get("role");
+
             if (!"ADMIN".equalsIgnoreCase(role) && request.getRequestURI().startsWith("/pengajuan/verify")) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");

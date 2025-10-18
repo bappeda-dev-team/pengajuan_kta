@@ -22,6 +22,8 @@ public class FormPengajuanResDTO {
         private String nomor_induk;
         private String jumlah_anggota;
         private String daerah;
+        private Date berlaku_dari;
+        private Date berlaku_sampai;
         private String nama;
         private String tempat_lahir;
         private Date tanggal_lahir;
@@ -29,8 +31,10 @@ public class FormPengajuanResDTO {
         private String alamat;
         private String profesi;
         private String dibuat_di;
-        private String status;
         private String keterangan;
+        private String status;
+        private String catatan;
+        private TertandaDTO tertanda;
         private List<FilePendukung> file_pendukung;
     }
 

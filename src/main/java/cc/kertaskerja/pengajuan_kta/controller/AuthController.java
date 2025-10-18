@@ -86,7 +86,6 @@ public class AuthController {
         }
     }
 
-
     @PostMapping("/check-account")
     @Operation(summary = "Validate access token and get account data")
     public ResponseEntity<ApiResponse<AccountResponse>> checkAccount(@Valid @RequestBody TokenRequest tokenRequest) {
