@@ -18,7 +18,6 @@ public class R2ClientConfig {
         this.props = props;
     }
 
-
     @Bean
     public S3Client r2Client() {
         return S3Client.builder()

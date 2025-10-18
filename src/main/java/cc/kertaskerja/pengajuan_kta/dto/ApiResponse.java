@@ -1,6 +1,7 @@
 package cc.kertaskerja.pengajuan_kta.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -56,5 +57,17 @@ public class ApiResponse<T> {
 
     public static <T> ApiResponse<T> error(int statusCode, T data, String message) {
         return new ApiResponse<>(false, statusCode, message, data);
+    }
+
+    public static <T> ApiResponse<T> fromJson(String json, Class<T> dataType) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(
+                  json,
+                  mapper.getTypeFactory().constructParametricType(ApiResponse.class, dataType)
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse JSON", e);
+        }
     }
 }

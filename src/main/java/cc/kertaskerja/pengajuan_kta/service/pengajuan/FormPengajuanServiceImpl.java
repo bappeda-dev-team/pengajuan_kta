@@ -11,7 +11,8 @@ import cc.kertaskerja.pengajuan_kta.exception.ResourceNotFoundException;
 import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FilePendukungRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FormPengajuanRepository;
-import cc.kertaskerja.pengajuan_kta.service.global.CloudStorage.R2StorageService;
+import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
+import cc.kertaskerja.pengajuan_kta.service.global.R2StorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -19,16 +20,75 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class FormPengajuanServiceImpl implements FormPengajuanService {
     private final AccountRepository accountRepository;
+    private final JwtTokenProvider jwtTokenProvider;
     private final FormPengajuanRepository formPengajuanRepository;
     private final FilePendukungRepository filePendukungRepository;
     private final R2StorageService r2StorageService;
     private final ObjectMapper objectMapper;
+
+    @Override
+    public List<FormPengajuanResDTO.PengajuanResponse> findAllDataPengajuan(String authHeader) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new RuntimeException("Missing or invalid Authorization header");
+            }
+
+            // Ambil token dari header
+            String token = authHeader.substring(7);
+
+            // Parse JWT langsung dari JwtTokenProvider (bukan lewat R2StorageService)
+            Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+
+            String role = (String) claims.get("role");
+            Long userId = ((Number) claims.get("uid")).longValue();
+
+            // Query berdasarkan role
+            List<FormPengajuan> forms;
+            if ("ADMIN".equalsIgnoreCase(role)) {
+                forms = formPengajuanRepository.findAll();
+            } else {
+                forms = formPengajuanRepository.findByAccountId(userId);
+            }
+
+            // Mapping entity ke response DTO
+            return forms.stream()
+                  .map(form -> FormPengajuanResDTO.PengajuanResponse.builder()
+                        .uuid(form.getUuid())
+                        .induk_organisasi(form.getIndukOrganisasi())
+                        .nomor_induk(form.getNomorInduk())
+                        .jumlah_anggota(form.getJumlahAnggota() != null ? form.getJumlahAnggota().toString() : "0")
+                        .daerah(form.getDaerah())
+                        .nama(form.getNama())
+                        .tempat_lahir(form.getTempatLahir())
+                        .tanggal_lahir(form.getTanggalLahir())
+                        .jenis_kelamin(form.getJenisKelamin())
+                        .alamat(form.getAlamat())
+                        .profesi(form.getProfesi())
+                        .dibuat_di(form.getDibuatDi())
+                        .status(form.getStatus() != null ? form.getStatus().name() : null)
+                        .keterangan(form.getKeterangan())
+                        .file_pendukung(form.getFilePendukung().stream()
+                              .map(file -> FormPengajuanResDTO.FilePendukung.builder()
+                                    .form_uuid(file.getFormPengajuan().getUuid().toString())
+                                    .file_url(file.getFileUrl())
+                                    .nama_file(file.getNamaFile())
+                                    .build())
+                              .toList())
+                        .build())
+                  .toList();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get all pengajuan: " + e.getMessage(), e);
+        }
+    }
 
     @Override
     @Transactional

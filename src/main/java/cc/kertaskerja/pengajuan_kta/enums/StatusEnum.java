@@ -7,5 +7,6 @@ public enum StatusEnum {
     DRAFT,
     PENDING,
     APPROVED,
-    REJECTED
+    REJECTED,
+    VERIFIED
 }
