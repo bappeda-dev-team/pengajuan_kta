@@ -49,12 +49,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write("""
-                {
-                    "success": false,
-                    "statusCode": 401,
-                    "message": "Token has been revoked. Please login again."
-                }
-            """);
+                      {
+                          "success": false,
+                          "statusCode": 401,
+                          "message": "Token has been revoked. Please login again."
+                      }
+                  """);
             return;
         }
 
@@ -82,12 +82,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     response.setContentType("application/json");
                     response.getWriter().write("""
-                        {
-                            "success": false,
-                            "statusCode": 403,
-                            "message": "Your account is pending verification. Access denied."
-                        }
-                    """);
+                              {
+                                  "success": false,
+                                  "statusCode": 403,
+                                  "message": "Your account is pending verification. Access denied."
+                              }
+                          """);
                     return;
                 }
             }
@@ -98,12 +98,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
                 response.getWriter().write("""
-                    {
-                        "success": false,
-                        "statusCode": 401,
-                        "message": "Unauthorized: only ADMIN can verify pengajuan"
-                    }
-                """);
+                          {
+                              "success": false,
+                              "statusCode": 401,
+                              "message": "Unauthorized: only ADMIN can verify pengajuan"
+                          }
+                      """);
 
                 return;
             }
