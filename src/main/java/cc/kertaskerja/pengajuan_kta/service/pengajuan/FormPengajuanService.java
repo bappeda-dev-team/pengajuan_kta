@@ -12,7 +12,6 @@ import java.util.UUID;
 
 @Service
 public interface FormPengajuanService {
-
     List<FormPengajuanResDTO.PengajuanResponse> findAllDataPengajuan(String authHeader);
 
     FormPengajuanResDTO.SaveDataResponse saveData(FormPengajuanReqDTO.SavePengajuan formPengajuanDTO);
@@ -20,6 +19,8 @@ public interface FormPengajuanService {
     FilePendukungDTO uploadAndSaveFile(MultipartFile file, String formUuid, String namaFile);
 
     FormPengajuanResDTO.PengajuanResponse findByUuidWithFiles(UUID uuid);
+
+    FormPengajuanResDTO.SaveDataResponse editDataPengajuan(String authHeader, UUID uuid, FormPengajuanReqDTO.SavePengajuan dto);
 
     FormPengajuanResDTO.VerifyData verifyDataPengajuan(FormPengajuanReqDTO.VerifyPengajuan dto, UUID uuid);
 }

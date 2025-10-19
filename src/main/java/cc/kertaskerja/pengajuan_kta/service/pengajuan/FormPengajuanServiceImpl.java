@@ -7,7 +7,7 @@ import cc.kertaskerja.pengajuan_kta.entity.Account;
 import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
 import cc.kertaskerja.pengajuan_kta.entity.FormPengajuan;
 import cc.kertaskerja.pengajuan_kta.enums.StatusEnum;
-import cc.kertaskerja.pengajuan_kta.exception.ResourceNotFoundException;
+import cc.kertaskerja.pengajuan_kta.exception.*;
 import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FilePendukungRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FormPengajuanRepository;
@@ -23,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,21 +42,17 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                 throw new RuntimeException("Missing or invalid Authorization header");
             }
 
-            // Ambil token dari header
             String token = authHeader.substring(7);
-
-            // Parse JWT langsung dari JwtTokenProvider (bukan lewat R2StorageService)
             Map<String, Object> claims = jwtTokenProvider.parseToken(token);
 
             String role = (String) claims.get("role");
             Long userId = ((Number) claims.get("uid")).longValue();
 
-            // Query berdasarkan role
             List<FormPengajuan> forms;
             if ("ADMIN".equalsIgnoreCase(role)) {
-                forms = formPengajuanRepository.findAll();
+                forms = formPengajuanRepository.findAllData();
             } else {
-                forms = formPengajuanRepository.findByAccountId(userId);
+                forms = formPengajuanRepository.findByAccId(userId);
             }
 
             // Mapping entity ke response DTO
@@ -115,7 +112,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .alamat(dto.getAlamat())
                   .profesi(dto.getProfesi())
                   .dibuatDi(dto.getDibuat_di())
-                  .status(StatusEnum.PENDING) // Default value
+                  .status(StatusEnum.PENDING)
                   .keterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-")
                   .build();
 
@@ -138,8 +135,6 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .keterangan(saved.getKeterangan())
                   .build();
 
-        } catch (NumberFormatException e) {
-            throw new RuntimeException("Invalid number format for jumlah_anggota", e);
         } catch (DataIntegrityViolationException e) {
             throw new RuntimeException("Data integrity violation. Please check NOT NULL, UNIQUE, or foreign key constraints.", e);
         } catch (Exception e) {
@@ -160,7 +155,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
             // 3. Cari FormPengajuan berdasarkan UUID
             UUID formUuidParsed = UUID.fromString(formUuid);
             FormPengajuan formPengajuan = formPengajuanRepository.findByUuid(formUuidParsed)
-                  .orElseThrow(() -> new RuntimeException("Form with UUID " + formUuid + " not found"));
+                  .orElseThrow(() -> new ResourceNotFoundException("Form with UUID " + formUuid + " not found"));
 
             // 4. Simpan metadata ke database
             FilePendukung filePendukung = FilePendukung.builder()
@@ -214,6 +209,67 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                           .build())
                     .toList())
               .build();
+    }
+
+    @Override
+    @Transactional
+    public FormPengajuanResDTO.SaveDataResponse editDataPengajuan(String authHeader, UUID uuid, FormPengajuanReqDTO.SavePengajuan dto) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("Missing or invalid Authorization header");
+        }
+
+        String token = authHeader.substring(7);
+        Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+        String userId = String.valueOf(claims.get("uid"));
+
+        FormPengajuan formPengajuan = formPengajuanRepository.findByUuid(uuid)
+              .orElseThrow(() -> new ResourceNotFoundException("Data pengajuan dengan UUID " + uuid + " tidak ditemukan"));
+
+        if (!userId.equals(formPengajuan.getAccount().getId().toString())) {
+            throw new ForbiddenException("Data pengajuan yang diubah bukan milik Anda.");
+        }
+
+        if (formPengajuan.getStatus() == StatusEnum.APPROVED) {
+            throw new ConflictException("Data pengajuan yang sudah disetujui tidak dapat diubah.");
+        }
+
+        try {
+            formPengajuan
+                  .setIndukOrganisasi(dto.getInduk_organisasi())
+                  .setNomorInduk(dto.getNomor_induk())
+                  .setJumlahAnggota(Integer.parseInt(dto.getJumlah_anggota()))
+                  .setDaerah(dto.getDaerah())
+                  .setNama(dto.getNama())
+                  .setTempatLahir(dto.getTempat_lahir())
+                  .setTanggalLahir(dto.getTanggal_lahir())
+                  .setJenisKelamin(dto.getJenis_kelamin())
+                  .setAlamat(dto.getAlamat())
+                  .setProfesi(dto.getProfesi())
+                  .setDibuatDi(dto.getDibuat_di())
+                  .setKeterangan(dto.getKeterangan());
+
+            formPengajuanRepository.save(formPengajuan);
+
+            return FormPengajuanResDTO.SaveDataResponse.builder()
+                  .uuid(formPengajuan.getUuid())
+                  .induk_organisasi(formPengajuan.getIndukOrganisasi())
+                  .nomor_induk(formPengajuan.getNomorInduk())
+                  .jumlah_anggota(String.valueOf(formPengajuan.getJumlahAnggota()))
+                  .daerah(formPengajuan.getDaerah())
+                  .nama(formPengajuan.getNama())
+                  .tempat_lahir(formPengajuan.getTempatLahir())
+                  .tanggal_lahir(formPengajuan.getTanggalLahir())
+                  .jenis_kelamin(formPengajuan.getJenisKelamin())
+                  .alamat(formPengajuan.getAlamat())
+                  .profesi(formPengajuan.getProfesi())
+                  .dibuat_di(formPengajuan.getDibuatDi())
+                  .status(formPengajuan.getStatus().toString())
+                  .keterangan(formPengajuan.getKeterangan())
+                  .build();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Gagal mengubah data pengajuan: " + e.getMessage());
+        }
     }
 
     @Override

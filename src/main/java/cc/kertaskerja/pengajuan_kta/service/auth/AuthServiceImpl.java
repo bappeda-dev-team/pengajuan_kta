@@ -51,9 +51,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AccountResponse register(RegisterRequest request) {
-            if (accountRepository.existsByUsername(request.getUsername())) {
-                throw new ConflictException("Username has been registered. Please try another username.");
-            }
+        if (accountRepository.existsByUsername(request.getUsername())) {
+            throw new ConflictException("Username has been registered. Please try another username.");
+        }
 
         try {
 
