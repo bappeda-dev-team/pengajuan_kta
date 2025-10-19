@@ -34,17 +34,32 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-              .csrf(csrf -> csrf.disable())
-              .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ Enable CORS
-              .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-              .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/auth/**", "/actuator/health", "/api/public/**").permitAll()
-                    .requestMatchers("/pengajuan/verify/**").hasRole("ADMIN")
-                    .anyRequest().authenticated()
-              )
-              .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-              .httpBasic(Customizer.withDefaults());
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
+                .authorizeHttpRequests(authz -> authz
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Swagger
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
 
+                        // API public (opsional)
+                        .requestMatchers(
+                                "/api/public/**",
+                                "/actuator/**",
+                                "/api/external/**"
+                        ).permitAll()
+
+                        // Endpoint lain wajib login
+                        .anyRequest().authenticated()
+                )
+                .httpBasic(Customizer.withDefaults())
+                .formLogin(AbstractHttpConfigurer::disable)
+                .logout(AbstractHttpConfigurer::disable);
         return http.build();
     }
 
