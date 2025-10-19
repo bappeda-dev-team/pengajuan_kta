@@ -1,4 +1,4 @@
-package cc.kertaskerja.pengajuan_kta.service.global.CloudStorage;
+package cc.kertaskerja.pengajuan_kta.service.global;
 
 import cc.kertaskerja.pengajuan_kta.config.CloudFlareProperties;
 import org.springframework.stereotype.Service;

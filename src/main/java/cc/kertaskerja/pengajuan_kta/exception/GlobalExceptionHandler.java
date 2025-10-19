@@ -205,6 +205,23 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
+    // ========== 409 CONFLICT EXCEPTIONS ==========
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiResponse<Object>> handleConflictException(
+          ConflictException ex, HttpServletRequest request) {
+
+        logger.warning("Conflict data at: " + request.getRequestURI() + ": " + ex.getMessage());
+
+        ApiResponse<Object> response = ApiResponse.error(
+              HttpStatus.CONFLICT.value(),
+              ex.getMessage(),
+              null
+        );
+
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
     // ========== 500 INTERNAL SERVER ERROR EXCEPTIONS ==========
 
     @ExceptionHandler(InternalServerException.class)

@@ -12,7 +12,6 @@ import lombok.*;
 @ToString
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class EncryptDTO {
-
     @NotBlank(message = "Payload tidak boleh kosong")
     private String data;
 }

@@ -24,11 +24,6 @@ spring:
           strategy: field
         use-new-id-generator-mappings: false
 
-  security:
-    user:
-      name: admin
-      password: admin123
-
   docker:
     compose:
       enabled: false
@@ -96,3 +91,8 @@ springdoc:
     disable-swagger-default-url: true
   override-with-generic-response: false
   show-actuator: false
+
+jwt:
+  # NOTE: replace with a secure random 256-bit key in production (min ~32 bytes for HS256)
+  secret: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+  expirationMillis: 3600000

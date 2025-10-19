@@ -1,17 +1,14 @@
 package cc.kertaskerja.pengajuan_kta.entity;
 
-import cc.kertaskerja.pengajuan_kta.dto.TertandaDTO;
+import cc.kertaskerja.pengajuan_kta.common.BaseAuditable;
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.TertandaDTO;
 import cc.kertaskerja.pengajuan_kta.enums.StatusEnum;
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
-
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -23,12 +20,17 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FormPengajuan {
-
+public class FormPengajuan extends BaseAuditable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonBackReference
+    private Account account;
+
+    @Builder.Default
     @Column(nullable = false, unique = true, updatable = false)
     private UUID uuid = UUID.randomUUID();
 
@@ -53,8 +55,11 @@ public class FormPengajuan {
     @Column(name = "nama", length = 100, nullable = false)
     private String nama;
 
-    @Column(name = "tanggal_lahir", length = 100, nullable = false)
-    private String tanggalLahir;
+    @Column(name = "tempat_lahir", length = 100, nullable = false)
+    private String tempatLahir;
+
+    @Column(name = "tanggal_lahir", nullable = false)
+    private Date tanggalLahir;
 
     @Column(name = "jenis_kelamin", length = 100, nullable = false)
     private String jenisKelamin;
@@ -68,10 +73,6 @@ public class FormPengajuan {
     @Column(name = "dibuat_di", length = 50, nullable = false)
     private String dibuatDi;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "tertanda", columnDefinition = "jsonb", nullable = false)
-    private TertandaDTO tertanda;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)
     private StatusEnum status;
@@ -79,18 +80,14 @@ public class FormPengajuan {
     @Column(name = "keterangan", nullable = false)
     private String keterangan;
 
-    // Changed from @OneToOne to @OneToMany to match the @ManyToOne in FilePendukung
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "tertanda", columnDefinition = "jsonb", nullable = false)
+    private TertandaDTO tertanda;
+
+    @Column(name = "catatan")
+    private String catatan;
+
     @OneToMany(mappedBy = "formPengajuan", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<FilePendukung> filePendukung;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updatedAt;
 }

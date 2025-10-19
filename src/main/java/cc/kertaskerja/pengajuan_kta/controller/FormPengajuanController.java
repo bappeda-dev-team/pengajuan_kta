@@ -1,19 +1,18 @@
 package cc.kertaskerja.pengajuan_kta.controller;
 
 import cc.kertaskerja.pengajuan_kta.dto.ApiResponse;
-import cc.kertaskerja.pengajuan_kta.dto.FilePendukungDTO;
-import cc.kertaskerja.pengajuan_kta.dto.FormPengajuanReqDTO;
-import cc.kertaskerja.pengajuan_kta.dto.FormPengajuanResDTO;
-import cc.kertaskerja.pengajuan_kta.exception.BadRequestException;
-import cc.kertaskerja.pengajuan_kta.helper.Crypto;
-import cc.kertaskerja.pengajuan_kta.service.FormPengajuanService;
-import cc.kertaskerja.pengajuan_kta.service.global.CloudStorage.R2StorageService;
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FilePendukungDTO;
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanReqDTO;
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanResDTO;
+import cc.kertaskerja.pengajuan_kta.service.pengajuan.FormPengajuanService;
+import cc.kertaskerja.pengajuan_kta.service.global.R2StorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,13 +30,32 @@ public class FormPengajuanController {
     private final FormPengajuanService formPengajuanService;
     private final R2StorageService r2StorageService;
 
+    @GetMapping
+    @Operation(summary = "Ambil semua data pengajuan KTA berdasarkan role & token JWT")
+    public ResponseEntity<ApiResponse<?>> findAllPengajuan(@RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false)
+                                                                          String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("Missing or invalid Authorization header");
+        }
+
+        try {
+            var result = formPengajuanService.findAllDataPengajuan(authHeader);
+            return ResponseEntity.ok(ApiResponse.success(result, "Retrieved " + result.size() + " data pengajuan successfully"));
+        } catch (RuntimeException e) {
+            var error = ApiResponse.builder()
+                  .success(false)
+                  .statusCode(400)
+                  .message(e.getMessage())
+                  .timestamp(LocalDateTime.now())
+                  .build();
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+
     @PostMapping
     @Operation(summary = "Simpan data pengajuan KTA")
-    public ResponseEntity<ApiResponse<?>> saveData(@Valid @RequestBody FormPengajuanReqDTO dto,
-                                                   BindingResult bindingResult) {
-        if (!Crypto.isEncrypted(dto.getTertanda().getNip())) {
-            throw new BadRequestException("NIP is not encrypted: " + dto.getTertanda().getNip());
-        }
+    public ResponseEntity<ApiResponse<?>> saveData(@Valid @RequestBody FormPengajuanReqDTO.SavePengajuan dto,
+                                                    BindingResult bindingResult) {
 
         if (bindingResult.hasErrors()) {
             List<String> errorMessages = bindingResult.getFieldErrors().stream()
@@ -55,21 +73,27 @@ public class FormPengajuanController {
             return ResponseEntity.badRequest().body(errorResponse);
         }
 
-        FormPengajuanResDTO saved = formPengajuanService.saveData(dto);
+        try {
+            FormPengajuanResDTO.SaveDataResponse saved = formPengajuanService.saveData(dto);
 
-        ApiResponse<Object> response = ApiResponse.builder()
-              .success(true)
-              .statusCode(201)
-              .message("Pengajuan KTA has been saved successfully")
-              .data(saved.getUuid()) // only UUID here
-              .timestamp(LocalDateTime.now())
-              .build();
+            return ResponseEntity
+                  .status(201)
+                  .body(ApiResponse.created(saved.getUuid()));
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (RuntimeException e) {
+            ApiResponse<Object> error = ApiResponse.builder()
+                  .success(false)
+                  .statusCode(400)
+                  .message(e.getMessage())
+                  .timestamp(LocalDateTime.now())
+                  .build();
+
+            return ResponseEntity.badRequest().body(error);
+        }
     }
 
-    @PostMapping("/upload/save")
-    @Operation(summary = "Upload file ke R2 storage dan simpan metadata ke database")
+    @PostMapping("/upload-file")
+    @Operation(summary = "Upload file")
     public ResponseEntity<ApiResponse<?>> uploadAndSaveFile(@RequestParam("file") MultipartFile file,
                                                           @RequestParam("form_uuid") String formUuid,
                                                           @RequestParam(value = "nama_file", required = false) String namaFile) {
@@ -81,10 +105,50 @@ public class FormPengajuanController {
 
     @GetMapping("/file/{uuid}")
     @Operation(summary = "Ambil data pengajuan KTA berdasarkan uuid")
-    public ResponseEntity<ApiResponse<FormPengajuanResDTO>> getFormByUuid(@PathVariable UUID uuid) {
-        FormPengajuanResDTO result = formPengajuanService.findByUuidWithFiles(uuid);
-        ApiResponse<FormPengajuanResDTO> response = ApiResponse.success(result, "Retrieved 1 data successfully");
+    public ResponseEntity<ApiResponse<FormPengajuanResDTO.PengajuanResponse>> getFormByUuid(@PathVariable UUID uuid) {
+        FormPengajuanResDTO.PengajuanResponse result = formPengajuanService.findByUuidWithFiles(uuid);
+        ApiResponse<FormPengajuanResDTO.PengajuanResponse> response = ApiResponse.success(result, "Retrieved 1 data successfully");
 
         return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/verify/{uuid}")
+    @Operation(summary = "Verifikasi data pengajuan KTA dan update status")
+    public ResponseEntity<ApiResponse<?>> verifyData(@PathVariable UUID uuid,
+                                                      @Valid @RequestBody FormPengajuanReqDTO.VerifyPengajuan dto,
+                                                      BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            List<String> errorMessages = bindingResult.getFieldErrors().stream()
+                  .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                  .toList();
+
+            ApiResponse<List<String>> errorResponse = ApiResponse.<List<String>>builder()
+                  .success(false)
+                  .statusCode(400)
+                  .message("Validation failed")
+                  .errors(errorMessages)
+                  .timestamp(LocalDateTime.now())
+                  .build();
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        try {
+            FormPengajuanResDTO.VerifyData result = formPengajuanService.verifyDataPengajuan(dto, uuid);
+
+            return ResponseEntity.ok(ApiResponse.updated(result));
+
+        } catch (RuntimeException e) {
+            ApiResponse<Object> errorResponse = ApiResponse.builder()
+                  .success(false)
+                  .statusCode(400)
+                  .message(e.getMessage())
+                  .timestamp(LocalDateTime.now())
+                  .build();
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 }
