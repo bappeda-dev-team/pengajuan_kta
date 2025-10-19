@@ -14,4 +14,5 @@ public class CloudFlareProperties {
     private String bucket;
     private String accessKey;
     private String secretKey;
+    private String baseUrl;
 }

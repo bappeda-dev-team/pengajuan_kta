@@ -24,11 +24,6 @@ spring:
           strategy: field
         use-new-id-generator-mappings: false
 
-  security:
-    user:
-      name: admin
-      password: admin123
-
   docker:
     compose:
       enabled: false
@@ -43,7 +38,7 @@ spring:
       resolve-lazily: false
 
 server:
-  port: 8080
+  port: 8081
   servlet:
     context-path: /kta/api
   tomcat:
@@ -81,6 +76,7 @@ cloudflare:
     endpoint: https://7aa9bbf17ef2077fc32fdadafbb1e76d.r2.cloudflarestorage.com
     access-key: 28f20a0e4545504c62097e0b6610ff46
     secret-key: 458651d94bc92e54f6d2b62b5dd33b9b2c8f22b51f945ab3fa873fb1ce7518aa
+    base-url: https://pub-402c7e3572ca42b4afaa1c050a231948.r2.dev
 
 springdoc:
   api-docs:
@@ -95,3 +91,8 @@ springdoc:
     disable-swagger-default-url: true
   override-with-generic-response: false
   show-actuator: false
+
+jwt:
+  # NOTE: replace with a secure random 256-bit key in production (min ~32 bytes for HS256)
+  secret: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+  expirationMillis: 3600000

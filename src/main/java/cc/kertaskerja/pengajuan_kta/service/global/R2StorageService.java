@@ -1,4 +1,4 @@
-package cc.kertaskerja.pengajuan_kta.service.global.CloudStorage;
+package cc.kertaskerja.pengajuan_kta.service.global;
 
 import cc.kertaskerja.pengajuan_kta.config.CloudFlareProperties;
 import org.springframework.stereotype.Service;
@@ -22,6 +22,7 @@ public class R2StorageService {
     public String upload(MultipartFile file) throws IOException {
         String key = file.getOriginalFilename();
 
+        // Upload file to Cloudflare R2
         r2Client.putObject(
               PutObjectRequest.builder()
                     .bucket(props.getBucket())
@@ -31,6 +32,7 @@ public class R2StorageService {
               software.amazon.awssdk.core.sync.RequestBody.fromBytes(file.getBytes())
         );
 
-        return props.getEndpoint() + "/" + props.getBucket() + "/" + key;
+        // Return public URL (using base-url)
+        return String.format("%s/%s", props.getBaseUrl(), key);
     }
 }
