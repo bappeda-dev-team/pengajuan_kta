@@ -32,11 +32,12 @@ public class JwtTokenProvider {
     /**
      * Generate JWT token with username, msisdn, and role
      */
-    public String generateToken(String username, String msisdn, String role) {
+    public String generateToken(Long id, String username, String msisdn, String role) {
         Instant now = Instant.now();
         Instant expiry = now.plusMillis(expirationMillis);
 
         Map<String, Object> claims = new HashMap<>();
+        claims.put("uid", id);
         claims.put("sub", username);
         claims.put("msisdn", msisdn);
         claims.put("role", role);

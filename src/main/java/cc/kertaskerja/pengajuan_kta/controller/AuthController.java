@@ -33,7 +33,7 @@ public class AuthController {
     private final TokenBlacklistService tokenBlacklistService;
 
     @PostMapping("/signup")
-    @Operation(summary = "Register a new account")
+    @Operation(summary = "Daftar akun baru")
     public ResponseEntity<ApiResponse<?>> register(@Valid @RequestBody RegisterRequest request,
                                                    BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -59,7 +59,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Login and get JWT access token")
+    @Operation(summary = "Login akun")
     public ResponseEntity<ApiResponse<?>> login(@Valid @RequestBody LoginRequest request) {
         try {
             LoginResponse response = authService.login(request);
@@ -87,7 +87,7 @@ public class AuthController {
     }
 
     @PostMapping("/check-account")
-    @Operation(summary = "Validate access token and get account data")
+    @Operation(summary = "Cek dan validasi data akun yang baru login")
     public ResponseEntity<ApiResponse<AccountResponse>> checkAccount(@Valid @RequestBody TokenRequest tokenRequest) {
         try {
             AccountResponse account = authService.validateToken(tokenRequest.getAccessToken());

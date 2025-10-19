@@ -10,7 +10,6 @@ import java.util.Objects;
 @Entity
 @Table(name = "account")
 public class Account extends BaseAuditable {
-
     @Id
     private Long id;
 

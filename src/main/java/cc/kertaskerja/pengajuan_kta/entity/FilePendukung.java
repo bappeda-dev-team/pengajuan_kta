@@ -25,16 +25,11 @@ public class FilePendukung extends BaseAuditable {
     @Column(name = "nama_file", length = 255, nullable = false)
     private String namaFile;
 
-    // Remove the direct formUuid field since we're using the relationship
-    // @Column(name = "form_uuid", nullable = false)
-    // private UUID formUuid;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "form_uuid", referencedColumnName = "uuid", nullable = false)
     @JsonBackReference
     private FormPengajuan formPengajuan;
-    
-    // Helper method to get the UUID if needed
+
     public UUID getFormUuid() {
         return formPengajuan != null ? formPengajuan.getUuid() : null;
     }

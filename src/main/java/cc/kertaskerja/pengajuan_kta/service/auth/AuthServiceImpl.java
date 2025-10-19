@@ -116,6 +116,7 @@ public class AuthServiceImpl implements AuthService {
             loginAttemptService.loginSucceeded(username);
 
             String token = jwtTokenProvider.generateToken(
+                  account.getId(),
                   account.getUsername(),
                   account.getNomorTelepon(),
                   account.getRole()

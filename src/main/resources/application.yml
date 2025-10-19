@@ -2,11 +2,6 @@ spring:
   application:
     name: pengajuan_kta
 
-  security:
-    user:
-      name: admin
-      password: admin123
-
   datasource:
     url: jdbc:postgresql://localhost:5432/pengajuan_kta
     username: majapahit

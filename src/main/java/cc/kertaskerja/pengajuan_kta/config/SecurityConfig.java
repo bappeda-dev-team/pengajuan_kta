@@ -67,18 +67,12 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         UserDetails user = User.builder()
-              .username("admin")
-              .password(passwordEncoder().encode("admin123"))
+              .username("webprogregktangawikab")
+              .password(passwordEncoder().encode("xLI061@4f0#`"))
               .roles("USER", "ADMIN")
               .build();
 
-        UserDetails apiUser = User.builder()
-              .username("api_user")
-              .password(passwordEncoder().encode("api_password"))
-              .roles("USER")
-              .build();
-
-        return new InMemoryUserDetailsManager(user, apiUser);
+        return new InMemoryUserDetailsManager(user);
     }
 
     @Bean
