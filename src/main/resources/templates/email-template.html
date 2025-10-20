@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Verifikasi OTP</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .email-container {
+            max-width: 600px;
+            background-color: #ffffff;
+            margin: 0 auto;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #4A90E2;
+        }
+        .otp-code {
+            background-color: #f1f3f4;
+            font-size: 28px;
+            letter-spacing: 8px;
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: bold;
+            color: #333;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <h2 class="header">Verifikasi Akun Anda</h2>
+    <p>Halo <b th:text="${name}">Pengguna</b>,</p>
+    <p>Gunakan kode OTP berikut untuk memverifikasi akun Anda:</p>
+
+    <div class="otp-code" th:text="${otp}">123456</div>
+
+    <p>Kode ini berlaku selama <b>5 menit</b>. Jangan bagikan kode ini kepada siapa pun.</p>
+    <p>Terima kasih telah bergabung bersama kami!</p>
+
+    <div class="footer">© 2025 KertasKerja. All rights reserved.</div>
+</div>
+</body>
+</html>

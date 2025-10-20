@@ -17,7 +17,8 @@ public class AccountResponse {
     // Constructors
     // =====================
 
-    public AccountResponse() {}
+    public AccountResponse() {
+    }
 
     public AccountResponse(
           Long id,

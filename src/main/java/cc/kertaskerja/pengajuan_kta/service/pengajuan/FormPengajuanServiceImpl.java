@@ -13,7 +13,6 @@ import cc.kertaskerja.pengajuan_kta.repository.FilePendukungRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FormPengajuanRepository;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
 import cc.kertaskerja.pengajuan_kta.service.global.R2StorageService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -23,17 +22,16 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class FormPengajuanServiceImpl implements FormPengajuanService {
+
     private final AccountRepository accountRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final FormPengajuanRepository formPengajuanRepository;
     private final FilePendukungRepository filePendukungRepository;
     private final R2StorageService r2StorageService;
-    private final ObjectMapper objectMapper;
 
     @Override
     public List<FormPengajuanResDTO.PengajuanResponse> findAllDataPengajuan(String authHeader) {
@@ -55,7 +53,6 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                 forms = formPengajuanRepository.findByAccId(userId);
             }
 
-            // Mapping entity ke response DTO
             return forms.stream()
                   .map(form -> FormPengajuanResDTO.PengajuanResponse.builder()
                         .uuid(form.getUuid())
