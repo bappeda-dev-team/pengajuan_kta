@@ -1,57 +1,82 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <title>Verifikasi OTP</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f8f9fa;
-            padding: 20px;
-        }
-        .email-container {
-            max-width: 600px;
-            background-color: #ffffff;
-            margin: 0 auto;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            color: #4A90E2;
-        }
-        .otp-code {
-            background-color: #f1f3f4;
-            font-size: 28px;
-            letter-spacing: 8px;
-            text-align: center;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            font-weight: bold;
-            color: #333;
-        }
-        .footer {
-            text-align: center;
-            font-size: 12px;
-            color: #777;
-            margin-top: 20px;
-        }
-    </style>
 </head>
-<body>
-<div class="email-container">
-    <h2 class="header">Verifikasi Akun Anda</h2>
-    <p>Halo <b th:text="${name}">Pengguna</b>,</p>
-    <p>Gunakan kode OTP berikut untuk memverifikasi akun Anda:</p>
 
-    <div class="otp-code" th:text="${otp}">123456</div>
+<body style="font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 20px; margin: 0;">
+<table align="center" width="600" cellpadding="0" cellspacing="0"
+       style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); padding: 30px;">
+    <tr>
+        <td align="center" style="padding-bottom: 13px; border-bottom: 3px solid #000;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td align="center" width="80">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Lambang_Kabupaten_Ngawi_%28svg%29.svg/976px-Lambang_Kabupaten_Ngawi_%28svg%29.svg.png"
+                             alt="Logo Ngawi"
+                             width="50"
+                             height="50"
+                             style="display: block;">
 
-    <p>Kode ini berlaku selama <b>5 menit</b>. Jangan bagikan kode ini kepada siapa pun.</p>
-    <p>Terima kasih telah bergabung bersama kami!</p>
+                    </td>
+                    <td align="center" style="padding-left: 10px;">
+                        <p style="margin: 0; font-size: 10px; font-weight: 600; color: #000000;">Pemerintah Kabupaten
+                            Ngawi</p>
+                        <p style="margin: 0; font-size: 13px; font-weight: bold; color: #000000;">Dinas Komunikasi,
+                            Informatika, Statistik dan Persandian</p>
+                        <p style="margin: 0; font-size: 6px; color: #000000; text-decoration: none;">Jl. Teuku Umar No.
+                            43, Cabean Kidul, Ketanggi, Kec. Ngawi, Kode Pos 63211, Telepon (0351) 749060</p>
+                        <p style="margin: 0; font-size: 6px; color: #000000;">
+                            Email: <a href="mailto:kominfo@ngawikab.go.id"
+                                      style="color: #000000; text-decoration: none;">kominfo@ngawikab.go.id</a>,
+                            Website: <a href="https://www.kominfo.ngawikab.go.id"
+                                        style="color: #000000; text-decoration: none;">www.kominfo.ngawikab.go.id</a>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
 
-    <div class="footer">© 2025 KertasKerja. All rights reserved.</div>
-</div>
+    <tr>
+        <td align="center" style="padding: 30px 20px 10px;">
+            <h2 style="color: #4A90E2; margin: 0; font-size: 14px;">Verifikasi Akun Anda</h2>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding: 10px 20px; color: #333333;">
+            <p style="margin-bottom: 5px; font-size: 11px;">Halo <b th:text="${name}">Pengguna</b>,</p>
+            <p style="margin-top: 0; font-size: 11px;">Gunakan kode OTP berikut untuk memverifikasi akun Anda:</p>
+        </td>
+    </tr>
+
+    <tr>
+        <td align="center" style="padding: 20px 0;">
+            <div th:text="${otp}"
+                 style="background-color: #f1f3f4; font-size: 28px; letter-spacing: 8px; text-align: center; padding: 15px 30px; border-radius: 10px; font-weight: bold; color: #333333;">
+                123456
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding: 10px 20px; color: #333333;">
+            <p style="margin: 0; font-size: 11px;">Kode ini berlaku selama <b>3 menit</b>. Jangan bagikan kode ini
+                kepada siapa pun.</p>
+            <p style="margin-top: 15px; font-size: 11px;">Terima kasih, Matur nuwun!</p>
+        </td>
+    </tr>
+
+    <tr>
+        <td align="center" style="padding-top: 20px; border-top: 1px solid #dddddd;">
+            <p style="font-size: 12px; color: #777777; margin: 0;">
+                © 2025 Pejabat Pengelola Informasi Daerah Kabupaten Ngawi. All rights reserved.
+            </p>
+        </td>
+    </tr>
+</table>
 </body>
 </html>

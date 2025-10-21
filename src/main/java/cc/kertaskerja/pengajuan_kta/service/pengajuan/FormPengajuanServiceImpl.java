@@ -220,14 +220,14 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
         String userId = String.valueOf(claims.get("uid"));
 
         FormPengajuan formPengajuan = formPengajuanRepository.findByUuid(uuid)
-              .orElseThrow(() -> new ResourceNotFoundException("Data pengajuan dengan UUID " + uuid + " tidak ditemukan"));
+              .orElseThrow(() -> new ResourceNotFoundException("Data pengajuan with UUID " + uuid + " is not found"));
 
         if (!userId.equals(formPengajuan.getAccount().getId().toString())) {
-            throw new ForbiddenException("Data pengajuan yang diubah bukan milik Anda.");
+            throw new ForbiddenException("Data pengajuan that has been changed is not yours.");
         }
 
         if (formPengajuan.getStatus() == StatusEnum.APPROVED) {
-            throw new ConflictException("Data pengajuan yang sudah disetujui tidak dapat diubah.");
+            throw new ConflictException("Data pengajuan that has been approved cannot be edited.");
         }
 
         try {
@@ -265,7 +265,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .build();
 
         } catch (Exception e) {
-            throw new RuntimeException("Gagal mengubah data pengajuan: " + e.getMessage());
+            throw new RuntimeException("Failed to change data pengajuan: " + e.getMessage());
         }
     }
 
@@ -274,7 +274,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
     public FormPengajuanResDTO.VerifyData verifyDataPengajuan(FormPengajuanReqDTO.VerifyPengajuan dto, UUID uuid) {
         try {
             FormPengajuan form = formPengajuanRepository.findByUuid(uuid)
-                  .orElseThrow(() -> new ResourceNotFoundException("Form pengajuan tidak ditemukan"));
+                  .orElseThrow(() -> new ResourceNotFoundException("Form pengajuan is not found"));
 
             form.setBerlakuDari(dto.getBerlaku_dari());
             form.setBerlakuSampai(dto.getBerlaku_sampai());
@@ -295,7 +295,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
         } catch (ResourceNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Gagal memverifikasi data pengajuan: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to verified data pengajuan: " + e.getMessage(), e);
         }
     }
 }
