@@ -24,6 +24,18 @@ spring:
           strategy: field
         use-new-id-generator-mappings: false
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: wordpalace72@gmail.com
+    password: dqkvkdhkrsevmnvt
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
   docker:
     compose:
       enabled: false
@@ -93,6 +105,5 @@ springdoc:
   show-actuator: false
 
 jwt:
-  # NOTE: replace with a secure random 256-bit key in production (min ~32 bytes for HS256)
-  secret: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+  secret: "jwtauthsecretauthpengajuanktangawikab"
   expirationMillis: 3600000

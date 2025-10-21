@@ -22,7 +22,6 @@ public class R2StorageService {
     public String upload(MultipartFile file) throws IOException {
         String key = file.getOriginalFilename();
 
-        // Upload file to Cloudflare R2
         r2Client.putObject(
               PutObjectRequest.builder()
                     .bucket(props.getBucket())
@@ -32,7 +31,6 @@ public class R2StorageService {
               software.amazon.awssdk.core.sync.RequestBody.fromBytes(file.getBytes())
         );
 
-        // Return public URL (using base-url)
         return String.format("%s/%s", props.getBaseUrl(), key);
     }
 }

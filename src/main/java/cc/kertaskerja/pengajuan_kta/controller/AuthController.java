@@ -3,6 +3,8 @@ package cc.kertaskerja.pengajuan_kta.controller;
 import cc.kertaskerja.pengajuan_kta.dto.ApiResponse;
 import cc.kertaskerja.pengajuan_kta.dto.Auth.*;
 import cc.kertaskerja.pengajuan_kta.exception.BadRequestException;
+import cc.kertaskerja.pengajuan_kta.exception.ConflictException;
+import cc.kertaskerja.pengajuan_kta.exception.UnauthenticationException;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
 import cc.kertaskerja.pengajuan_kta.service.auth.AuthService;
 import cc.kertaskerja.pengajuan_kta.service.auth.TokenBlacklistService;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -31,7 +34,46 @@ public class AuthController {
     private final AuthService authService;
     private final TokenBlacklistService tokenBlacklistService;
 
-    @PostMapping("/signup")
+    @PostMapping("/send-otp")
+    @Operation(summary = "Kirim OTP ke email pengguna untuk verifikasi")
+    public ResponseEntity<ApiResponse<?>> sendOtp(@Valid @RequestBody RegisterRequest.SendOtp request,
+                                                  BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            List<String> errorMessages = bindingResult.getFieldErrors().stream()
+                  .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                  .toList();
+
+            return ResponseEntity.badRequest()
+                  .body(ApiResponse.<List<String>>builder()
+                        .success(false)
+                        .statusCode(400)
+                        .message("Validation failed")
+                        .data(errorMessages)
+                        .timestamp(LocalDateTime.now())
+                        .build());
+        }
+
+        try {
+            AccountResponse.SendOtp response = authService.sendOTP(request);
+
+            return ResponseEntity.ok(
+                  ApiResponse.success(response, response.getMessage())
+            );
+
+        } catch (ConflictException ex) {
+            List<String> conflicts = Arrays.asList(ex.getMessage().split("; "));
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                  .body(ApiResponse.<List<String>>builder()
+                        .success(false)
+                        .statusCode(409)
+                        .message("Conflict detected")
+                        .data(conflicts)
+                        .timestamp(LocalDateTime.now())
+                        .build());
+        }
+    }
+
+    @PostMapping("/verify-otp-and-signup")
     @Operation(summary = "Daftar akun baru")
     public ResponseEntity<ApiResponse<?>> register(@Valid @RequestBody RegisterRequest request,
                                                    BindingResult bindingResult) {
@@ -60,41 +102,9 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "Login akun")
     public ResponseEntity<ApiResponse<?>> login(@Valid @RequestBody LoginRequest request) {
-        try {
-            LoginResponse response = authService.login(request);
-            return ResponseEntity.ok(ApiResponse.success(response, "Signin successfully"));
-        } catch (BadRequestException e) {
-            String message = e.getMessage();
+        LoginResponse response = authService.login(request);
 
-            if ("TOO_MANY_ATTEMPTS".equalsIgnoreCase(message)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                      .body(ApiResponse.<Map<String, Object>>builder()
-                            .success(false)
-                            .statusCode(HttpStatus.FORBIDDEN.value())
-                            .message("Failed to login for more than 3 times. Please wait 1 minute before retrying")
-                            .data(Map.of("countdown", Instant.now().plus(Duration.ofMinutes(1))))
-                            .timestamp(LocalDateTime.now())
-                            .build());
-            }
-
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                  .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), message));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                  .body(ApiResponse.error(HttpStatus.UNAUTHORIZED.value(), e.getMessage()));
-        }
-    }
-
-    @PostMapping("/check-account")
-    @Operation(summary = "Cek dan validasi data akun yang baru login")
-    public ResponseEntity<ApiResponse<AccountResponse>> checkAccount(@Valid @RequestBody TokenRequest tokenRequest) {
-        try {
-            AccountResponse account = authService.validateToken(tokenRequest.getAccessToken());
-            return ResponseEntity.ok(ApiResponse.success(account, "Account validated"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                  .body(ApiResponse.error(401, e.getMessage()));
-        }
+        return ResponseEntity.ok(ApiResponse.success(response, "Signin successfully"));
     }
 
     @PostMapping("/logout")
