@@ -158,7 +158,7 @@ public class GlobalExceptionHandler {
 
     // ========== 401 UNAUTHORIZED EXCEPTIONS ==========
 
-    @ExceptionHandler(UnauthorizedException.class)
+    @ExceptionHandler(UnauthenticationException.class)
     public ResponseEntity<ApiResponse<Object>> handleUnauthorizedException(
           UnauthorizedException ex, HttpServletRequest request) {
 

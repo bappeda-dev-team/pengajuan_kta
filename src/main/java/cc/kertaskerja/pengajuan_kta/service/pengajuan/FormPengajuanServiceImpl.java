@@ -13,7 +13,6 @@ import cc.kertaskerja.pengajuan_kta.repository.FilePendukungRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FormPengajuanRepository;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
 import cc.kertaskerja.pengajuan_kta.service.global.R2StorageService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -23,17 +22,16 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class FormPengajuanServiceImpl implements FormPengajuanService {
+
     private final AccountRepository accountRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final FormPengajuanRepository formPengajuanRepository;
     private final FilePendukungRepository filePendukungRepository;
     private final R2StorageService r2StorageService;
-    private final ObjectMapper objectMapper;
 
     @Override
     public List<FormPengajuanResDTO.PengajuanResponse> findAllDataPengajuan(String authHeader) {
@@ -55,7 +53,6 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                 forms = formPengajuanRepository.findByAccId(userId);
             }
 
-            // Mapping entity ke response DTO
             return forms.stream()
                   .map(form -> FormPengajuanResDTO.PengajuanResponse.builder()
                         .uuid(form.getUuid())
@@ -223,14 +220,14 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
         String userId = String.valueOf(claims.get("uid"));
 
         FormPengajuan formPengajuan = formPengajuanRepository.findByUuid(uuid)
-              .orElseThrow(() -> new ResourceNotFoundException("Data pengajuan dengan UUID " + uuid + " tidak ditemukan"));
+              .orElseThrow(() -> new ResourceNotFoundException("Data pengajuan with UUID " + uuid + " is not found"));
 
         if (!userId.equals(formPengajuan.getAccount().getId().toString())) {
-            throw new ForbiddenException("Data pengajuan yang diubah bukan milik Anda.");
+            throw new ForbiddenException("Data pengajuan that has been changed is not yours.");
         }
 
         if (formPengajuan.getStatus() == StatusEnum.APPROVED) {
-            throw new ConflictException("Data pengajuan yang sudah disetujui tidak dapat diubah.");
+            throw new ConflictException("Data pengajuan that has been approved cannot be edited.");
         }
 
         try {
@@ -268,7 +265,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .build();
 
         } catch (Exception e) {
-            throw new RuntimeException("Gagal mengubah data pengajuan: " + e.getMessage());
+            throw new RuntimeException("Failed to change data pengajuan: " + e.getMessage());
         }
     }
 
@@ -277,7 +274,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
     public FormPengajuanResDTO.VerifyData verifyDataPengajuan(FormPengajuanReqDTO.VerifyPengajuan dto, UUID uuid) {
         try {
             FormPengajuan form = formPengajuanRepository.findByUuid(uuid)
-                  .orElseThrow(() -> new ResourceNotFoundException("Form pengajuan tidak ditemukan"));
+                  .orElseThrow(() -> new ResourceNotFoundException("Form pengajuan is not found"));
 
             form.setBerlakuDari(dto.getBerlaku_dari());
             form.setBerlakuSampai(dto.getBerlaku_sampai());
@@ -298,7 +295,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
         } catch (ResourceNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Gagal memverifikasi data pengajuan: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to verified data pengajuan: " + e.getMessage(), e);
         }
     }
 }
