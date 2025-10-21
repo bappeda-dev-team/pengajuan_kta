@@ -53,6 +53,19 @@ public class SecurityConfig {
               // 👇 Apply JWT filter for other requests
               .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
+                        // API public (opsional)
+                        .requestMatchers(
+                                "/api/public/**",
+                                "/actuator/**",
+                                "/api/external/**"
+                        ).permitAll()
+
+                        // Endpoint lain wajib login
+                        .anyRequest().authenticated()
+                )
+                .httpBasic(Customizer.withDefaults())
+                .formLogin(AbstractHttpConfigurer::disable)
+                .logout(AbstractHttpConfigurer::disable);
         return http.build();
     }
 
