@@ -11,6 +11,8 @@ import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
 import cc.kertaskerja.pengajuan_kta.service.otp.EmailService;
 import cc.kertaskerja.pengajuan_kta.service.otp.OtpService;
+import cc.kertaskerja.pengajuan_kta.service.otp.SmsService;
+import cc.kertaskerja.pengajuan_kta.util.AccountUtils;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -28,31 +30,25 @@ public class AuthServiceImpl implements AuthService {
     private final AuthAttemptService authAttempService;
     private final OtpService otpService;
     private final EmailService emailService;
+    private final SmsService smsService;
+    private final AccountUtils accountUtils;
 
     public AuthServiceImpl(AccountRepository accountRepository,
                            PasswordEncoder passwordEncoder,
                            JwtTokenProvider jwtTokenProvider,
                            AuthAttemptService authAttempService,
                            OtpService otpService,
-                           EmailService emailService) {
+                           EmailService emailService,
+                           SmsService smsService,
+                           AccountUtils accountUtils) {
         this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
         this.authAttempService = authAttempService;
         this.otpService = otpService;
         this.emailService = emailService;
-    }
-
-    private Long generateRandom6DigitId() {
-        long min = 100000L;
-        long max = 999999L;
-        long randomId;
-
-        do {
-            randomId = (long) (Math.random() * (max - min + 1)) + min;
-        } while (accountRepository.existsById(randomId));
-
-        return randomId;
+        this.smsService = smsService;
+        this.accountUtils = accountUtils;
     }
 
     @Override
@@ -71,6 +67,11 @@ public class AuthServiceImpl implements AuthService {
             conflicts.add("Username has been registered. Please try another username.");
         }
 
+        String formattedPhone = accountUtils.formatPhoneNumber(request.getNomor_telepon());
+        if (accountRepository.existsByNomorTelepon(formattedPhone)) {
+            conflicts.add("Your phone number has been registered. Please try another phone number.");
+        }
+
         if (!conflicts.isEmpty()) {
             throw new ConflictException(String.join("; ", conflicts));
         }
@@ -78,6 +79,7 @@ public class AuthServiceImpl implements AuthService {
        try {
            String otp = otpService.generateOtp(request.getEmail());
            emailService.sendOtpEmail(request.getEmail(), otp, request.getNama());
+           smsService.sendOtpWhatsApp(formattedPhone, otp, request.getNama());
 
            AccountResponse.SendOtp response = new AccountResponse.SendOtp();
            response.setNama(request.getNama());
@@ -104,7 +106,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         try {
-            Long generatedId = generateRandom6DigitId();
+            Long generatedId = accountUtils.generateRandom6DigitId();
 
             Account account = new Account();
             account.setId(generatedId);
