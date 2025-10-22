@@ -107,3 +107,12 @@ springdoc:
 jwt:
   secret: "jwtauthsecretpengajuanktangawikab@3521"
   expirationMillis: 3600000
+
+whatsapp:
+  api:
+    url: https://api.fonnte.com/send
+    token: tudovztaCTiU1UrGYTnp
+    timeout: 10000
+    retry:
+      max-attempts: 3
+      delay: 2000

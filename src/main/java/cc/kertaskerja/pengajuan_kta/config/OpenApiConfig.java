@@ -20,9 +20,9 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
               .info(new Info()
-                    .title("KTA API Documentation")
+                    .title("Pengajuan KTA API Documentation")
                     .version("1.0.0")
-                    .description("API documentation for Kertaskerja Pengajuan KTA"))
+                    .description("Pejabat Pengelola Informasi dan Dokumentasi Kabupaten Ngawi"))
               .servers(List.of(
                     new Server()
                           .url("http://localhost:8080/kta/api")
