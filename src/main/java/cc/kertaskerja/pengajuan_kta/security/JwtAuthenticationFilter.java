@@ -118,13 +118,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.setContentType("application/json");
         response.getWriter().write(String.format(
               """
-              {
-                "success": false,
-                "message": "%s",
-                "statusCode": %d,
-                "timestamp": "%s"
-              }
-              """,
+                    {
+                      "success": false,
+                      "message": "%s",
+                      "statusCode": %d,
+                      "timestamp": "%s"
+                    }
+                    """,
               message,
               HttpStatus.UNAUTHORIZED.value(),
               LocalDateTime.now()

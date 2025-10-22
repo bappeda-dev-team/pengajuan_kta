@@ -23,5 +23,6 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     @Query(value = "SELECT COUNT(*) > 0 FROM account WHERE email = :email", nativeQuery = true)
     boolean existsByEmail(@Param("email") String email);
 
+    boolean existsByNomorTelepon(String nomorTelepon);
 
 }
