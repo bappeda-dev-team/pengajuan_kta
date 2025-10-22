@@ -222,6 +222,23 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
+    // ========== 429 RATE LIMIT EXCEPTIONS ==========
+
+    @ExceptionHandler(RateLimitException.class)
+    public ResponseEntity<ApiResponse<Object>> handleRateLimitException(
+          RateLimitException ex, HttpServletRequest request) {
+
+        logger.warning("Rate limit exceeded at: " + request.getRequestURI() + ": " + ex.getMessage());
+
+        ApiResponse<Object> response = ApiResponse.error(
+              429, // kode HTTP yang sesuai
+              ex.getMessage(),
+              null
+        );
+
+        return new ResponseEntity<>(response, HttpStatus.TOO_MANY_REQUESTS);
+    }
+
     // ========== 500 INTERNAL SERVER ERROR EXCEPTIONS ==========
 
     @ExceptionHandler(InternalServerException.class)

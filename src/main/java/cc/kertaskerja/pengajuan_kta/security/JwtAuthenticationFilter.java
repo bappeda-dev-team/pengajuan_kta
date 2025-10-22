@@ -1,125 +1,133 @@
 package cc.kertaskerja.pengajuan_kta.security;
 
-import cc.kertaskerja.pengajuan_kta.entity.Account;
-import cc.kertaskerja.pengajuan_kta.enums.StatusEnum;
-import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
-import cc.kertaskerja.pengajuan_kta.service.auth.TokenBlacklistService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Component
-@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final AccountRepository accountRepository;
-    private final TokenBlacklistService tokenBlacklistService;
+
+    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider) {
+        this.jwtTokenProvider = jwtTokenProvider;
+    }
 
     @Override
-    protected void doFilterInternal(
-          HttpServletRequest request,
-          HttpServletResponse response,
-          FilterChain filterChain
-    ) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        String requestPath = request.getRequestURI();
 
-        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // Skip JWT authentication ONLY for auth endpoints
+        if (isPublicEndpoint(requestPath)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token = authHeader.substring(7);
+        // For Swagger endpoints, check for Basic Auth first, then skip JWT
+        if (isSwaggerEndpoint(requestPath)) {
+            String authHeader = request.getHeader("Authorization");
 
-        if (tokenBlacklistService.isBlacklisted(token)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("""
-                      {
-                          "success": false,
-                          "statusCode": 401,
-                          "message": "Token has been revoked. Please login again."
-                      }
-                  """);
-            return;
-        }
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        try {
-            Map<String, Object> claims = jwtTokenProvider.parseToken(token);
-
-            String username = (String) claims.get("sub");
-            Long uid = ((Number) claims.get("uid")).longValue();
-
-            Account account = accountRepository.findById(uid)
-                  .filter(a -> a.getUsername().equals(username))
-                  .orElse(null);
-
-            // 🔒 If account not found or pending, reject all non-auth requests
-            String path = request.getRequestURI();
-            boolean isAuthEndpoint = path.startsWith("/auth");
-
-            if (account == null || account.getStatus() == StatusEnum.PENDING) {
-                if (!isAuthEndpoint) {
-                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                    response.setContentType("application/json");
-                    response.getWriter().write("""
-                              {
-                                  "success": false,
-                                  "statusCode": 403,
-                                  "message": "Your account is pending verification. Access denied."
-                              }
-                          """);
-                    return;
-                }
-            }
-
-            String role = (String) claims.get("role");
-
-            if (!"ADMIN".equalsIgnoreCase(role) && request.getRequestURI().startsWith("/pengajuan/verify")) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write("""
-                          {
-                              "success": false,
-                              "statusCode": 401,
-                              "message": "Unauthorized: only ADMIN can verify pengajuan"
-                          }
-                      """);
-
+            // If it's Basic Auth, let it through (don't process as JWT)
+            if (authHeader != null && authHeader.startsWith("Basic ")) {
+                filterChain.doFilter(request, response);
                 return;
             }
 
-            List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
-
-            UsernamePasswordAuthenticationToken authentication =
-                  new UsernamePasswordAuthenticationToken(username, null, authorities);
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        } catch (Exception e) {
-            SecurityContextHolder.clearContext();
+            // If no auth header for Swagger, let Spring Security handle Basic Auth challenge
+            if (authHeader == null) {
+                filterChain.doFilter(request, response);
+                return;
+            }
         }
 
-        filterChain.doFilter(request, response);
+        try {
+            String authHeader = request.getHeader("Authorization");
+
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                log.debug("No valid Authorization header found for path: {}", requestPath);
+                unauthorizedResponse(response, "UNAUTHORIZED. You must input token in Authorization header");
+                return;
+            }
+
+            // Rest of your JWT processing logic...
+            String token = authHeader.substring(7);
+            Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+
+            String username = (String) claims.get("sub");
+            String role = (String) claims.get("role");
+            Long userId = ((Number) claims.get("uid")).longValue();
+            String nama = (String) claims.get("nama");
+            String email = (String) claims.get("email");
+
+            UsernamePasswordAuthenticationToken authentication =
+                  new UsernamePasswordAuthenticationToken(
+                        username,
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                  );
+
+            authentication.setDetails(Map.of(
+                  "userId", userId,
+                  "nama", nama,
+                  "email", email,
+                  "role", role
+            ));
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            log.debug("✅ JWT Authentication successful for user: {} with role: {}", username, role);
+
+            filterChain.doFilter(request, response);
+
+        } catch (Exception e) {
+            log.error("❌ JWT Authentication failed: {}", e.getMessage());
+            SecurityContextHolder.clearContext();
+            unauthorizedResponse(response, e.getMessage());
+        }
     }
 
+    private boolean isPublicEndpoint(String path) {
+        // Only auth endpoints are truly public
+        return path.startsWith("/kta/api/auth/") ||
+              path.startsWith("/kta/api/public/") ||
+              path.equals("/kta/api/actuator/health");
+    }
+
+    private boolean isSwaggerEndpoint(String path) {
+        return path.startsWith("/kta/api/v3/api-docs") ||
+              path.startsWith("/kta/api/swagger-ui") ||
+              path.equals("/kta/api/swagger-ui.html");
+    }
+
+    private void unauthorizedResponse(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        response.setContentType("application/json");
+        response.getWriter().write(String.format(
+              """
+              {
+                "success": false,
+                "message": "%s",
+                "statusCode": %d,
+                "timestamp": "%s"
+              }
+              """,
+              message,
+              HttpStatus.UNAUTHORIZED.value(),
+              LocalDateTime.now()
+        ));
+    }
 }

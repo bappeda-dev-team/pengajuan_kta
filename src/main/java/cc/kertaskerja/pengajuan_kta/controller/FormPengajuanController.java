@@ -87,7 +87,7 @@ public class FormPengajuanController {
         return ResponseEntity.ok(ApiResponse.created(result));
     }
 
-    @GetMapping("/file/{uuid}")
+    @GetMapping("/detail/{uuid}")
     @Operation(summary = "Ambil data pengajuan KTA berdasarkan uuid")
     public ResponseEntity<ApiResponse<FormPengajuanResDTO.PengajuanResponse>> getFormByUuid(@PathVariable UUID uuid) {
         FormPengajuanResDTO.PengajuanResponse result = formPengajuanService.findByUuidWithFiles(uuid);

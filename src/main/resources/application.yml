@@ -50,7 +50,7 @@ spring:
       resolve-lazily: false
 
 server:
-  port: 8081
+  port: 8080
   servlet:
     context-path: /kta/api
   tomcat:
@@ -79,7 +79,8 @@ logging:
       swagger: DEBUG
     cc:
       kertaskerja:
-        manrisk_fraud: INFO
+        pengajuan_kta:
+          security: DEBUG
         aop: DEBUG
 
 cloudflare:
@@ -93,17 +94,16 @@ cloudflare:
 springdoc:
   api-docs:
     enabled: true
-    path: /api-docs
+    path: /v3/api-docs
   swagger-ui:
     enabled: true
     path: /swagger-ui.html
     operationsSorter: method
     tagsSorter: alpha
     tryItOutEnabled: true
-    disable-swagger-default-url: true
   override-with-generic-response: false
   show-actuator: false
 
 jwt:
-  secret: "jwtauthsecretauthpengajuanktangawikab"
+  secret: "jwtauthsecretpengajuanktangawikab@3521"
   expirationMillis: 3600000

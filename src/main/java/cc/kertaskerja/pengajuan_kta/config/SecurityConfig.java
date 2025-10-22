@@ -1,11 +1,10 @@
 package cc.kertaskerja.pengajuan_kta.config;
 
+import cc.kertaskerja.pengajuan_kta.security.CustomBasicAuthenticationEntryPoint;
 import cc.kertaskerja.pengajuan_kta.security.JwtAuthenticationFilter;
-import cc.kertaskerja.pengajuan_kta.security.CustomAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -18,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -31,31 +31,34 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CustomAuthenticationEntryPoint customAuthEntryPoint;
+    private final CustomBasicAuthenticationEntryPoint customBasicAuthEntryPoint;
 
+    /**
+     * 🔒 Single Security Chain - Simpler approach
+     */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        return http
               .csrf(csrf -> csrf.disable())
               .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-              .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
               .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/auth/**").authenticated() // require Basic auth
-                    .requestMatchers("/actuator/health", "/api/public/**").permitAll()
-                    .requestMatchers("/pengajuan/verify/**").hasRole("ADMIN")
+                    .requestMatchers("/actuator/health", "/public/**").permitAll()
+                    .requestMatchers("/auth/**").permitAll()
+                    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").authenticated()
                     .anyRequest().authenticated()
               )
-
-              // 👇 Apply our custom entry point for Basic Auth
-              .httpBasic(httpBasic -> httpBasic.authenticationEntryPoint(customAuthEntryPoint))
-
-              // 👇 Apply JWT filter for other requests
-              .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-        return http.build();
+              .httpBasic(httpBasic -> httpBasic
+                    .realmName("Swagger UI Access")
+                    .authenticationEntryPoint(customBasicAuthEntryPoint)
+              )
+              .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+              .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+              .build();
     }
 
+    /**
+     * 🧩 CORS Configuration
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -70,17 +73,23 @@ public class SecurityConfig {
         return source;
     }
 
+    /**
+     * 🧑 Basic Auth User untuk Swagger
+     */
     @Bean
     public UserDetailsService userDetailsService() {
         UserDetails user = User.builder()
               .username("webprogregktangawikab")
               .password(passwordEncoder().encode("xLI061@4f0#`"))
-              .roles("USER", "ADMIN")
+              .roles("ADMIN")
               .build();
 
         return new InMemoryUserDetailsManager(user);
     }
 
+    /**
+     * 🔐 Password Encoder
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
