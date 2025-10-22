@@ -6,9 +6,7 @@ import cc.kertaskerja.pengajuan_kta.dto.Auth.LoginResponse;
 import cc.kertaskerja.pengajuan_kta.dto.Auth.RegisterRequest;
 import cc.kertaskerja.pengajuan_kta.entity.Account;
 import cc.kertaskerja.pengajuan_kta.enums.StatusEnum;
-import cc.kertaskerja.pengajuan_kta.exception.BadRequestException;
-import cc.kertaskerja.pengajuan_kta.exception.ConflictException;
-import cc.kertaskerja.pengajuan_kta.exception.ResourceNotFoundException;
+import cc.kertaskerja.pengajuan_kta.exception.*;
 import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
 import cc.kertaskerja.pengajuan_kta.service.otp.EmailService;
@@ -60,7 +58,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AccountResponse.SendOtp sendOTP(RegisterRequest.SendOtp request) {
         if (authAttempService.sendOtpBlocked(request.getEmail())) {
-            throw new BadRequestException("TOO_MANY_ATTEMPTS. Please wait 1 minute before sending OTP again");
+            throw new RateLimitException("TOO_MANY_ATTEMPTS. Please wait 1 minute before sending OTP again");
         }
 
         List<String> conflicts = new ArrayList<>();
@@ -102,7 +100,7 @@ public class AuthServiceImpl implements AuthService {
         boolean valid = otpService.validateOtp(request.getEmail(), request.getOtp_code());
 
         if (!valid) {
-            throw new BadRequestException("Invalid OTP code");
+            throw new ForbiddenException("Invalid OTP code");
         }
 
         try {
@@ -149,7 +147,7 @@ public class AuthServiceImpl implements AuthService {
         String username = request.getUsername();
 
         if (authAttempService.loginBlocked(username)) {
-            throw new BadRequestException("TOO_MANY_ATTEMPTS. Please wait 1 minute before retrying");
+            throw new RateLimitException("TOO_MANY_ATTEMPTS. You have failed 3x. Please wait 1 minute before retrying");
         }
 
         try {
