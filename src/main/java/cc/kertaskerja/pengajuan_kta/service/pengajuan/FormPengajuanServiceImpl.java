@@ -91,10 +91,14 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
     @Override
     @Transactional
     public FormPengajuanResDTO.SaveDataResponse saveData(FormPengajuanReqDTO.SavePengajuan dto) {
-        try {
-            Account account = accountRepository.findById(dto.getUser_id())
-                  .orElseThrow(() -> new ResourceNotFoundException("Account not found for user_id: " + dto.getUser_id()));
+        Account account = accountRepository.findById(dto.getUser_id())
+              .orElseThrow(() -> new ResourceNotFoundException("Account not found for user_id: " + dto.getUser_id()));
 
+        if (formPengajuanRepository.existsByNomorInduk(dto.getNomor_induk())) {
+            throw new ConflictException("Nomor induk '" + dto.getNomor_induk() + "' already exists");
+        }
+
+        try {
             FormPengajuan entity = FormPengajuan.builder()
                   .account(account)
                   .uuid(UUID.randomUUID())
@@ -143,18 +147,14 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
     @Transactional
     public FilePendukungDTO uploadAndSaveFile(MultipartFile file, String formUuid, String namaFile) {
         try {
-            // 1. Upload file ke R2
             String fileUrl = r2StorageService.upload(file);
 
-            // 2. Gunakan namaFile dari request atau fallback ke original filename
             String finalNamaFile = namaFile != null ? namaFile : file.getOriginalFilename();
 
-            // 3. Cari FormPengajuan berdasarkan UUID
             UUID formUuidParsed = UUID.fromString(formUuid);
             FormPengajuan formPengajuan = formPengajuanRepository.findByUuid(formUuidParsed)
                   .orElseThrow(() -> new ResourceNotFoundException("Form with UUID " + formUuid + " not found"));
 
-            // 4. Simpan metadata ke database
             FilePendukung filePendukung = FilePendukung.builder()
                   .fileUrl(fileUrl)
                   .namaFile(finalNamaFile)
@@ -163,7 +163,6 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
             FilePendukung savedFile = filePendukungRepository.save(filePendukung);
 
-            // 5. Return DTO
             return FilePendukungDTO.builder()
                   .form_uuid(formUuid)
                   .file_url(savedFile.getFileUrl())
@@ -179,7 +178,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
     @Transactional(readOnly = true)
     public FormPengajuanResDTO.PengajuanResponse findByUuidWithFiles(UUID uuid) {
         FormPengajuan formPengajuan = formPengajuanRepository.findByUuidWithFiles(uuid)
-              .orElseThrow(() -> new RuntimeException("Form with UUID " + uuid + " not found"));
+              .orElseThrow(() -> new ResourceNotFoundException("Form with UUID " + uuid + " not found"));
 
         return FormPengajuanResDTO.PengajuanResponse.builder()
               .uuid(formPengajuan.getUuid())

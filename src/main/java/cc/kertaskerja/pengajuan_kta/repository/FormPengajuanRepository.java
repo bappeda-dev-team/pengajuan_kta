@@ -16,18 +16,22 @@ public interface FormPengajuanRepository extends JpaRepository<FormPengajuan, Lo
     @Query(value = "SELECT * FROM form_pengajuan", nativeQuery = true)
     List<FormPengajuan> findAllData();
 
+    @Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END " +
+          "FROM form_pengajuan " +
+          "WHERE nomor_induk = :nomorInduk",
+          nativeQuery = true)
+    boolean existsByNomorInduk(@Param("nomorInduk") String nomorInduk);
+
     @Query(value = "SELECT * FROM form_pengajuan WHERE user_id = :accountId", nativeQuery = true)
     List<FormPengajuan> findByAccId(@Param("accountId") Long accountId);
 
     @Query(value = "SELECT * FROM form_pengajuan WHERE uuid = :uuid", nativeQuery = true)
     Optional<FormPengajuan> findByUuid(@Param("uuid") UUID uuid);
 
-    @Query(value = """
-        SELECT f.* 
-        FROM form_pengajuan f
-        LEFT JOIN file_pendukung fp ON f.id = fp.form_pengajuan_id
-        WHERE f.uuid = :uuid
-        """, nativeQuery = true)
+//    @Query(value = "SELECT f.* FROM form_pengajuan f LEFT JOIN file_pendukung fp ON f.id = fp.form_uuid WHERE f.uuid = :uuid", nativeQuery = true)
+//    Optional<FormPengajuan> findByUuidWithFiles(@Param("uuid") UUID uuid);
+
+    @Query("SELECT f FROM FormPengajuan f LEFT JOIN FETCH f.filePendukung WHERE f.uuid = :uuid")
     Optional<FormPengajuan> findByUuidWithFiles(@Param("uuid") UUID uuid);
 
 }
