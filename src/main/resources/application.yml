@@ -116,3 +116,7 @@ whatsapp:
     retry:
       max-attempts: 3
       delay: 2000
+
+recaptcha:
+  site-key: randomrecapchav3@1234567890
+  secret-key: HS01NxW8yhLMCm8IfGnfiNzVzTXVAJ3C
