@@ -80,31 +80,31 @@ public class AuthServiceImpl implements AuthService {
             throw new ConflictException(String.join("; ", conflicts));
         }
 
-       try {
-           String captchaKey = captchaService.generateCaptchaKey();
-           String captchaText = captchaService.generateCaptchaText(5);
-           captchaService.saveCaptcha(captchaKey, captchaText);
-           String base64Captcha = "data:image/png;base64," + captchaService.generateCaptchaImage(captchaText);
+        try {
+            String captchaKey = captchaService.generateCaptchaKey();
+            String captchaText = captchaService.generateCaptchaText(5);
+            captchaService.saveCaptcha(captchaKey, captchaText);
+            String base64Captcha = "data:image/png;base64," + captchaService.generateCaptchaImage(captchaText);
 
-           String otp = otpService.generateOtp(request.getEmail(), formattedPhone);
-           emailService.sendOtpEmail(request.getEmail(), otp, request.getNama());
-           smsService.sendOtpWhatsApp(formattedPhone, otp, request.getNama());
+            String otp = otpService.generateOtp(request.getEmail(), formattedPhone);
+            emailService.sendOtpEmail(request.getEmail(), otp, request.getNama());
+            smsService.sendOtpWhatsApp(formattedPhone, otp, request.getNama());
 
-           AccountResponse.SendOtp response = new AccountResponse.SendOtp();
-           response.setNama(request.getNama());
-           response.setEmail(request.getEmail());
-           response.setNomor_telepon(request.getNomor_telepon());
-           response.setCaptcha(
-                 new AccountResponse.SendOtp.CaptchaResponse(captchaKey, base64Captcha)
-           );
+            AccountResponse.SendOtp response = new AccountResponse.SendOtp();
+            response.setNama(request.getNama());
+            response.setEmail(request.getEmail());
+            response.setNomor_telepon(request.getNomor_telepon());
+            response.setCaptcha(
+                  new AccountResponse.SendOtp.CaptchaResponse(captchaKey, base64Captcha)
+            );
 
-           authAttempService.sendOtpSucceeded(request.getEmail());
+            authAttempService.sendOtpSucceeded(request.getEmail());
 
-           return response;
-       } catch (Exception e) {
-           authAttempService.sendOtpFailed(request.getEmail());
-           throw new RuntimeException("Unexpected error occurred while registering account", e);
-       }
+            return response;
+        } catch (Exception e) {
+            authAttempService.sendOtpFailed(request.getEmail());
+            throw new RuntimeException("Unexpected error occurred while registering account", e);
+        }
     }
 
     @Override
