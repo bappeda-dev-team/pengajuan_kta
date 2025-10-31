@@ -152,15 +152,15 @@ public class AccountResponse {
         private String nama;
         private String email;
         private String nomor_telepon;
-        private String message;
+        private CaptchaResponse captcha;
 
         public SendOtp() {}
 
-        public SendOtp(String nama, String email, String nomor_telepon, String message) {
+        public SendOtp(String nama, String email, String nomor_telepon, CaptchaResponse captcha) {
             this.nama = nama;
             this.email = email;
             this.nomor_telepon = nomor_telepon;
-            this.message = message;
+            this.captcha = captcha;
         }
 
         public String getNama() { return nama; }
@@ -172,7 +172,42 @@ public class AccountResponse {
         public String getNomor_telepon() { return nomor_telepon; }
         public void setNomor_telepon(String nomor_telepon) { this.nomor_telepon = nomor_telepon; }
 
-        public String getMessage() { return message; }
-        public void setMessage(String message) { this.message = message; }
+        public CaptchaResponse getCaptcha() {
+            return captcha;
+        }
+
+        public void setCaptcha(CaptchaResponse captcha) {
+            this.captcha = captcha;
+        }
+
+        public static class CaptchaResponse {
+            private String key;
+            private String img;
+
+            public CaptchaResponse() {}
+
+            public CaptchaResponse(String key, String img) {
+                this.key = key;
+                this.img = img;
+            }
+
+            public String getKey() {
+                return key;
+            }
+
+            public void setKey(String key) {
+                this.key = key;
+            }
+
+            public String getImg() {
+                return img;
+            }
+
+            public void setImg(String img) {
+                this.img = img;
+            }
+        }
     }
 }
+
+

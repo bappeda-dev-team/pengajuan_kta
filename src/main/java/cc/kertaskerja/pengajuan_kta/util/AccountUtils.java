@@ -12,9 +12,6 @@ public class AccountUtils {
         this.accountRepository = accountRepository;
     }
 
-    /**
-     * Generate random 6-digit ID that is unique in the database.
-     */
     public Long generateRandom6DigitId() {
         long min = 100000L;
         long max = 999999L;
@@ -27,9 +24,6 @@ public class AccountUtils {
         return randomId;
     }
 
-    /**
-     * Format Indonesian phone number into international format (62...).
-     */
     public String formatPhoneNumber(String phoneNumber) {
         if (phoneNumber == null || phoneNumber.isBlank()) {
             return phoneNumber;
