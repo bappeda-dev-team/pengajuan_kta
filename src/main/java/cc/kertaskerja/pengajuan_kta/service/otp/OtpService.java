@@ -13,9 +13,10 @@ public class OtpService {
 
     private final StringRedisTemplate redisTemplate;
 
-    public String generateOtp(String key) {
+    public String generateOtp(String email, String msisdn) {
         String otp = String.format("%06d", new Random().nextInt(999999));
-        redisTemplate.opsForValue().set("OTP:" + key, otp, Duration.ofMinutes(3));
+        redisTemplate.opsForValue().set("OTP:" + email, otp, Duration.ofMinutes(3));
+        redisTemplate.opsForValue().set("OTP:" + msisdn, otp, Duration.ofMinutes(3));
         return otp;
     }
 

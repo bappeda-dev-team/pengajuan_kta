@@ -61,7 +61,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        configuration.setAllowedOrigins(List.of(
+              "http://localhost:3000",
+              "http://192.168.1.38:3000",
+              "https://kta-service.zeabur.app"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
@@ -79,7 +83,7 @@ public class SecurityConfig {
     public UserDetailsService userDetailsService() {
         UserDetails user = User.builder()
               .username("webprogregktangawikab")
-              .password(passwordEncoder().encode("xLI061@4f0#`"))
+              .password(passwordEncoder().encode("xLI061@4f0#"))
               .roles("ADMIN")
               .build();
 

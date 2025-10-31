@@ -39,16 +39,22 @@ public class RegisterRequest {
     @NotNull(message = "Harap masukkan tipe akun yang Anda daftarkan")
     private TipeAkunEnum tipe_akun;
 
+    private String captcha_token;
+
+    private String captcha_code;
+
     public RegisterRequest() {}
 
     public RegisterRequest(String nama, String username, String password, String nomor_telepon,
-                           TipeAkunEnum tipe_akun, String email) {
+                           TipeAkunEnum tipe_akun, String email, String captcha_token, String captcha_code) {
         this.nama = nama;
         this.username = username;
         this.password = password;
         this.nomor_telepon = nomor_telepon;
         this.tipe_akun = tipe_akun;
         this.email = email;
+        this.captcha_token = captcha_token;
+        this.captcha_code = captcha_code;
     }
 
     // =====================
@@ -109,6 +115,22 @@ public class RegisterRequest {
 
     public void setOtp_code(String otp_code) {
         this.otp_code = otp_code;
+    }
+
+    public String getCaptcha_token() {
+        return captcha_token;
+    }
+
+    public void setCaptcha_token(String captcha_token) {
+        this.captcha_token = captcha_token;
+    }
+
+    public String getCaptcha_code() {
+        return captcha_code;
+    }
+
+    public void setCaptcha_code(String captcha_code) {
+        this.captcha_code = captcha_code;
     }
 
     // =====================

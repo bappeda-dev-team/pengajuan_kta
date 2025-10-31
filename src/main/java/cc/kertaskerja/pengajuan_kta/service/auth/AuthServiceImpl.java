@@ -9,6 +9,7 @@ import cc.kertaskerja.pengajuan_kta.enums.StatusEnum;
 import cc.kertaskerja.pengajuan_kta.exception.*;
 import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
+import cc.kertaskerja.pengajuan_kta.service.captcha.CaptchaService;
 import cc.kertaskerja.pengajuan_kta.service.otp.EmailService;
 import cc.kertaskerja.pengajuan_kta.service.otp.OtpService;
 import cc.kertaskerja.pengajuan_kta.service.otp.SmsService;
@@ -32,6 +33,7 @@ public class AuthServiceImpl implements AuthService {
     private final EmailService emailService;
     private final SmsService smsService;
     private final AccountUtils accountUtils;
+    private final CaptchaService captchaService;
 
     public AuthServiceImpl(AccountRepository accountRepository,
                            PasswordEncoder passwordEncoder,
@@ -40,7 +42,8 @@ public class AuthServiceImpl implements AuthService {
                            OtpService otpService,
                            EmailService emailService,
                            SmsService smsService,
-                           AccountUtils accountUtils) {
+                           AccountUtils accountUtils,
+                           CaptchaService captchaService) {
         this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
@@ -49,6 +52,7 @@ public class AuthServiceImpl implements AuthService {
         this.emailService = emailService;
         this.smsService = smsService;
         this.accountUtils = accountUtils;
+        this.captchaService = captchaService;
     }
 
     @Override
@@ -69,40 +73,54 @@ public class AuthServiceImpl implements AuthService {
 
         String formattedPhone = accountUtils.formatPhoneNumber(request.getNomor_telepon());
         if (accountRepository.existsByNomorTelepon(formattedPhone)) {
-            conflicts.add("Your phone number has been registered. Please try another phone number.");
+            conflicts.add("Your phone number has been registered. Please try another whatsapp number.");
         }
 
         if (!conflicts.isEmpty()) {
             throw new ConflictException(String.join("; ", conflicts));
         }
 
-       try {
-           String otp = otpService.generateOtp(request.getEmail());
-           emailService.sendOtpEmail(request.getEmail(), otp, request.getNama());
-           smsService.sendOtpWhatsApp(formattedPhone, otp, request.getNama());
+        try {
+            String captchaKey = captchaService.generateCaptchaKey();
+            String captchaText = captchaService.generateCaptchaText(5);
+            captchaService.saveCaptcha(captchaKey, captchaText);
+            String base64Captcha = "data:image/png;base64," + captchaService.generateCaptchaImage(captchaText);
 
-           AccountResponse.SendOtp response = new AccountResponse.SendOtp();
-           response.setNama(request.getNama());
-           response.setEmail(request.getEmail());
-           response.setNomor_telepon(request.getNomor_telepon());
-           response.setMessage("OTP code has been sent to your email and whatsapp");
+            String otp = otpService.generateOtp(request.getEmail(), formattedPhone);
+            emailService.sendOtpEmail(request.getEmail(), otp, request.getNama());
+            smsService.sendOtpWhatsApp(formattedPhone, otp, request.getNama());
 
-           authAttempService.sendOtpSucceeded(request.getEmail());
+            AccountResponse.SendOtp response = new AccountResponse.SendOtp();
+            response.setNama(request.getNama());
+            response.setEmail(request.getEmail());
+            response.setNomor_telepon(request.getNomor_telepon());
+            response.setCaptcha(
+                  new AccountResponse.SendOtp.CaptchaResponse(captchaKey, base64Captcha)
+            );
 
-           return response;
-       } catch (Exception e) {
-           authAttempService.sendOtpFailed(request.getEmail());
-           throw new RuntimeException("Unexpected error occurred while registering account", e);
-       }
+            authAttempService.sendOtpSucceeded(request.getEmail());
+
+            return response;
+        } catch (Exception e) {
+            authAttempService.sendOtpFailed(request.getEmail());
+            throw new RuntimeException("Unexpected error occurred while registering account", e);
+        }
     }
 
     @Override
     @Transactional
     public AccountResponse register(RegisterRequest request) {
-        boolean valid = otpService.validateOtp(request.getEmail(), request.getOtp_code());
+        boolean validateCaptcha = captchaService.verifyCaptcha(request.getCaptcha_token(), request.getCaptcha_code());
 
-        if (!valid) {
-            throw new ForbiddenException("Invalid OTP code");
+        if (!validateCaptcha) {
+            throw new ForbiddenException("Invalid captcha code. Please try again");
+        }
+
+        boolean validOtpByEmail = otpService.validateOtp(request.getEmail(), request.getOtp_code());
+        boolean validOtpByPhone = otpService.validateOtp(request.getNomor_telepon(), request.getOtp_code());
+
+        if (!validOtpByEmail || !validOtpByPhone) {
+            throw new ForbiddenException("Invalid OTP or OTP code has expired. Please try again");
         }
 
         try {
@@ -131,6 +149,9 @@ public class AuthServiceImpl implements AuthService {
             response.setStatus(saved.getStatus().name());
             response.setRole(saved.getRole());
 
+            otpService.deleteOtp(request.getEmail());
+            otpService.deleteOtp(request.getNomor_telepon());
+
             return response;
 
         } catch (DataIntegrityViolationException e) {
@@ -149,7 +170,7 @@ public class AuthServiceImpl implements AuthService {
         String username = request.getUsername();
 
         if (authAttempService.loginBlocked(username)) {
-            throw new RateLimitException("TOO_MANY_ATTEMPTS. You have failed 3x. Please wait 1 minute before retrying");
+            throw new RateLimitException("TOO_MANY_ATTEMPTS. You have entered the wrong credentials 3 times. Please wait 1 minute before trying again.");
         }
 
         try {

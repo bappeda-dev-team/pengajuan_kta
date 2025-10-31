@@ -57,9 +57,14 @@ public class AuthController {
             AccountResponse.SendOtp response = authService.sendOTP(request);
 
             return ResponseEntity.ok(
-                  ApiResponse.success(response, response.getMessage())
+                  ApiResponse.builder()
+                        .success(true)
+                        .statusCode(200)
+                        .message("OTP sent successfully! Please check your email and WhatsApp.")
+                        .data(response)
+                        .timestamp(LocalDateTime.now())
+                        .build()
             );
-
         } catch (ConflictException ex) {
             List<String> conflicts = Arrays.asList(ex.getMessage().split("; "));
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -121,5 +126,4 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(null, "Logged out successfully"));
     }
 }
-
 
