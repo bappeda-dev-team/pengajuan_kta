@@ -3,6 +3,7 @@ package cc.kertaskerja.pengajuan_kta.config;
 import cc.kertaskerja.pengajuan_kta.security.CustomBasicAuthenticationEntryPoint;
 import cc.kertaskerja.pengajuan_kta.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -31,6 +32,12 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomBasicAuthenticationEntryPoint customBasicAuthEntryPoint;
+
+    @Value("${SWAGGER_USERNAME}")
+    private String swaggerUsername;
+
+    @Value("${SWAGGER_PASSWORD}")
+    private String swaggerPassword;
 
     /**
      * 🔒 Single Security Chain - Simpler approach
@@ -82,8 +89,8 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         UserDetails user = User.builder()
-              .username("webprogregktangawikab")
-              .password(passwordEncoder().encode("xLI061@4f0#"))
+              .username(swaggerUsername)
+              .password(passwordEncoder().encode(swaggerPassword))
               .roles("ADMIN")
               .build();
 
