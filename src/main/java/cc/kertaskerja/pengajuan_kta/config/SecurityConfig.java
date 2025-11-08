@@ -89,8 +89,8 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         UserDetails user = User.builder()
-              .username(swaggerUsername)
-              .password(passwordEncoder().encode(swaggerPassword))
+              .username("webprogregktangawikab")
+              .password(passwordEncoder().encode("xLI061@4f0#"))
               .roles("ADMIN")
               .build();
 
