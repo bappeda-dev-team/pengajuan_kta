@@ -25,8 +25,8 @@ public class OpenApiConfig {
                     .description("Pejabat Pengelola Informasi dan Dokumentasi Kabupaten Ngawi"))
               .servers(List.of(
                     new Server()
-                          .url("http://localhost:8080/kta/api")
-                          .description("Development server")
+                          .url("https://kta-service.zeabur.app")
+                          .description("Production server")
               ))
               .addSecurityItem(new SecurityRequirement().addList("basicAuth"))
               .components(new Components()
