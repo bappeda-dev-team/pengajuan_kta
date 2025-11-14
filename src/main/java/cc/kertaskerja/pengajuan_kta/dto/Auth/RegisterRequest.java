@@ -34,14 +34,14 @@ public class RegisterRequest {
     )
     private String nomor_telepon;
 
-    private String otp_code;
+//    private String otp_code;
 
     @NotNull(message = "Harap masukkan tipe akun yang Anda daftarkan")
     private TipeAkunEnum tipe_akun;
 
-    private String captcha_token;
+//    private String captcha_token;
 
-    private String captcha_code;
+//    private String captcha_code;
 
     public RegisterRequest() {}
 
@@ -53,8 +53,8 @@ public class RegisterRequest {
         this.nomor_telepon = nomor_telepon;
         this.tipe_akun = tipe_akun;
         this.email = email;
-        this.captcha_token = captcha_token;
-        this.captcha_code = captcha_code;
+//        this.captcha_token = captcha_token;
+//        this.captcha_code = captcha_code;
     }
 
     // =====================
@@ -109,29 +109,29 @@ public class RegisterRequest {
         this.email = email;
     }
 
-    public String getOtp_code() {
-        return otp_code;
-    }
-
-    public void setOtp_code(String otp_code) {
-        this.otp_code = otp_code;
-    }
-
-    public String getCaptcha_token() {
-        return captcha_token;
-    }
-
-    public void setCaptcha_token(String captcha_token) {
-        this.captcha_token = captcha_token;
-    }
-
-    public String getCaptcha_code() {
-        return captcha_code;
-    }
-
-    public void setCaptcha_code(String captcha_code) {
-        this.captcha_code = captcha_code;
-    }
+//    public String getOtp_code() {
+//        return otp_code;
+//    }
+//
+//    public void setOtp_code(String otp_code) {
+//        this.otp_code = otp_code;
+//    }
+//
+//    public String getCaptcha_token() {
+//        return captcha_token;
+//    }
+//
+//    public void setCaptcha_token(String captcha_token) {
+//        this.captcha_token = captcha_token;
+//    }
+//
+//    public String getCaptcha_code() {
+//        return captcha_code;
+//    }
+//
+//    public void setCaptcha_code(String captcha_code) {
+//        this.captcha_code = captcha_code;
+//    }
 
     // =====================
     // Inner class for sending OTP
