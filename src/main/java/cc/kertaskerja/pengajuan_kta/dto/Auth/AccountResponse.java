@@ -208,6 +208,53 @@ public class AccountResponse {
             }
         }
     }
+
+    // Resend Captcha
+    public static class ResendCaptcha {
+        private CaptchaResponse captcha;
+
+        public ResendCaptcha() {}
+
+        public ResendCaptcha(CaptchaResponse captcha) {
+            this.captcha = captcha;
+        }
+
+        public CaptchaResponse getCaptcha() {
+            return captcha;
+        }
+
+        public void setCaptcha(CaptchaResponse captcha) {
+            this.captcha = captcha;
+        }
+
+        public static class CaptchaResponse {
+            private String key;
+            private String img;
+
+            public CaptchaResponse() {}
+
+            public CaptchaResponse(String key, String img) {
+                this.key = key;
+                this.img = img;
+            }
+
+            public String getKey() {
+                return key;
+            }
+
+            public void setKey(String key) {
+                this.key = key;
+            }
+
+            public String getImg() {
+                return img;
+            }
+
+            public void setImg(String img) {
+                this.img = img;
+            }
+        }
+    }
 }
 
 

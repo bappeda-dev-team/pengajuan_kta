@@ -35,7 +35,7 @@ public class AuthController {
     private final TokenBlacklistService tokenBlacklistService;
 
     @PostMapping("/send-otp")
-    @Operation(summary = "Kirim OTP ke email pengguna untuk verifikasi")
+    @Operation(summary = "[1] - Kirim OTP ke email pengguna untuk verifikasi")
     public ResponseEntity<ApiResponse<?>> sendOtp(@Valid @RequestBody RegisterRequest.SendOtp request,
                                                   BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -78,8 +78,16 @@ public class AuthController {
         }
     }
 
+    @GetMapping("/resend-captcha")
+    @Operation(summary = "Kirim ulang captcha")
+    public ResponseEntity<ApiResponse<AccountResponse.ResendCaptcha>> resendOtp() {
+        AccountResponse.ResendCaptcha response = authService.resendOtp();
+
+        return ResponseEntity.ok(ApiResponse.success(response, "Captcha resent successfully"));
+    }
+
     @PostMapping("/verify-otp-and-signup")
-    @Operation(summary = "Daftar akun baru")
+    @Operation(summary = "[2] - Daftar akun baru")
     public ResponseEntity<ApiResponse<?>> register(@Valid @RequestBody RegisterRequest request,
                                                    BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -105,7 +113,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Login akun")
+    @Operation(summary = "[3] - Login akun")
     public ResponseEntity<ApiResponse<?>> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
 
