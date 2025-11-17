@@ -21,7 +21,7 @@ public class CaptchaService {
         this.redisTemplate = redisTemplate;
     }
 
-    private static final Duration CAPTCHA_TTL = Duration.ofSeconds(30);
+    private static final Duration CAPTCHA_TTL = Duration.ofSeconds(60);
     private static final String CAPTCHA_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
     public String generateCaptchaText(int length) {

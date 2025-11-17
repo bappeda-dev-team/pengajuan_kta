@@ -33,6 +33,12 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomBasicAuthenticationEntryPoint customBasicAuthEntryPoint;
 
+    @Value("${SWAGGER_USERNAME}")
+    private String swaggerUsername;
+
+    @Value("${SWAGGER_PASSWORD}")
+    private String swaggerPassword;
+
     /**
      * 🔒 Single Security Chain - Simpler approach
      */
@@ -64,6 +70,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
               "http://localhost:3000",
+              "http://192.168.1.38:3000",
               "https://kta-service.zeabur.app"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
