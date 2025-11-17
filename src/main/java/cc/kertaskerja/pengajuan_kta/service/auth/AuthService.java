@@ -10,6 +10,8 @@ public interface AuthService {
 
     AccountResponse.SendOtp sendOTP(RegisterRequest.SendOtp request);
 
+    AccountResponse.ResendCaptcha resendOtp();
+
     AccountResponse register(RegisterRequest request);
 
     LoginResponse login(LoginRequest request);
