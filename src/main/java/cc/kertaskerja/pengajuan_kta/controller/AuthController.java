@@ -54,7 +54,9 @@ public class AuthController {
         }
 
         try {
-            AccountResponse.SendOtp response = authService.sendOTP(request);
+            // AccountResponse.SendOtp response = authService.sendOTP(request);
+
+            var response = "SUCCESS";
 
             return ResponseEntity.ok(
                   ApiResponse.builder()
