@@ -81,22 +81,22 @@ public class AuthServiceImpl implements AuthService {
         }
 
         try {
-            String captchaKey = captchaService.generateCaptchaKey();
-            String captchaText = captchaService.generateCaptchaText(5);
-            captchaService.saveCaptcha(captchaKey, captchaText);
-            String base64Captcha = "data:image/png;base64," + captchaService.generateCaptchaImage(captchaText);
-
-            String otp = otpService.generateOtp(request.getEmail(), formattedPhone);
-            emailService.sendOtpEmail(request.getEmail(), otp, request.getNama());
-            smsService.sendOtpWhatsApp(formattedPhone, otp, request.getNama());
+//            String captchaKey = captchaService.generateCaptchaKey();
+//            String captchaText = captchaService.generateCaptchaText(5);
+//            captchaService.saveCaptcha(captchaKey, captchaText);
+//            String base64Captcha = "data:image/png;base64," + captchaService.generateCaptchaImage(captchaText);
+//
+//            String otp = otpService.generateOtp(request.getEmail(), formattedPhone);
+//            emailService.sendOtpEmail(request.getEmail(), otp, request.getNama());
+//            smsService.sendOtpWhatsApp(formattedPhone, otp, request.getNama());
 
             AccountResponse.SendOtp response = new AccountResponse.SendOtp();
             response.setNama(request.getNama());
             response.setEmail(request.getEmail());
             response.setNomor_telepon(request.getNomor_telepon());
-            response.setCaptcha(
-                  new AccountResponse.SendOtp.CaptchaResponse(captchaKey, base64Captcha)
-            );
+//            response.setCaptcha(
+//                  new AccountResponse.SendOtp.CaptchaResponse(captchaKey, base64Captcha)
+//            );
 
             authAttempService.sendOtpSucceeded(request.getEmail());
 
@@ -126,18 +126,18 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AccountResponse register(RegisterRequest request) {
-        boolean validateCaptcha = captchaService.verifyCaptcha(request.getCaptcha_token(), request.getCaptcha_code());
-
-        if (!validateCaptcha) {
-            throw new ForbiddenException("Invalid captcha code. Please try again");
-        }
-
-        boolean validOtpByEmail = otpService.validateOtp(request.getEmail(), request.getOtp_code());
-        boolean validOtpByPhone = otpService.validateOtp(request.getNomor_telepon(), request.getOtp_code());
-
-        if (!validOtpByEmail || !validOtpByPhone) {
-            throw new ForbiddenException("Invalid OTP or OTP code has expired. Please try again");
-        }
+//        boolean validateCaptcha = captchaService.verifyCaptcha(request.getCaptcha_token(), request.getCaptcha_code());
+//
+//        if (!validateCaptcha) {
+//            throw new ForbiddenException("Invalid captcha code. Please try again");
+//        }
+//
+//        boolean validOtpByEmail = otpService.validateOtp(request.getEmail(), request.getOtp_code());
+//        boolean validOtpByPhone = otpService.validateOtp(request.getNomor_telepon(), request.getOtp_code());
+//
+//        if (!validOtpByEmail || !validOtpByPhone) {
+//            throw new ForbiddenException("Invalid OTP or OTP code has expired. Please try again");
+//        }
 
         try {
             Long generatedId = accountUtils.generateRandom6DigitId();
