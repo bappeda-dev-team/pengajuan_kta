@@ -114,6 +114,33 @@ public class AuthController {
               .body(ApiResponse.created(created));
     }
 
+    @PutMapping("/verify-account/{nik}")
+    @Operation(summary = "Verifikasi akun oleh ADMIN")
+    public ResponseEntity<ApiResponse<?>> verifyAccount(@Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+                                                        @PathVariable String nik,
+                                                        @Valid @RequestBody RegisterRequest.VerifyAccount request,
+                                                        BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            List<String> errorMessages = bindingResult.getFieldErrors().stream()
+                  .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                  .toList();
+
+            ApiResponse<List<String>> errorResponse = ApiResponse.<List<String>>builder()
+                  .success(false)
+                  .statusCode(400)
+                  .message("Validation failed")
+                  .errors(errorMessages)
+                  .timestamp(LocalDateTime.now())
+                  .build();
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        AccountResponse.VerifyAccount verified = authService.verifyAccount(authHeader, nik, request);
+
+        return ResponseEntity.ok(ApiResponse.success(verified, "Account verified successfully"));
+    }
+
     @PostMapping("/login")
     @Operation(summary = "[3] - Login akun")
     public ResponseEntity<ApiResponse<?>> login(@Valid @RequestBody LoginRequest request) {

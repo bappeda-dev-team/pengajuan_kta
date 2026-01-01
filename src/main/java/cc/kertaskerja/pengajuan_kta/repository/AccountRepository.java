@@ -11,11 +11,11 @@ import java.util.Optional;
 @Repository
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
-    @Query(value = "SELECT * FROM account WHERE username = :username LIMIT 1", nativeQuery = true)
-    Optional<Account> findByUsername(@Param("username") String username);
+    @Query(value = "SELECT * FROM account WHERE nik = :nik LIMIT 1", nativeQuery = true)
+    Optional<Account> findByNik(@Param("nik") String nik);
 
-    @Query(value = "SELECT COUNT(*) > 0 FROM account WHERE username = :username", nativeQuery = true)
-    boolean existsByUsername(@Param("username") String username);
+    @Query(value = "SELECT COUNT(*) > 0 FROM account WHERE nik = :nik", nativeQuery = true)
+    boolean existsAccount(@Param("nik") String nik);
 
     @Query(value = "SELECT * FROM account WHERE email = :email LIMIT 1", nativeQuery = true)
     Optional<Account> findByEmail(@Param("email") String email);

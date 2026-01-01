@@ -5,7 +5,8 @@ import cc.kertaskerja.pengajuan_kta.dto.Auth.LoginRequest;
 import cc.kertaskerja.pengajuan_kta.dto.Auth.LoginResponse;
 import cc.kertaskerja.pengajuan_kta.dto.Auth.RegisterRequest;
 import cc.kertaskerja.pengajuan_kta.entity.Account;
-import cc.kertaskerja.pengajuan_kta.enums.StatusEnum;
+import cc.kertaskerja.pengajuan_kta.enums.StatusAccountEnum;
+import cc.kertaskerja.pengajuan_kta.enums.StatusPengajuanEnum;
 import cc.kertaskerja.pengajuan_kta.exception.*;
 import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -67,7 +69,7 @@ public class AuthServiceImpl implements AuthService {
             conflicts.add("Email has been registered. Please try another email.");
         }
 
-        if (accountRepository.existsByUsername(request.getUsername())) {
+        if (accountRepository.existsAccount(request.getNik())) {
             conflicts.add("Username has been registered. Please try another username.");
         }
 
@@ -93,7 +95,7 @@ public class AuthServiceImpl implements AuthService {
             AccountResponse.SendOtp response = new AccountResponse.SendOtp();
             response.setNama(request.getNama());
             response.setEmail(request.getEmail());
-            response.setNomor_telepon(request.getNomor_telepon());
+            response.setNomorTelepon(request.getNomor_telepon());
 //            response.setCaptcha(
 //                  new AccountResponse.SendOtp.CaptchaResponse(captchaKey, base64Captcha)
 //            );
@@ -146,11 +148,11 @@ public class AuthServiceImpl implements AuthService {
             account.setId(generatedId);
             account.setNama(request.getNama());
             account.setEmail(request.getEmail());
-            account.setUsername(request.getUsername());
+            account.setNik(request.getNik());
             account.setPassword(passwordEncoder.encode(request.getPassword()));
             account.setNomorTelepon(request.getNomor_telepon());
             account.setTipeAkun(request.getTipe_akun().name());
-            account.setStatus(StatusEnum.PENDING);
+            account.setStatus(StatusAccountEnum.PENDING);
             account.setRole("USER");
 
             Account saved = accountRepository.save(account);
@@ -159,9 +161,9 @@ public class AuthServiceImpl implements AuthService {
             response.setId(saved.getId());
             response.setNama(saved.getNama());
             response.setEmail(saved.getEmail());
-            response.setUsername(saved.getUsername());
-            response.setNomor_telepon(saved.getNomorTelepon());
-            response.setTipe_akun(saved.getTipeAkun());
+            response.setNik(saved.getNik());
+            response.setNomorTelepon(saved.getNomorTelepon());
+            response.setTipeAkun(saved.getTipeAkun());
             response.setStatus(saved.getStatus().name());
             response.setRole(saved.getRole());
 
@@ -181,33 +183,79 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
+    public AccountResponse.VerifyAccount verifyAccount(String authHeader, String nik, RegisterRequest.VerifyAccount request) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthenticationException("Missing or invalid Authorization header");
+        }
+
+        String token = authHeader.substring(7);
+        Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+        String role = String.valueOf(claims.get("role"));
+
+        if (!"ADMIN".equalsIgnoreCase(role)) {
+            throw new ForbiddenException("Only ADMIN can verify accounts");
+        }
+
+        try {
+            Account account = accountRepository.findByNik(nik)
+                  .orElseThrow(() -> new ResourceNotFoundException("NIK not found: " + nik));
+
+            StatusAccountEnum newStatus = (request != null && request.getStatus() != null)
+                  ? StatusAccountEnum.valueOf(request.getStatus().trim().toUpperCase())
+                  : StatusAccountEnum.PENDING;
+
+            if (newStatus != StatusAccountEnum.VERIFIED && newStatus != StatusAccountEnum.REJECTED) {
+                throw new BadRequestException("Invalid status. Allowed: APPROVED, REJECTED");
+            }
+
+            account.setStatus(newStatus);
+            Account saved = accountRepository.save(account);
+
+            return AccountResponse.VerifyAccount.builder()
+                  .nama(saved.getNama())
+                  .nik(saved.getNik())
+                  .nomorTelepon(saved.getNomorTelepon())
+                  .status(saved.getStatus().name())
+                  .build();
+
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Invalid status. Allowed: APPROVED, REJECTED");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to verify account: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
-        String username = request.getUsername();
+        String nik = request.getNik();
 
-        if (authAttempService.loginBlocked(username)) {
+        if (authAttempService.loginBlocked(nik)) {
             throw new RateLimitException("TOO_MANY_ATTEMPTS. You have entered the wrong credentials 3 times. Please wait 1 minute before trying again.");
         }
 
         try {
-            Account account = accountRepository.findByUsername(username)
+            Account account = accountRepository.findByNik(nik)
                   .orElseThrow(() -> {
-                      authAttempService.loginFailed(username);
-                      return new ResourceNotFoundException("Invalid username or password");
+                      authAttempService.loginFailed(nik);
+                      return new ResourceNotFoundException("Invalid NIK or password");
                   });
 
             if (!passwordEncoder.matches(request.getPassword(), account.getPassword())) {
-                authAttempService.loginFailed(username);
-                throw new ResourceNotFoundException("Invalid username or password");
+                authAttempService.loginFailed(nik);
+                throw new ResourceNotFoundException("Invalid NIK or password");
             }
 
-            authAttempService.loginSucceeded(username);
+            authAttempService.loginSucceeded(nik);
 
             String token = jwtTokenProvider.generateToken(
                   account.getId(),
                   account.getNama(),
                   account.getEmail(),
-                  account.getUsername(),
+                  account.getNik(),
                   account.getNomorTelepon(),
                   account.getRole()
             );
@@ -216,7 +264,7 @@ public class AuthServiceImpl implements AuthService {
                   String.valueOf(account.getId()),
                   account.getNama(),
                   account.getEmail(),
-                  account.getUsername(),
+                  account.getNik(),
                   account.getNomorTelepon(),
                   account.getTipeAkun(),
                   account.getStatus().name(),

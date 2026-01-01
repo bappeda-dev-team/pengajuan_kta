@@ -18,8 +18,10 @@ public class RegisterRequest {
     @NotBlank(message = "Harap isi nama lengkap Anda")
     private String nama;
 
-    @NotBlank(message = "Username tidak boleh kosong")
-    private String username;
+    @NotBlank
+    @Size(min = 16, max = 16)
+    @Pattern(regexp = "\\d{16}", message = "NIK must be exactly 16 digits")
+    private String nik;
 
     @NotBlank(message = "Email tidak boleh kosong")
     @Email(message = "Format email tidak valid")
@@ -60,8 +62,8 @@ public class RegisterRequest {
         @NotBlank(message = "Harap isi nama lengkap Anda")
         private String nama;
 
-        @NotBlank(message = "Username tidak boleh kosong")
-        private String username;
+        @NotBlank(message = "NIK tidak boleh kosong")
+        private String nik;
 
         @NotBlank(message = "Email tidak boleh kosong")
         @Email(message = "Format email tidak valid")
@@ -74,5 +76,13 @@ public class RegisterRequest {
               message = "Nomor HP harus dimulai dengan 62 dan diikuti 8–14 digit angka"
         )
         private String nomor_telepon;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class VerifyAccount {
+        @NotNull(message = "Status tidak boleh kosong")
+        private String status;
     }
 }

@@ -6,7 +6,7 @@ import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanResDTO;
 import cc.kertaskerja.pengajuan_kta.entity.Account;
 import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
 import cc.kertaskerja.pengajuan_kta.entity.FormPengajuan;
-import cc.kertaskerja.pengajuan_kta.enums.StatusEnum;
+import cc.kertaskerja.pengajuan_kta.enums.StatusPengajuanEnum;
 import cc.kertaskerja.pengajuan_kta.exception.*;
 import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FilePendukungRepository;
@@ -44,13 +44,13 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
             Map<String, Object> claims = jwtTokenProvider.parseToken(token);
 
             String role = (String) claims.get("role");
-            Long userId = ((Number) claims.get("uid")).longValue();
+            String nik = String.valueOf(claims.get("sub"));
 
             List<FormPengajuan> forms;
             if ("ADMIN".equalsIgnoreCase(role)) {
                 forms = formPengajuanRepository.findAllData();
             } else {
-                forms = formPengajuanRepository.findByAccId(userId);
+                forms = formPengajuanRepository.findByAccId(nik);
             }
 
             return forms.stream()
@@ -91,8 +91,8 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
     @Override
     @Transactional
     public FormPengajuanResDTO.SaveDataResponse saveData(FormPengajuanReqDTO.SavePengajuan dto) {
-        Account account = accountRepository.findById(dto.getUser_id())
-              .orElseThrow(() -> new ResourceNotFoundException("Account not found for user_id: " + dto.getUser_id()));
+        Account account = accountRepository.findByNik(dto.getNik())
+              .orElseThrow(() -> new ResourceNotFoundException("NIK not found: " + dto.getNik()));
 
         if (formPengajuanRepository.existsByNomorInduk(dto.getNomor_induk())) {
             throw new ConflictException("Nomor induk '" + dto.getNomor_induk() + "' already exists");
@@ -113,11 +113,12 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .alamat(dto.getAlamat())
                   .profesi(dto.getProfesi())
                   .dibuatDi(dto.getDibuat_di())
-                  .status(StatusEnum.PENDING)
+                  .status(StatusPengajuanEnum.PENDING)
                   .keterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-")
                   .build();
 
             FormPengajuan saved = formPengajuanRepository.save(entity);
+            account.setIsAssigned(true);
 
             return FormPengajuanResDTO.SaveDataResponse.builder()
                   .uuid(saved.getUuid())
@@ -148,7 +149,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
     public FilePendukungDTO uploadAndSaveFile(MultipartFile file, String formUuid, String namaFile) {
         try {
             String fileUrl = r2StorageService.upload(file);
-
+            System.out.println("UUID: " + formUuid);
             String finalNamaFile = namaFile != null ? namaFile : file.getOriginalFilename();
 
             UUID formUuidParsed = UUID.fromString(formUuid);
@@ -170,6 +171,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .build();
 
         } catch (Exception e) {
+            System.out.println(e.getMessage() + " ERROR");
             throw new RuntimeException("Failed to upload and save file: " + e.getMessage(), e);
         }
     }
@@ -225,7 +227,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
             throw new ForbiddenException("Data pengajuan that has been changed is not yours.");
         }
 
-        if (formPengajuan.getStatus() == StatusEnum.APPROVED) {
+        if (formPengajuan.getStatus() == StatusPengajuanEnum.APPROVED) {
             throw new ConflictException("Data pengajuan that has been approved cannot be edited.");
         }
 
@@ -277,7 +279,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
             form.setBerlakuDari(dto.getBerlaku_dari());
             form.setBerlakuSampai(dto.getBerlaku_sampai());
-            form.setStatus(dto.getStatus() != null ? StatusEnum.valueOf(dto.getStatus()) : StatusEnum.PENDING);
+            form.setStatus(dto.getStatus() != null ? StatusPengajuanEnum.valueOf(dto.getStatus()) : StatusPengajuanEnum.PENDING);
             form.setTertanda(dto.getTertanda());
             form.setCatatan(dto.getCatatan());
 

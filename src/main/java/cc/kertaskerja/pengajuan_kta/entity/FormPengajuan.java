@@ -2,7 +2,7 @@ package cc.kertaskerja.pengajuan_kta.entity;
 
 import cc.kertaskerja.pengajuan_kta.common.BaseAuditable;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.TertandaDTO;
-import cc.kertaskerja.pengajuan_kta.enums.StatusEnum;
+import cc.kertaskerja.pengajuan_kta.enums.StatusPengajuanEnum;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -28,7 +28,7 @@ public class FormPengajuan extends BaseAuditable {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "nik", referencedColumnName = "nik", nullable = false)
     @JsonBackReference
     private Account account;
 
@@ -77,7 +77,7 @@ public class FormPengajuan extends BaseAuditable {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)
-    private StatusEnum status;
+    private StatusPengajuanEnum status;
 
     @Column(name = "keterangan", nullable = false)
     private String keterangan;

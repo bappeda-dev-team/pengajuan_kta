@@ -14,5 +14,8 @@ public interface AuthService {
 
     AccountResponse register(RegisterRequest request);
 
+    AccountResponse.VerifyAccount verifyAccount(String authHeader, String nik, RegisterRequest.VerifyAccount request);
+
     LoginResponse login(LoginRequest request);
+
 }

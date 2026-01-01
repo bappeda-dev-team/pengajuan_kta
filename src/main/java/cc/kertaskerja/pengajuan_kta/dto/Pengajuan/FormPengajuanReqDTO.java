@@ -21,9 +21,9 @@ public class FormPengajuanReqDTO {
     @Getter
     @Setter
     public static class SavePengajuan {
-        @NotNull(message = "user id tidak boleh kosong!")
-        @JsonProperty("user_id")
-        private Long user_id;
+        @NotNull(message = "NIK tidak boleh kosong!")
+        @JsonProperty("nik")
+        private String nik;
 
         @NotBlank(message = "Nama Induk Organisasi harus diisi")
         @JsonProperty("induk_organisasi")
