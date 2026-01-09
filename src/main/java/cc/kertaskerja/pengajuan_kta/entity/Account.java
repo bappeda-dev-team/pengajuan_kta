@@ -5,6 +5,7 @@ import cc.kertaskerja.pengajuan_kta.enums.StatusAccountEnum;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Date;
 import java.util.List;
 
 @Entity
@@ -43,6 +44,19 @@ public class Account extends BaseAuditable {
 
     @Column(name = "email", unique = true)
     private String email;
+
+    @Column(name = "tempat_lahir")
+    private String tempatLahir;
+
+    @Temporal(TemporalType.DATE)
+    @Column(name = "tanggal_lahir")
+    private Date tanggalLahir;
+
+    @Column(name = "alamat")
+    private String alamat;
+
+    @Column(name = "jenis_kelamin")
+    private String jenisKelamin;
 
     @Column(name = "is_assigned")
     private Boolean isAssigned;

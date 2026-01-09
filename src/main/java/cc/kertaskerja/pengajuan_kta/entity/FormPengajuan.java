@@ -54,26 +54,8 @@ public class FormPengajuan extends BaseAuditable {
     @Column(name = "berlaku_sampai", nullable = false)
     private Date berlakuSampai;
 
-    @Column(name = "nama", length = 100, nullable = false)
-    private String nama;
-
-    @Column(name = "tempat_lahir", length = 100, nullable = false)
-    private String tempatLahir;
-
-    @Column(name = "tanggal_lahir", nullable = false)
-    private Date tanggalLahir;
-
-    @Column(name = "jenis_kelamin", length = 100, nullable = false)
-    private String jenisKelamin;
-
-    @Column(name = "alamat", columnDefinition = "TEXT")
-    private String alamat;
-
     @Column(name = "profesi", nullable = false)
     private String profesi;
-
-    @Column(name = "dibuat_di", length = 50, nullable = false)
-    private String dibuatDi;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)

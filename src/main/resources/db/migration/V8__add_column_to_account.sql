@@ -1,0 +1,6 @@
+ALTER TABLE account
+    ADD COLUMN tempat_lahir VARCHAR(100) NOT NULL,
+    ADD COLUMN tanggal_lahir DATE NOT NULL,
+    ADD COLUMN alamat TEXT NOT NULL,
+    ADD COLUMN jenis_kelamin VARCHAR(1) NOT NULL,
+    ADD COLUMN profesi VARCHAR(100) NOT NULL;

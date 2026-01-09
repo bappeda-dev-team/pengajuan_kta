@@ -32,7 +32,7 @@ public class LoginResponse {
         private String id;
         private String nama;
         private String email;
-        private String username;
+        private String nik;
         private String nomor_telepon;
         private String tipe_akun;
         private String status;
@@ -40,12 +40,12 @@ public class LoginResponse {
 
         public Profile() {}
 
-        public Profile(String id, String nama, String email, String username,
+        public Profile(String id, String nama, String email, String nik,
                        String nomor_telepon, String tipe_akun, String status, String role) {
             this.id = id;
             this.nama = nama;
             this.email = email;
-            this.username = username;
+            this.nik = nik;
             this.nomor_telepon = nomor_telepon;
             this.tipe_akun = tipe_akun;
             this.status = status;
@@ -76,12 +76,12 @@ public class LoginResponse {
             this.email = email;
         }
 
-        public String getUsername() {
-            return username;
+        public String getnik() {
+            return nik;
         }
 
-        public void setUsername(String username) {
-            this.username = username;
+        public void setnik(String nik) {
+            this.nik = nik;
         }
 
         public String getNomor_telepon() {

@@ -11,6 +11,7 @@ import cc.kertaskerja.pengajuan_kta.exception.*;
 import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
 import cc.kertaskerja.pengajuan_kta.service.captcha.CaptchaService;
+import cc.kertaskerja.pengajuan_kta.service.external.EncryptService;
 import cc.kertaskerja.pengajuan_kta.service.otp.EmailService;
 import cc.kertaskerja.pengajuan_kta.service.otp.OtpService;
 import cc.kertaskerja.pengajuan_kta.service.otp.SmsService;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -36,6 +38,7 @@ public class AuthServiceImpl implements AuthService {
     private final SmsService smsService;
     private final AccountUtils accountUtils;
     private final CaptchaService captchaService;
+    private final EncryptService encryptService;
 
     public AuthServiceImpl(AccountRepository accountRepository,
                            PasswordEncoder passwordEncoder,
@@ -45,7 +48,8 @@ public class AuthServiceImpl implements AuthService {
                            EmailService emailService,
                            SmsService smsService,
                            AccountUtils accountUtils,
-                           CaptchaService captchaService) {
+                           CaptchaService captchaService,
+                           EncryptService encryptService) {
         this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
@@ -55,27 +59,32 @@ public class AuthServiceImpl implements AuthService {
         this.smsService = smsService;
         this.accountUtils = accountUtils;
         this.captchaService = captchaService;
+        this.encryptService = encryptService;
     }
 
     @Override
     public AccountResponse.SendOtp sendOTP(RegisterRequest.SendOtp request) {
         if (authAttempService.sendOtpBlocked(request.getEmail())) {
-            throw new RateLimitException("TOO_MANY_ATTEMPTS. Please wait 1 minute before sending OTP again");
+            throw new RateLimitException("Terlalu banyak percobaan. Silakan coba lagi dalam 1 menit");
         }
 
         List<String> conflicts = new ArrayList<>();
 
+        if (accountRepository.findByNik(encryptService.encrypt(request.getNik())).isPresent()) {
+            conflicts.add("NIK sudah terdaftar.");
+        }
+
         if (accountRepository.findByEmail(request.getEmail()).isPresent()) {
-            conflicts.add("Email has been registered. Please try another email.");
+            conflicts.add("Email sudah terdaftar. Silakan gunakan email lain.");
         }
 
         if (accountRepository.existsAccount(request.getNik())) {
-            conflicts.add("Username has been registered. Please try another username.");
+            conflicts.add("NIK sudah terdaftar.");
         }
 
         String formattedPhone = accountUtils.formatPhoneNumber(request.getNomor_telepon());
         if (accountRepository.existsByNomorTelepon(formattedPhone)) {
-            conflicts.add("Your phone number has been registered. Please try another whatsapp number.");
+            conflicts.add("Nomor WhatsApp sudah terdaftar. Silakan gunakan nomor lain.");
         }
 
         if (!conflicts.isEmpty()) {
@@ -83,22 +92,22 @@ public class AuthServiceImpl implements AuthService {
         }
 
         try {
-//            String captchaKey = captchaService.generateCaptchaKey();
-//            String captchaText = captchaService.generateCaptchaText(5);
-//            captchaService.saveCaptcha(captchaKey, captchaText);
-//            String base64Captcha = "data:image/png;base64," + captchaService.generateCaptchaImage(captchaText);
-//
-//            String otp = otpService.generateOtp(request.getEmail(), formattedPhone);
-//            emailService.sendOtpEmail(request.getEmail(), otp, request.getNama());
-//            smsService.sendOtpWhatsApp(formattedPhone, otp, request.getNama());
+            String captchaKey = captchaService.generateCaptchaKey();
+            String captchaText = captchaService.generateCaptchaText(5);
+            captchaService.saveCaptcha(captchaKey, captchaText);
+            String base64Captcha = "data:image/png;base64," + captchaService.generateCaptchaImage(captchaText);
+
+            String otp = otpService.generateOtp(request.getEmail(), formattedPhone);
+            emailService.sendOtpEmail(request.getEmail(), otp, request.getNama());
+            smsService.sendOtpWhatsApp(formattedPhone, otp, request.getNama());
 
             AccountResponse.SendOtp response = new AccountResponse.SendOtp();
             response.setNama(request.getNama());
             response.setEmail(request.getEmail());
             response.setNomorTelepon(request.getNomor_telepon());
-//            response.setCaptcha(
-//                  new AccountResponse.SendOtp.CaptchaResponse(captchaKey, base64Captcha)
-//            );
+            response.setCaptcha(
+                  new AccountResponse.SendOtp.CaptchaResponse(captchaKey, base64Captcha)
+            );
 
             authAttempService.sendOtpSucceeded(request.getEmail());
 
@@ -110,7 +119,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AccountResponse.ResendCaptcha resendOtp() {
+    public AccountResponse.ResendCaptcha resendCaptcha() {
         String captchaKey = captchaService.generateCaptchaKey();
         String captchaText = captchaService.generateCaptchaText(5);
 
@@ -128,18 +137,20 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AccountResponse register(RegisterRequest request) {
-//        boolean validateCaptcha = captchaService.verifyCaptcha(request.getCaptcha_token(), request.getCaptcha_code());
-//
-//        if (!validateCaptcha) {
-//            throw new ForbiddenException("Invalid captcha code. Please try again");
-//        }
-//
-//        boolean validOtpByEmail = otpService.validateOtp(request.getEmail(), request.getOtp_code());
-//        boolean validOtpByPhone = otpService.validateOtp(request.getNomor_telepon(), request.getOtp_code());
-//
-//        if (!validOtpByEmail || !validOtpByPhone) {
-//            throw new ForbiddenException("Invalid OTP or OTP code has expired. Please try again");
-//        }
+        boolean validateCaptcha = captchaService.verifyCaptcha(request.getCaptcha_token(), request.getCaptcha_code());
+
+        if (!validateCaptcha) {
+            throw new ForbiddenException("CAPTCHA yang Anda masukkan salah. Silakan coba lagi.");
+        }
+
+        boolean validOtpByEmail = otpService.validateOtp(request.getEmail(), request.getOtp_code());
+        boolean validOtpByPhone = otpService.validateOtp(request.getNomor_telepon(), request.getOtp_code());
+
+        if (!validOtpByEmail || !validOtpByPhone) {
+            throw new ForbiddenException("Kode OTP salah atau sudah kadaluarsa. Silakan coba lagi.");
+        }
+
+
 
         try {
             Long generatedId = accountUtils.generateRandom6DigitId();
@@ -148,12 +159,17 @@ public class AuthServiceImpl implements AuthService {
             account.setId(generatedId);
             account.setNama(request.getNama());
             account.setEmail(request.getEmail());
-            account.setNik(request.getNik());
+            account.setNik(encryptService.encrypt(request.getNik()));
             account.setPassword(passwordEncoder.encode(request.getPassword()));
             account.setNomorTelepon(request.getNomor_telepon());
+            account.setTempatLahir(request.getTempat_lahir());
+            account.setTanggalLahir(request.getTanggal_lahir());
+            account.setJenisKelamin(request.getJenis_kelamin());
+            account.setAlamat(request.getAlamat());
             account.setTipeAkun(request.getTipe_akun().name());
             account.setStatus(StatusAccountEnum.PENDING);
             account.setRole("USER");
+            account.setIsAssigned(false);
 
             Account saved = accountRepository.save(account);
 
@@ -199,7 +215,7 @@ public class AuthServiceImpl implements AuthService {
 
         try {
             Account account = accountRepository.findByNik(nik)
-                  .orElseThrow(() -> new ResourceNotFoundException("NIK not found: " + nik));
+                  .orElseThrow(() -> new ResourceNotFoundException("NIK tidak ditemukan: " + nik));
 
             StatusAccountEnum newStatus = (request != null && request.getStatus() != null)
                   ? StatusAccountEnum.valueOf(request.getStatus().trim().toUpperCase())
@@ -231,22 +247,28 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
+        boolean validateCaptcha = captchaService.verifyCaptcha(request.getCaptcha_token(), request.getCaptcha_code());
+
+        if (!validateCaptcha) {
+            throw new ForbiddenException("CAPTCHA yang Anda masukkan salah. Silakan coba lagi.");
+        }
+
         String nik = request.getNik();
 
         if (authAttempService.loginBlocked(nik)) {
-            throw new RateLimitException("TOO_MANY_ATTEMPTS. You have entered the wrong credentials 3 times. Please wait 1 minute before trying again.");
+            throw new RateLimitException("Terlalu banyak percobaan login. Silakan coba lagi dalam 1 menit");
         }
 
         try {
-            Account account = accountRepository.findByNik(nik)
+            Account account = accountRepository.findByNik(encryptService.encrypt(nik))
                   .orElseThrow(() -> {
                       authAttempService.loginFailed(nik);
-                      return new ResourceNotFoundException("Invalid NIK or password");
+                      return new ResourceNotFoundException("Akun Anda belum terdaftar. Silakan daftar terlebih dahulu.");
                   });
 
             if (!passwordEncoder.matches(request.getPassword(), account.getPassword())) {
                 authAttempService.loginFailed(nik);
-                throw new ResourceNotFoundException("Invalid NIK or password");
+                throw new ResourceNotFoundException("Password yang Anda masukkan salah. Silakan coba lagi.");
             }
 
             authAttempService.loginSucceeded(nik);
@@ -278,5 +300,114 @@ public class AuthServiceImpl implements AuthService {
         } catch (Exception e) {
             throw new RuntimeException("Error occurred during login process", e);
         }
+    }
+
+    @Override
+    public List<AccountResponse> listAccount(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthenticationException("Missing or invalid Authorization header");
+        }
+
+        String token = authHeader.substring(7);
+        Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+        String role = String.valueOf(claims.get("role"));
+
+        if (!"ADMIN".equalsIgnoreCase(role)) {
+            throw new ForbiddenException("You are not authorized to access this resource");
+        }
+
+        try {
+            List<Account> accounts = accountRepository.findAllData();
+
+            return accounts.stream()
+                  .map(account -> AccountResponse.builder()
+                        .id(account.getId())
+                        .nama(account.getNama())
+                        .nik(account.getNik())
+                        .email(account.getEmail())
+                        .nomorTelepon(account.getNomorTelepon())
+                        .tipeAkun(account.getTipeAkun())
+                        .status(account.getStatus() != null ? account.getStatus().name() : null)
+                        .createdAt(account.getCreatedAt())
+                        .updatedAt(account.getUpdatedAt())
+                        .build())
+                  .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get all account: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public AccountResponse.Detail detailAccount(String authHeader, String nik) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthenticationException("Missing or invalid Authorization header");
+        }
+
+        String token = authHeader.substring(7);
+        Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+        String role = String.valueOf(claims.get("role"));
+
+        if (!"ADMIN".equalsIgnoreCase(role)) {
+            throw new ForbiddenException("Only ADMIN can verify accounts");
+        }
+
+        try {
+            Account account = accountRepository.findByNik(nik)
+                  .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + nik));
+
+            return AccountResponse.Detail.builder()
+                  .id(account.getId())
+                  .nama(account.getNama())
+                  .nik(account.getNik())
+                  .email(account.getEmail())
+                  .tempatLahir(account.getTempatLahir())
+                  .tanggalLahir(account.getTanggalLahir())
+                  .alamat(account.getAlamat())
+                  .jenisKelamin(account.getJenisKelamin())
+                  .nomorTelepon(account.getNomorTelepon())
+                  .tipeAkun(account.getTipeAkun())
+                  .status(account.getStatus() != null ? account.getStatus().name() : null)
+                  .createdAt(account.getCreatedAt())
+                  .updatedAt(account.getUpdatedAt())
+                  .build();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get data account: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public AccountResponse.Detail profile(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthenticationException("Missing or invalid Authorization header");
+        }
+
+        String token = authHeader.substring(7);
+        Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+
+        // IMPORTANT: in your JWT, "sub" is what you put as username during token generation.
+        // In your current login flow, it is account.getNik() (stored encrypted in DB),
+        // so we should lookup by that value directly.
+        String nikFromToken = String.valueOf(claims.get("sub"));
+
+        Account account = accountRepository.findByNik(nikFromToken)
+              .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+
+        return AccountResponse.Detail.builder()
+              .id(account.getId())
+              .nama(account.getNama())
+              .nik(account.getNik())
+              .email(account.getEmail())
+              .nomorTelepon(account.getNomorTelepon())
+              .tempatLahir(account.getTempatLahir())
+              .tanggalLahir(account.getTanggalLahir())
+              .jenisKelamin(account.getJenisKelamin())
+              .alamat(account.getAlamat())
+              .tipeAkun(account.getTipeAkun())
+              .status(account.getStatus() != null ? account.getStatus().name() : null)
+              .role(account.getRole())
+              .createdAt(account.getCreatedAt())
+              .updatedAt(account.getUpdatedAt())
+              .build();
     }
 }

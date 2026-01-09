@@ -12,6 +12,7 @@ import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FilePendukungRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FormPengajuanRepository;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
+import cc.kertaskerja.pengajuan_kta.service.external.EncryptService;
 import cc.kertaskerja.pengajuan_kta.service.global.R2StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -32,6 +33,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
     private final FormPengajuanRepository formPengajuanRepository;
     private final FilePendukungRepository filePendukungRepository;
     private final R2StorageService r2StorageService;
+    private final EncryptService encryptService;
 
     @Override
     public List<FormPengajuanResDTO.PengajuanResponse> findAllDataPengajuan(String authHeader) {
@@ -62,13 +64,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                         .daerah(form.getDaerah())
                         .berlaku_dari(form.getBerlakuDari())
                         .berlaku_sampai(form.getBerlakuSampai())
-                        .nama(form.getNama())
-                        .tempat_lahir(form.getTempatLahir())
-                        .tanggal_lahir(form.getTanggalLahir())
-                        .jenis_kelamin(form.getJenisKelamin())
-                        .alamat(form.getAlamat())
                         .profesi(form.getProfesi())
-                        .dibuat_di(form.getDibuatDi())
                         .keterangan(form.getKeterangan())
                         .catatan(form.getCatatan())
                         .status(form.getStatus() != null ? form.getStatus().name() : null)
@@ -91,7 +87,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
     @Override
     @Transactional
     public FormPengajuanResDTO.SaveDataResponse saveData(FormPengajuanReqDTO.SavePengajuan dto) {
-        Account account = accountRepository.findByNik(dto.getNik())
+        Account account = accountRepository.findByNik(encryptService.encrypt(dto.getNik()))
               .orElseThrow(() -> new ResourceNotFoundException("NIK not found: " + dto.getNik()));
 
         if (formPengajuanRepository.existsByNomorInduk(dto.getNomor_induk())) {
@@ -106,13 +102,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .nomorInduk(dto.getNomor_induk())
                   .jumlahAnggota(Integer.parseInt(dto.getJumlah_anggota()))
                   .daerah(dto.getDaerah())
-                  .nama(dto.getNama())
-                  .tempatLahir(dto.getTempat_lahir())
-                  .tanggalLahir(dto.getTanggal_lahir())
-                  .jenisKelamin(dto.getJenis_kelamin())
-                  .alamat(dto.getAlamat())
                   .profesi(dto.getProfesi())
-                  .dibuatDi(dto.getDibuat_di())
                   .status(StatusPengajuanEnum.PENDING)
                   .keterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-")
                   .build();
@@ -126,13 +116,6 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .nomor_induk(saved.getNomorInduk())
                   .jumlah_anggota(String.valueOf(saved.getJumlahAnggota()))
                   .daerah(saved.getDaerah())
-                  .nama(saved.getNama())
-                  .tempat_lahir(saved.getTempatLahir())
-                  .tanggal_lahir(saved.getTanggalLahir())
-                  .jenis_kelamin(saved.getJenisKelamin())
-                  .alamat(saved.getAlamat())
-                  .profesi(saved.getProfesi())
-                  .dibuat_di(saved.getDibuatDi())
                   .status(saved.getStatus().name())
                   .keterangan(saved.getKeterangan())
                   .build();
@@ -190,13 +173,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                     ? formPengajuan.getJumlahAnggota().toString()
                     : "0")
               .daerah(formPengajuan.getDaerah())
-              .nama(formPengajuan.getNama())
-              .tempat_lahir(formPengajuan.getTempatLahir())
-              .tanggal_lahir(formPengajuan.getTanggalLahir())
-              .jenis_kelamin(formPengajuan.getJenisKelamin())
-              .alamat(formPengajuan.getAlamat())
               .profesi(formPengajuan.getProfesi())
-              .dibuat_di(formPengajuan.getDibuatDi())
               .status(formPengajuan.getStatus() != null ? formPengajuan.getStatus().name() : null)
               .keterangan(formPengajuan.getKeterangan())
               .file_pendukung(formPengajuan.getFilePendukung().stream()
@@ -237,13 +214,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .setNomorInduk(dto.getNomor_induk())
                   .setJumlahAnggota(Integer.parseInt(dto.getJumlah_anggota()))
                   .setDaerah(dto.getDaerah())
-                  .setNama(dto.getNama())
-                  .setTempatLahir(dto.getTempat_lahir())
-                  .setTanggalLahir(dto.getTanggal_lahir())
-                  .setJenisKelamin(dto.getJenis_kelamin())
-                  .setAlamat(dto.getAlamat())
                   .setProfesi(dto.getProfesi())
-                  .setDibuatDi(dto.getDibuat_di())
                   .setKeterangan(dto.getKeterangan());
 
             formPengajuanRepository.save(formPengajuan);
@@ -254,13 +225,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .nomor_induk(formPengajuan.getNomorInduk())
                   .jumlah_anggota(String.valueOf(formPengajuan.getJumlahAnggota()))
                   .daerah(formPengajuan.getDaerah())
-                  .nama(formPengajuan.getNama())
-                  .tempat_lahir(formPengajuan.getTempatLahir())
-                  .tanggal_lahir(formPengajuan.getTanggalLahir())
-                  .jenis_kelamin(formPengajuan.getJenisKelamin())
-                  .alamat(formPengajuan.getAlamat())
                   .profesi(formPengajuan.getProfesi())
-                  .dibuat_di(formPengajuan.getDibuatDi())
                   .status(formPengajuan.getStatus().toString())
                   .keterangan(formPengajuan.getKeterangan())
                   .build();

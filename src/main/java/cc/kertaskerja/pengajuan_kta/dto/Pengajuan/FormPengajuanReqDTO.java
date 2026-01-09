@@ -25,15 +25,13 @@ public class FormPengajuanReqDTO {
         @JsonProperty("nik")
         private String nik;
 
-        @NotBlank(message = "Nama Induk Organisasi harus diisi")
         @JsonProperty("induk_organisasi")
         private String induk_organisasi;
 
         @NotBlank(message = "Harap masukkan Nomor Induk")
         @JsonProperty("nomor_induk")
         private String nomor_induk;
-
-        @NotBlank(message = "Masukkan jumlah anggota")
+        
         @JsonProperty("jumlah_anggota")
         private String jumlah_anggota;
 
@@ -41,33 +39,8 @@ public class FormPengajuanReqDTO {
         @JsonProperty("daerah")
         private String daerah;
 
-        @NotBlank(message = "Nama wajib diisi")
-        @JsonProperty("nama")
-        private String nama;
-
-        @NotBlank(message = "Wajib mengisi tempat lahir")
-        @JsonProperty("tempat_lahir")
-        private String tempat_lahir;
-
-        @NotNull(message = "Tanggal lahir diisi")
-        @JsonProperty("tanggal_lahir")
-        private Date tanggal_lahir;
-
-        @NotBlank(message = "Wajib mengisi jenis kelamin")
-        @JsonProperty("jenis_kelamin")
-        private String jenis_kelamin;
-
-        @NotBlank(message = "Alamat wajib diisi")
-        @JsonProperty("alamat")
-        private String alamat;
-
-        @NotBlank(message = "Profesi tidak boleh kosong")
         @JsonProperty("profesi")
         private String profesi;
-
-        @NotBlank(message = "Wajib mengisi tempat daerah dibuat")
-        @JsonProperty("dibuat_di")
-        private String dibuat_di;
 
         private String keterangan;
     }

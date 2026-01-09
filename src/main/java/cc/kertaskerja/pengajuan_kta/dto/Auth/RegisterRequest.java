@@ -10,6 +10,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -42,14 +44,26 @@ public class RegisterRequest {
     )
     private String nomor_telepon;
 
-//    private String otp_code;
+    @NotBlank(message = "Tempat lahir wajib diisi")
+    private String tempat_lahir;
+
+    @NotNull(message = "Tanggal lahir wajib diisi")
+    private Date tanggal_lahir;
+
+    @NotBlank(message = "Alamat wajib diisi")
+    private String alamat;
+
+    @NotBlank(message = "Jenis kelamin wajib diisi")
+    private String jenis_kelamin;
+
+    private String otp_code;
 
     @NotNull(message = "Harap masukkan tipe akun yang Anda daftarkan")
     private TipeAkunEnum tipe_akun;
 
-//    private String captcha_token;
+    private String captcha_token;
 
-//    private String captcha_code;
+    private String captcha_code;
 
     // ====================================
     // Inner class for sending OTP

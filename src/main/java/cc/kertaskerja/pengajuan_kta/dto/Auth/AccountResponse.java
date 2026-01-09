@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+import java.util.Date;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -27,6 +30,46 @@ public class AccountResponse {
 
     private String status;
     private String role;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Detail {
+        private Long id;
+        private String nama;
+        private String email;
+
+        @JsonProperty("nik")
+        private String nik;
+
+        @JsonProperty("nomor_telepon")
+        private String nomorTelepon;
+
+        @JsonProperty("tempat_lahir")
+        private String tempatLahir;
+
+        @JsonProperty("tanggal_lahir")
+        private Date tanggalLahir;
+
+        @JsonProperty("jenis_kelamin")
+        private String jenisKelamin;
+
+        @JsonProperty("alamat")
+        private String alamat;
+
+        @JsonProperty("tipe_akun")
+        private String tipeAkun;
+
+        private String status;
+        private String role;
+
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+    }
 
     @Data
     @Builder

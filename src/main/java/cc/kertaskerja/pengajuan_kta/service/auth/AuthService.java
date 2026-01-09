@@ -6,11 +6,13 @@ import cc.kertaskerja.pengajuan_kta.dto.Auth.LoginResponse;
 import cc.kertaskerja.pengajuan_kta.dto.Auth.RegisterRequest;
 import cc.kertaskerja.pengajuan_kta.entity.Account;
 
+import java.util.List;
+
 public interface AuthService {
 
     AccountResponse.SendOtp sendOTP(RegisterRequest.SendOtp request);
 
-    AccountResponse.ResendCaptcha resendOtp();
+    AccountResponse.ResendCaptcha resendCaptcha();
 
     AccountResponse register(RegisterRequest request);
 
@@ -18,4 +20,9 @@ public interface AuthService {
 
     LoginResponse login(LoginRequest request);
 
+    List<AccountResponse> listAccount(String authHeader);
+
+    AccountResponse.Detail detailAccount(String authHeader, String nik);
+
+    AccountResponse.Detail profile(String authHeader);
 }

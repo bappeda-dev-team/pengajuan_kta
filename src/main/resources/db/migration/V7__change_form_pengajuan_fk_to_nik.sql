@@ -1,5 +1,5 @@
 ALTER TABLE form_pengajuan
-    ADD COLUMN IF NOT EXISTS nik VARCHAR(16);
+    ADD COLUMN IF NOT EXISTS nik VARCHAR(255);
 
 -- 2) backfill user_nik based on existing user_id
 UPDATE form_pengajuan fp

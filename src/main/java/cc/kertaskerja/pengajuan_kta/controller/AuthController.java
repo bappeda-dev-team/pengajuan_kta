@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/auth")
 @RequiredArgsConstructor
 @Tag(name = "Endpoint Authentication")
 public class AuthController {
@@ -34,7 +33,7 @@ public class AuthController {
     private final AuthService authService;
     private final TokenBlacklistService tokenBlacklistService;
 
-    @PostMapping("/send-otp")
+    @PostMapping("/auth/send-otp")
     @Operation(summary = "[1] - Kirim OTP ke email pengguna untuk verifikasi")
     public ResponseEntity<ApiResponse<?>> sendOtp(@Valid @RequestBody RegisterRequest.SendOtp request,
                                                   BindingResult bindingResult) {
@@ -54,10 +53,10 @@ public class AuthController {
         }
 
         try {
-            // AccountResponse.SendOtp response = authService.sendOTP(request);
+             AccountResponse.SendOtp response = authService.sendOTP(request);
 
-            var response = "SUCCESS";
-
+//            var response = "SUCCESS";
+//
             return ResponseEntity.ok(
                   ApiResponse.builder()
                         .success(true)
@@ -80,15 +79,15 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/resend-captcha")
+    @GetMapping("/auth/resend-captcha")
     @Operation(summary = "Kirim ulang captcha")
     public ResponseEntity<ApiResponse<AccountResponse.ResendCaptcha>> resendOtp() {
-        AccountResponse.ResendCaptcha response = authService.resendOtp();
+        AccountResponse.ResendCaptcha response = authService.resendCaptcha();
 
         return ResponseEntity.ok(ApiResponse.success(response, "Captcha resent successfully"));
     }
 
-    @PostMapping("/verify-otp-and-signup")
+    @PostMapping("/auth/verify-otp-and-signup")
     @Operation(summary = "[2] - Daftar akun baru")
     public ResponseEntity<ApiResponse<?>> register(@Valid @RequestBody RegisterRequest request,
                                                    BindingResult bindingResult) {
@@ -141,12 +140,28 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(verified, "Account verified successfully"));
     }
 
-    @PostMapping("/login")
+    @PostMapping("/auth/login")
     @Operation(summary = "[3] - Login akun")
     public ResponseEntity<ApiResponse<?>> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
 
         return ResponseEntity.ok(ApiResponse.success(response, "Signin successfully"));
+    }
+
+    @GetMapping("/accounts")
+    @Operation(summary = "List akun terdaftar")
+    public ResponseEntity<ApiResponse<List<AccountResponse>>> listAccount(@Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+        List<AccountResponse> response = authService.listAccount(authHeader);
+
+        return ResponseEntity.ok(ApiResponse.success(response, "List account successfully"));
+    }
+
+    @GetMapping("/account/{nik}")
+    @Operation(summary = "Lihat detail akun")
+    public ResponseEntity<ApiResponse<AccountResponse.Detail>> detailAccount(@Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader, @PathVariable String nik) {
+        AccountResponse.Detail response = authService.detailAccount(authHeader, nik);
+
+        return ResponseEntity.ok(ApiResponse.success(response, "Detail account successfully"));
     }
 
     @PostMapping("/logout")
@@ -161,6 +176,16 @@ public class AuthController {
         tokenBlacklistService.blacklist(token);
 
         return ResponseEntity.ok(ApiResponse.success(null, "Logged out successfully"));
+    }
+
+    @GetMapping("/account/profile")
+    @Operation(summary = "Lihat profile")
+    public ResponseEntity<ApiResponse<AccountResponse.Detail>> myDetailAccount(
+          @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader
+    ) {
+        AccountResponse.Detail response = authService.profile(authHeader);
+
+        return ResponseEntity.ok(ApiResponse.success(response, "My account detail retrieved successfully"));
     }
 }
 

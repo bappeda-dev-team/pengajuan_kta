@@ -69,7 +69,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
-              "http://localhost:3000",
+              "http://localhost:3008",
               "http://192.168.1.38:3000",
               "https://kta-service.zeabur.app"
         ));
