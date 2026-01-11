@@ -125,8 +125,7 @@ public class FormPengajuanController {
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/verify/{uuid}")
     @Operation(summary = "Verifikasi data pengajuan KTA dan update status")
-    public ResponseEntity<ApiResponse<?>> verifyData(@Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-                                                     @PathVariable UUID uuid,
+    public ResponseEntity<ApiResponse<?>> verifyData(@PathVariable UUID uuid,
                                                      @Valid @RequestBody FormPengajuanReqDTO.VerifyPengajuan dto,
                                                      BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -146,7 +145,7 @@ public class FormPengajuanController {
         }
 
         try {
-            FormPengajuanResDTO.VerifyData result = formPengajuanService.verifyDataPengajuan(authHeader, dto, uuid);
+            FormPengajuanResDTO.VerifyData result = formPengajuanService.verifyDataPengajuan(dto, uuid);
 
             return ResponseEntity.ok(ApiResponse.updated(result));
 

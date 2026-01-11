@@ -49,6 +49,10 @@ public class FormPengajuanReqDTO {
     @Getter
     @Setter
     public static class VerifyPengajuan {
+        @NotBlank(message = "NIK wajib diisi!")
+        @JsonProperty("nik")
+        private String nik;
+
         @NotNull(message = "Tanggal berlaku dari wajib diisi")
         @JsonProperty("berlaku_dari")
         private Date berlaku_dari;

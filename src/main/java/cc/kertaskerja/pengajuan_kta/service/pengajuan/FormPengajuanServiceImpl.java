@@ -303,16 +303,12 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
     @Override
     @Transactional
-    public FormPengajuanResDTO.VerifyData verifyDataPengajuan(String authHeader, FormPengajuanReqDTO.VerifyPengajuan dto, UUID uuid) {
+    public FormPengajuanResDTO.VerifyData verifyDataPengajuan(FormPengajuanReqDTO.VerifyPengajuan dto, UUID uuid) {
         try {
             FormPengajuan form = formPengajuanRepository.findByUuid(uuid)
                   .orElseThrow(() -> new ResourceNotFoundException("Form pengajuan is not found"));
 
-            String token = authHeader.substring(7);
-            Map<String, Object> claims = jwtTokenProvider.parseToken(token);
-            String nik = String.valueOf(claims.get("sub"));
-
-            Account account = accountRepository.findByNik(nik)
+            Account account = accountRepository.findByNik(dto.getNik())
                   .orElseThrow(() -> new ResourceNotFoundException("NIK not found: " + encryptService.decrypt(dto.getTertanda().getNip())));
 
             form.setBerlakuDari(dto.getBerlaku_dari());
