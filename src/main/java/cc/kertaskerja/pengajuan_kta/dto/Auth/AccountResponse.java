@@ -65,6 +65,8 @@ public class AccountResponse {
         private String tipeAkun;
 
         private String status;
+
+        private Boolean is_assigned;
         private String role;
 
         private LocalDateTime createdAt;

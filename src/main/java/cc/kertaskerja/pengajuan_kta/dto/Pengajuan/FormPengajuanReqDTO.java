@@ -2,6 +2,7 @@ package cc.kertaskerja.pengajuan_kta.dto.Pengajuan;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -58,6 +59,7 @@ public class FormPengajuanReqDTO {
 
         @Valid
         @NotNull(message = "Kolom tertanda tidak boleh kosong!")
+        @JsonAlias("terdanda")
         private TertandaDTO tertanda;
 
         @NotBlank(message = "Status harap diisi!")

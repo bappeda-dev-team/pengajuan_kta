@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
@@ -72,9 +73,7 @@ public class FormPengajuanController {
 
         FormPengajuanResDTO.SaveDataResponse saved = formPengajuanService.saveData(dto);
 
-        return ResponseEntity
-              .status(201)
-              .body(ApiResponse.created(saved.getUuid()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(saved));
     }
 
     @PostMapping("/upload-file")
@@ -126,7 +125,8 @@ public class FormPengajuanController {
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/verify/{uuid}")
     @Operation(summary = "Verifikasi data pengajuan KTA dan update status")
-    public ResponseEntity<ApiResponse<?>> verifyData(@PathVariable UUID uuid,
+    public ResponseEntity<ApiResponse<?>> verifyData(@Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+                                                     @PathVariable UUID uuid,
                                                      @Valid @RequestBody FormPengajuanReqDTO.VerifyPengajuan dto,
                                                      BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -146,7 +146,7 @@ public class FormPengajuanController {
         }
 
         try {
-            FormPengajuanResDTO.VerifyData result = formPengajuanService.verifyDataPengajuan(dto, uuid);
+            FormPengajuanResDTO.VerifyData result = formPengajuanService.verifyDataPengajuan(authHeader, dto, uuid);
 
             return ResponseEntity.ok(ApiResponse.updated(result));
 
@@ -160,5 +160,17 @@ public class FormPengajuanController {
 
             return ResponseEntity.badRequest().body(errorResponse);
         }
+    }
+
+    @GetMapping("/detail-with-profile/{uuid}")
+    @Operation(summary = "Ambil detail pengajuan + profile pemilik (account) berdasarkan uuid")
+    public ResponseEntity<ApiResponse<FormPengajuanResDTO.PengajuanWithProfileResponse>> getDetailWithProfile(
+          @Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+          @PathVariable UUID uuid
+    ) {
+        FormPengajuanResDTO.PengajuanWithProfileResponse result =
+              formPengajuanService.findByUuidWithFilesAndProfile(authHeader, uuid);
+
+        return ResponseEntity.ok(ApiResponse.success(result, "Retrieved 1 data successfully"));
     }
 }

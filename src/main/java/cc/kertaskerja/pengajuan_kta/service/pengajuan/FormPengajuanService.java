@@ -20,7 +20,9 @@ public interface FormPengajuanService {
 
     FormPengajuanResDTO.PengajuanResponse findByUuidWithFiles(UUID uuid);
 
+    FormPengajuanResDTO.PengajuanWithProfileResponse findByUuidWithFilesAndProfile(String authHeader, UUID uuid);
+
     FormPengajuanResDTO.SaveDataResponse editDataPengajuan(String authHeader, UUID uuid, FormPengajuanReqDTO.SavePengajuan dto);
 
-    FormPengajuanResDTO.VerifyData verifyDataPengajuan(FormPengajuanReqDTO.VerifyPengajuan dto, UUID uuid);
+    FormPengajuanResDTO.VerifyData verifyDataPengajuan(String authHeader, FormPengajuanReqDTO.VerifyPengajuan dto, UUID uuid);
 }

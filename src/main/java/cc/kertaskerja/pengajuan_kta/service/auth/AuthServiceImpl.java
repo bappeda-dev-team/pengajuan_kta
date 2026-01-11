@@ -150,8 +150,6 @@ public class AuthServiceImpl implements AuthService {
             throw new ForbiddenException("Kode OTP salah atau sudah kadaluarsa. Silakan coba lagi.");
         }
 
-
-
         try {
             Long generatedId = accountUtils.generateRandom6DigitId();
 
@@ -368,6 +366,7 @@ public class AuthServiceImpl implements AuthService {
                   .nomorTelepon(account.getNomorTelepon())
                   .tipeAkun(account.getTipeAkun())
                   .status(account.getStatus() != null ? account.getStatus().name() : null)
+                  .is_assigned(account.getIsAssigned())
                   .createdAt(account.getCreatedAt())
                   .updatedAt(account.getUpdatedAt())
                   .build();
@@ -406,6 +405,7 @@ public class AuthServiceImpl implements AuthService {
               .tipeAkun(account.getTipeAkun())
               .status(account.getStatus() != null ? account.getStatus().name() : null)
               .role(account.getRole())
+              .is_assigned(account.getIsAssigned())
               .createdAt(account.getCreatedAt())
               .updatedAt(account.getUpdatedAt())
               .build();

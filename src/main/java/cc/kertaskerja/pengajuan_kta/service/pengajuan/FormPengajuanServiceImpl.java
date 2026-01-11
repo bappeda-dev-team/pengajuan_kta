@@ -1,5 +1,6 @@
 package cc.kertaskerja.pengajuan_kta.service.pengajuan;
 
+import cc.kertaskerja.pengajuan_kta.dto.Auth.AccountResponse;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FilePendukungDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanReqDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanResDTO;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -116,6 +118,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .nomor_induk(saved.getNomorInduk())
                   .jumlah_anggota(String.valueOf(saved.getJumlahAnggota()))
                   .daerah(saved.getDaerah())
+                  .profesi(saved.getProfesi())
                   .status(saved.getStatus().name())
                   .keterangan(saved.getKeterangan())
                   .build();
@@ -132,7 +135,6 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
     public FilePendukungDTO uploadAndSaveFile(MultipartFile file, String formUuid, String namaFile) {
         try {
             String fileUrl = r2StorageService.upload(file);
-            System.out.println("UUID: " + formUuid);
             String finalNamaFile = namaFile != null ? namaFile : file.getOriginalFilename();
 
             UUID formUuidParsed = UUID.fromString(formUuid);
@@ -187,6 +189,68 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
     }
 
     @Override
+    public FormPengajuanResDTO.PengajuanWithProfileResponse findByUuidWithFilesAndProfile(String authHeader, UUID uuid) {
+        FormPengajuan formPengajuan = formPengajuanRepository.findByUuidWithFilesAndAccount(uuid)
+              .orElseThrow(() -> new ResourceNotFoundException("Form with UUID " + uuid + " not found"));
+
+        Account owner = formPengajuan.getAccount();
+
+        String token = authHeader.substring(7);
+        Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+        String nik = String.valueOf(claims.get("sub"));
+
+        if (!owner.getNik().equals(nik)) {
+            throw new ForbiddenException("Data pengajuan is not yours.");
+        };
+
+        FormPengajuanResDTO.PengajuanResponse pengajuan = FormPengajuanResDTO.PengajuanResponse.builder()
+              .uuid(formPengajuan.getUuid())
+              .induk_organisasi(formPengajuan.getIndukOrganisasi())
+              .nomor_induk(formPengajuan.getNomorInduk())
+              .jumlah_anggota(formPengajuan.getJumlahAnggota() != null ? formPengajuan.getJumlahAnggota().toString() : "0")
+              .daerah(formPengajuan.getDaerah())
+              .berlaku_dari(formPengajuan.getBerlakuDari())
+              .berlaku_sampai(formPengajuan.getBerlakuSampai())
+              .profesi(formPengajuan.getProfesi())
+              .keterangan(formPengajuan.getKeterangan())
+              .catatan(formPengajuan.getCatatan())
+              .status(formPengajuan.getStatus() != null ? formPengajuan.getStatus().name() : null)
+              .tertanda(formPengajuan.getTertanda())
+              .file_pendukung(formPengajuan.getFilePendukung() == null ? List.of() : formPengajuan.getFilePendukung().stream()
+                    .map(file -> FormPengajuanResDTO.FilePendukung.builder()
+                          .form_uuid(file.getFormPengajuan().getUuid().toString())
+                          .file_url(file.getFileUrl())
+                          .nama_file(file.getNamaFile())
+                          .build())
+                    .toList())
+              .status_tanggal(formPengajuan.getStatusTanggal())
+              .build();
+
+        AccountResponse.Detail profile = AccountResponse.Detail.builder()
+              .id(owner.getId())
+              .nama(owner.getNama())
+              .email(owner.getEmail())
+              .nik(owner.getNik())
+              .nomorTelepon(owner.getNomorTelepon())
+              .tempatLahir(owner.getTempatLahir())
+              .tanggalLahir(owner.getTanggalLahir())
+              .jenisKelamin(owner.getJenisKelamin())
+              .alamat(owner.getAlamat())
+              .tipeAkun(owner.getTipeAkun())
+              .status(owner.getStatus() != null ? owner.getStatus().name() : null)
+              .role(owner.getRole())
+              .is_assigned(owner.getIsAssigned())
+              .createdAt(owner.getCreatedAt())
+              .updatedAt(owner.getUpdatedAt())
+              .build();
+
+        return FormPengajuanResDTO.PengajuanWithProfileResponse.builder()
+              .pengajuan(pengajuan)
+              .profile(profile)
+              .build();
+    }
+
+    @Override
     @Transactional
     public FormPengajuanResDTO.SaveDataResponse editDataPengajuan(String authHeader, UUID uuid, FormPengajuanReqDTO.SavePengajuan dto) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -215,7 +279,8 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .setJumlahAnggota(Integer.parseInt(dto.getJumlah_anggota()))
                   .setDaerah(dto.getDaerah())
                   .setProfesi(dto.getProfesi())
-                  .setKeterangan(dto.getKeterangan());
+                  .setStatus(StatusPengajuanEnum.PENDING)
+                  .setKeterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-");
 
             formPengajuanRepository.save(formPengajuan);
 
@@ -237,16 +302,26 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
     @Override
     @Transactional
-    public FormPengajuanResDTO.VerifyData verifyDataPengajuan(FormPengajuanReqDTO.VerifyPengajuan dto, UUID uuid) {
+    public FormPengajuanResDTO.VerifyData verifyDataPengajuan(String authHeader, FormPengajuanReqDTO.VerifyPengajuan dto, UUID uuid) {
         try {
             FormPengajuan form = formPengajuanRepository.findByUuid(uuid)
                   .orElseThrow(() -> new ResourceNotFoundException("Form pengajuan is not found"));
+
+            String token = authHeader.substring(7);
+            Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+            String nik = String.valueOf(claims.get("sub"));
+
+            Account account = accountRepository.findByNik(nik)
+                  .orElseThrow(() -> new ResourceNotFoundException("NIK not found: " + encryptService.decrypt(dto.getTertanda().getNip())));
 
             form.setBerlakuDari(dto.getBerlaku_dari());
             form.setBerlakuSampai(dto.getBerlaku_sampai());
             form.setStatus(dto.getStatus() != null ? StatusPengajuanEnum.valueOf(dto.getStatus()) : StatusPengajuanEnum.PENDING);
             form.setTertanda(dto.getTertanda());
             form.setCatatan(dto.getCatatan());
+            form.setStatusTanggal(LocalDateTime.now());
+
+            account.setIsAssigned(false);
 
             formPengajuanRepository.save(form);
 
@@ -256,6 +331,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .status(form.getStatus().name())
                   .tertanda(dto.getTertanda())
                   .catatan(form.getCatatan())
+                  .status_tanggal(form.getStatusTanggal())
                   .build();
 
         } catch (ResourceNotFoundException e) {

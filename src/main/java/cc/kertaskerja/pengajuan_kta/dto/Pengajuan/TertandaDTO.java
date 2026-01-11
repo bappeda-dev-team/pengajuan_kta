@@ -10,7 +10,6 @@ import lombok.*;
 @Builder
 public class TertandaDTO {
     private String nama;
-    private String tanda_tangan;
     private String jabatan;
     private String nip;
     private String pangkat;

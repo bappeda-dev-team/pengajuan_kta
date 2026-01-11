@@ -10,6 +10,8 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -70,6 +72,9 @@ public class FormPengajuan extends BaseAuditable {
 
     @Column(name = "catatan")
     private String catatan;
+
+    @Column(name = "status_tanggal")
+    private LocalDateTime statusTanggal;
 
     @OneToMany(mappedBy = "formPengajuan", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference

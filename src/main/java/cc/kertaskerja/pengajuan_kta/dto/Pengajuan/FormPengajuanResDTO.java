@@ -1,10 +1,12 @@
 package cc.kertaskerja.pengajuan_kta.dto.Pengajuan;
 
+import cc.kertaskerja.pengajuan_kta.dto.Auth.AccountResponse;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import jakarta.validation.constraints.NotBlank;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -30,6 +32,7 @@ public class FormPengajuanResDTO {
         private String catatan;
         private TertandaDTO tertanda;
         private List<FilePendukung> file_pendukung;
+        private LocalDateTime status_tanggal;
     }
 
     @Data
@@ -72,5 +75,15 @@ public class FormPengajuanResDTO {
         private String status;
         private TertandaDTO tertanda;
         private String catatan;
+        private LocalDateTime status_tanggal;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PengajuanWithProfileResponse {
+        private PengajuanResponse pengajuan;
+        private AccountResponse.Detail profile;
     }
 }

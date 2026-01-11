@@ -31,4 +31,12 @@ public interface FormPengajuanRepository extends JpaRepository<FormPengajuan, Lo
     @Query("SELECT f FROM FormPengajuan f LEFT JOIN FETCH f.filePendukung WHERE f.uuid = :uuid")
     Optional<FormPengajuan> findByUuidWithFiles(@Param("uuid") UUID uuid);
 
+    @Query("""
+        SELECT f
+        FROM FormPengajuan f
+        JOIN FETCH f.account a
+        LEFT JOIN FETCH f.filePendukung fp
+        WHERE f.uuid = :uuid
+    """)
+    Optional<FormPengajuan> findByUuidWithFilesAndAccount(@Param("uuid") UUID uuid);
 }
