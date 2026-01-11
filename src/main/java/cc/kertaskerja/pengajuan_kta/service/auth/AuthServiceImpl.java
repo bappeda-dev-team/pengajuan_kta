@@ -6,7 +6,6 @@ import cc.kertaskerja.pengajuan_kta.dto.Auth.LoginResponse;
 import cc.kertaskerja.pengajuan_kta.dto.Auth.RegisterRequest;
 import cc.kertaskerja.pengajuan_kta.entity.Account;
 import cc.kertaskerja.pengajuan_kta.enums.StatusAccountEnum;
-import cc.kertaskerja.pengajuan_kta.enums.StatusPengajuanEnum;
 import cc.kertaskerja.pengajuan_kta.exception.*;
 import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;

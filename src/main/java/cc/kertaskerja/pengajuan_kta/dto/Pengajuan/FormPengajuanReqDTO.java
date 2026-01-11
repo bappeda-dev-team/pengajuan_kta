@@ -15,7 +15,7 @@ import java.util.Date;
 @Setter
 @NoArgsConstructor
 @Builder
-@JsonInclude(JsonInclude.Include.ALWAYS) // always show fields
+@JsonInclude(JsonInclude.Include.ALWAYS)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FormPengajuanReqDTO {
 
