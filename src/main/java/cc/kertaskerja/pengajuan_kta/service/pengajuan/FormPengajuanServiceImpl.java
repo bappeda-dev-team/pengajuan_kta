@@ -198,8 +198,9 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
         String token = authHeader.substring(7);
         Map<String, Object> claims = jwtTokenProvider.parseToken(token);
         String nik = String.valueOf(claims.get("sub"));
+        String role = String.valueOf(claims.get("role"));
 
-        if (!owner.getNik().equals(nik)) {
+        if (!owner.getNik().equals(nik) && !role.equals("ADMIN")) {
             throw new ForbiddenException("Data pengajuan is not yours.");
         };
 

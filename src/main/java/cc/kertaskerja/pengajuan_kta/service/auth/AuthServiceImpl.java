@@ -98,7 +98,7 @@ public class AuthServiceImpl implements AuthService {
             String base64Captcha = "data:image/png;base64," + captchaService.generateCaptchaImage(captchaText);
 
             String otp = otpService.generateOtp(request.getEmail(), formattedPhone);
-            emailService.sendOtpEmail(request.getEmail(), otp, request.getNama());
+//            emailService.sendOtpEmail(request.getEmail(), otp, request.getNama());
             smsService.sendOtpWhatsApp(formattedPhone, otp, request.getNama());
 
             AccountResponse.SendOtp response = new AccountResponse.SendOtp();
