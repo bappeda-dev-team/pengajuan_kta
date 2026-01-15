@@ -139,14 +139,14 @@ public class AuthServiceImpl implements AuthService {
         boolean validateCaptcha = captchaService.verifyCaptcha(request.getCaptcha_token(), request.getCaptcha_code());
 
         if (!validateCaptcha) {
-            throw new ForbiddenException("CAPTCHA yang Anda masukkan salah. Silakan coba lagi.");
+            throw new BadRequestException("CAPTCHA yang Anda masukkan salah. Silakan coba lagi.");
         }
 
         boolean validOtpByEmail = otpService.validateOtp(request.getEmail(), request.getOtp_code());
         boolean validOtpByPhone = otpService.validateOtp(request.getNomor_telepon(), request.getOtp_code());
 
         if (!validOtpByEmail || !validOtpByPhone) {
-            throw new ForbiddenException("Kode OTP salah atau sudah kadaluarsa. Silakan coba lagi.");
+            throw new BadRequestException("Kode OTP salah atau sudah kadaluarsa. Silakan coba lagi.");
         }
 
         try {
