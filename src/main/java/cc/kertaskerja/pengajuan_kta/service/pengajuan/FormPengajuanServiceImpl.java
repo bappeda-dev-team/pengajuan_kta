@@ -52,7 +52,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
             List<FormPengajuan> forms;
             if ("ADMIN".equalsIgnoreCase(role)) {
-                forms = formPengajuanRepository.findAllData();
+                forms = formPengajuanRepository.findAllWithAccount();
             } else {
                 forms = formPengajuanRepository.findByAccId(nik);
             }
@@ -60,6 +60,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
             return forms.stream()
                   .map(form -> FormPengajuanResDTO.PengajuanResponse.builder()
                         .uuid(form.getUuid())
+                        .nama(form.getAccount().getNama())
                         .induk_organisasi(form.getIndukOrganisasi())
                         .nomor_induk(form.getNomorInduk())
                         .jumlah_anggota(form.getJumlahAnggota() != null ? form.getJumlahAnggota().toString() : "0")
@@ -102,7 +103,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .uuid(UUID.randomUUID())
                   .indukOrganisasi(dto.getInduk_organisasi())
                   .nomorInduk(dto.getNomor_induk())
-                  .jumlahAnggota(Integer.parseInt(dto.getJumlah_anggota()))
+                  .jumlahAnggota(dto.getJumlah_anggota())
                   .daerah(dto.getDaerah())
                   .profesi(dto.getProfesi())
                   .status(StatusPengajuanEnum.PENDING)
@@ -110,13 +111,12 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .build();
 
             FormPengajuan saved = formPengajuanRepository.save(entity);
-            account.setIsAssigned(true);
 
             return FormPengajuanResDTO.SaveDataResponse.builder()
                   .uuid(saved.getUuid())
                   .induk_organisasi(saved.getIndukOrganisasi())
                   .nomor_induk(saved.getNomorInduk())
-                  .jumlah_anggota(String.valueOf(saved.getJumlahAnggota()))
+                  .jumlah_anggota(saved.getJumlahAnggota())
                   .daerah(saved.getDaerah())
                   .profesi(saved.getProfesi())
                   .status(saved.getStatus().name())
@@ -156,7 +156,6 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .build();
 
         } catch (Exception e) {
-            System.out.println(e.getMessage() + " ERROR");
             throw new RuntimeException("Failed to upload and save file: " + e.getMessage(), e);
         }
     }
@@ -277,7 +276,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
             formPengajuan
                   .setIndukOrganisasi(dto.getInduk_organisasi())
                   .setNomorInduk(dto.getNomor_induk())
-                  .setJumlahAnggota(Integer.parseInt(dto.getJumlah_anggota()))
+                  .setJumlahAnggota(dto.getJumlah_anggota())
                   .setDaerah(dto.getDaerah())
                   .setProfesi(dto.getProfesi())
                   .setStatus(StatusPengajuanEnum.PENDING)
@@ -289,7 +288,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .uuid(formPengajuan.getUuid())
                   .induk_organisasi(formPengajuan.getIndukOrganisasi())
                   .nomor_induk(formPengajuan.getNomorInduk())
-                  .jumlah_anggota(String.valueOf(formPengajuan.getJumlahAnggota()))
+                  .jumlah_anggota(formPengajuan.getJumlahAnggota())
                   .daerah(formPengajuan.getDaerah())
                   .profesi(formPengajuan.getProfesi())
                   .status(formPengajuan.getStatus().toString())
@@ -336,5 +335,62 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to verified data pengajuan: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    @Transactional
+    public String editIsAssignedInAccount(String nik) {
+        try {
+            Account account = accountRepository.findByNik(nik)
+                  .orElseThrow(() -> new ResourceNotFoundException("NIK not found: " + nik));
+
+            account.setIsAssigned(true);
+
+            return "Success";
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set assigned: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void deleteData(String uuid) {
+        UUID formUuid;
+
+        try {
+            formUuid = UUID.fromString(uuid);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Invalid UUID format: " + uuid);
+        }
+
+        FormPengajuan form = formPengajuanRepository.findByUuidWithFiles(formUuid)
+              .orElseThrow(() ->
+                    new ResourceNotFoundException("Form pengajuan not found: " + uuid)
+              );
+
+        // ❌ Safety rule
+        if (form.getStatus() == StatusPengajuanEnum.APPROVED) {
+            throw new ConflictException("Approved pengajuan cannot be deleted");
+        }
+
+        // 1️⃣ Delete files from R2
+        if (form.getFilePendukung() != null && !form.getFilePendukung().isEmpty()) {
+            for (FilePendukung file : form.getFilePendukung()) {
+                if (file.getFileUrl() != null && !file.getFileUrl().isBlank()) {
+                    r2StorageService.delete(file.getFileUrl());
+                }
+            }
+        }
+
+        // 2️⃣ Delete child records (FK SAFE)
+        filePendukungRepository.deleteByFormPengajuan(form);
+
+        // 3️⃣ Flush to enforce DB execution order
+        filePendukungRepository.flush();
+
+        // 4️⃣ Delete parent
+        formPengajuanRepository.delete(form);
     }
 }

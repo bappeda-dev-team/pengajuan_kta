@@ -3,6 +3,7 @@ package cc.kertaskerja.pengajuan_kta.dto.Pengajuan;
 import cc.kertaskerja.pengajuan_kta.dto.Auth.AccountResponse;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import jakarta.validation.constraints.NotBlank;
 
@@ -20,6 +21,10 @@ public class FormPengajuanResDTO {
     @AllArgsConstructor
     public static class PengajuanResponse {
         private UUID uuid;
+
+        @JsonProperty("nama")
+        private String nama;
+
         private String induk_organisasi;
         private String nomor_induk;
         private String jumlah_anggota;
@@ -43,7 +48,7 @@ public class FormPengajuanResDTO {
         private UUID uuid;
         private String induk_organisasi;
         private String nomor_induk;
-        private String jumlah_anggota;
+        private Integer jumlah_anggota;
         private String daerah;
         private String profesi;
         private String status;

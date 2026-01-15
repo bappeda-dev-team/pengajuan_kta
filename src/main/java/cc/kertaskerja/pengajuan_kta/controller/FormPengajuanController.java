@@ -4,6 +4,7 @@ import cc.kertaskerja.pengajuan_kta.dto.ApiResponse;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FilePendukungDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanReqDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanResDTO;
+import cc.kertaskerja.pengajuan_kta.service.global.R2StorageService;
 import cc.kertaskerja.pengajuan_kta.service.pengajuan.FormPengajuanService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
@@ -28,6 +30,7 @@ import java.util.UUID;
 public class FormPengajuanController {
 
     private final FormPengajuanService formPengajuanService;
+    private final R2StorageService r2StorageService;
 
     @GetMapping
     @Operation(summary = "Ambil semua data pengajuan KTA berdasarkan role & token JWT")
@@ -171,5 +174,49 @@ public class FormPengajuanController {
               formPengajuanService.findByUuidWithFilesAndProfile(authHeader, uuid);
 
         return ResponseEntity.ok(ApiResponse.success(result, "Retrieved 1 data successfully"));
+    }
+
+    @PutMapping("/setassigned/{nik}")
+    @Operation(summary = "Set Assigned ke akun yang sudah buat form pengajuan")
+    public ResponseEntity<ApiResponse<String>> setIsAssigned(@PathVariable String nik) {
+        String result = formPengajuanService.editIsAssignedInAccount(nik);
+
+        return ResponseEntity.ok(ApiResponse.success(result, "Set assigned successfully"));
+    }
+
+    @DeleteMapping("/delete/{uuid}")
+    @Operation(summary = "Hapus Data Pengajuan via uuid")
+    public ResponseEntity<ApiResponse<Void>> deletePengajuan(@PathVariable UUID uuid) {
+        try {
+            formPengajuanService.deleteData(uuid.toString());
+
+            return ResponseEntity.ok(
+                  ApiResponse.success(null, "Data pengajuan berhasil dihapus")
+            );
+
+        } catch (RuntimeException e) {
+            ApiResponse<Void> errorResponse = ApiResponse.<Void>builder()
+                  .success(false)
+                  .statusCode(400)
+                  .message(e.getMessage())
+                  .timestamp(LocalDateTime.now())
+                  .build();
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @GetMapping("/image/{key}")
+    public ResponseEntity<byte[]> getImage(@PathVariable String key) {
+        byte[] bytes = r2StorageService.getObject(key);
+
+        MediaType mediaType = key.endsWith(".jpg") || key.endsWith(".jpeg")
+              ? MediaType.IMAGE_JPEG
+              : MediaType.IMAGE_PNG;
+
+        return ResponseEntity.ok()
+              .contentType(mediaType)
+              .header(HttpHeaders.CACHE_CONTROL, "max-age=86400")
+              .body(bytes);
     }
 }

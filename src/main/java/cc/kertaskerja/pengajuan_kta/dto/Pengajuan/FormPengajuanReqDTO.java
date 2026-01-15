@@ -34,7 +34,7 @@ public class FormPengajuanReqDTO {
         private String nomor_induk;
         
         @JsonProperty("jumlah_anggota")
-        private String jumlah_anggota;
+        private Integer jumlah_anggota;
 
         @NotBlank(message = "Nama daerah (kab/kota) wajib diisi")
         @JsonProperty("daerah")
@@ -53,11 +53,9 @@ public class FormPengajuanReqDTO {
         @JsonProperty("nik")
         private String nik;
 
-        @NotNull(message = "Tanggal berlaku dari wajib diisi")
         @JsonProperty("berlaku_dari")
         private Date berlaku_dari;
 
-        @NotNull(message = "Tanggal berlaku sampai wajib diisi")
         @JsonProperty("berlaku_sampai")
         private Date berlaku_sampai;
 

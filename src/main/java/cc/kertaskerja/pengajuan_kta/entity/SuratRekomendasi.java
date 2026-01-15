@@ -4,6 +4,7 @@ import cc.kertaskerja.pengajuan_kta.common.BaseAuditable;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.TertandaDTO;
 import cc.kertaskerja.pengajuan_kta.enums.StatusPengajuanEnum;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -11,6 +12,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -69,4 +71,8 @@ public class SuratRekomendasi extends BaseAuditable {
 
     @Column(name = "tanggal_surat", nullable = false)
     private Date tanggalSurat;
+
+    @OneToMany(mappedBy = "suratRekomendasi", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<FilePendukung> filePendukung;
 }

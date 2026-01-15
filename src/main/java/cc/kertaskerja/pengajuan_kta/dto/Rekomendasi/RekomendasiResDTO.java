@@ -1,18 +1,40 @@
 package cc.kertaskerja.pengajuan_kta.dto.Rekomendasi;
 
+import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RekomendasiResDTO {
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RekomendasiResponse {
+        private UUID uuid;
+        private String nomor_surat;
+        private String nomor_induk;
+        private String tujuan;
+        private Date tanggal;
+        private String tempat;
+        private Date tanggal_berlaku;
+        private String status;
+        private String keterangan;
+        private List<FilePendukung> file_pendukung;
+        private LocalDateTime status_tanggal;
+    }
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -27,5 +49,20 @@ public class RekomendasiResDTO {
         private Date tanggal_berlaku;
         private String status;
         private String keterangan;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FilePendukung {
+        @NotBlank(message = "rekom_uuid tidak boleh kosong!")
+        private String rekom_uuid;
+
+        @NotBlank(message = "Url File wajib diisi")
+        private String file_url;
+
+        @NotBlank(message = "Nama file tidak boleh kosong!")
+        private String nama_file;
     }
 }

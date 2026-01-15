@@ -6,13 +6,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor // ✅ hanya menyuntikkan bean non-@Value
+@RequiredArgsConstructor
 public class SmsService {
 
     private final RestTemplate restTemplate;
@@ -39,26 +38,26 @@ public class SmsService {
                   nama, otpCode
             );
 
-            Map<String, Object> body = new HashMap<>();
-            body.put("target", nomorTujuan);
-            body.put("message", message);
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            body.add("target", nomorTujuan);
+            body.add("message", message);
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
             headers.set("Authorization", whatsAppApiToken);
 
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
 
-            restTemplate.exchange(
+            ResponseEntity<String> resp = restTemplate.exchange(
                   whatsAppApiUrl,
                   HttpMethod.POST,
                   entity,
                   String.class
             );
 
-            log.info("Success: OTP WhatsApp sent to {}", nomorTujuan);
+            log.info("WhatsApp send response: status={} body={}", resp.getStatusCode(), resp.getBody());
         } catch (Exception e) {
-            log.error("Failed to send WhatsApp OTP to {} | Error: {}", nomorTujuan, e.getMessage());
+            log.error("Failed to send WhatsApp OTP to {} | Error: {}", nomorTujuan, e.getMessage(), e);
             throw new RuntimeException("Gagal mengirim OTP via WhatsApp");
         }
     }

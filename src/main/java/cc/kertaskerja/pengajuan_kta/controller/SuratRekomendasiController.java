@@ -1,6 +1,7 @@
 package cc.kertaskerja.pengajuan_kta.controller;
 
 import cc.kertaskerja.pengajuan_kta.dto.ApiResponse;
+import cc.kertaskerja.pengajuan_kta.dto.Rekomendasi.FilePendukungDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Rekomendasi.RekomendasiReqDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Rekomendasi.RekomendasiResDTO;
 import cc.kertaskerja.pengajuan_kta.service.rekomendasi.RekomendasiService;
@@ -11,13 +12,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/rekomendasi")
@@ -50,5 +50,24 @@ public class SuratRekomendasiController {
         RekomendasiResDTO.SaveDataResponse saved = rekomendasiService.saveData(dto);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(saved));
+    }
+
+    @PostMapping("/upload-file")
+    @Operation(summary = "Upload file")
+    public ResponseEntity<ApiResponse<?>> uploadAndSave(@RequestParam("file") MultipartFile file,
+                                                        @RequestParam("rekom_uuid") String formUuid,
+                                                        @RequestParam(value = "nama_file", required = false) String namaFile) {
+        FilePendukungDTO result = rekomendasiService.uploadAndSaveFile(file, formUuid, namaFile);
+
+        return ResponseEntity.ok(ApiResponse.created(result));
+    }
+
+    @GetMapping("/detail/{uuid}")
+    @Operation(summary = "Ambil data pengajuan Surat Rekomendasi berdasarkan uuid")
+    public ResponseEntity<ApiResponse<RekomendasiResDTO.RekomendasiResponse>> getRekomByUuid(@PathVariable UUID uuid) {
+        RekomendasiResDTO.RekomendasiResponse result = rekomendasiService.findByUuidWithFiles(uuid);
+        ApiResponse<RekomendasiResDTO.RekomendasiResponse> response = ApiResponse.success(result, "Retrieved 1 data successfully");
+
+        return ResponseEntity.ok(response);
     }
 }

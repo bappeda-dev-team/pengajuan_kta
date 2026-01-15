@@ -30,7 +30,16 @@ public class FilePendukung extends BaseAuditable {
     @JsonBackReference
     private FormPengajuan formPengajuan;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rekom_uuid", referencedColumnName = "uuid", nullable = false)
+    @JsonBackReference
+    private SuratRekomendasi suratRekomendasi;
+
     public UUID getFormUuid() {
         return formPengajuan != null ? formPengajuan.getUuid() : null;
+    }
+
+    public UUID getRekomUuid() {
+        return suratRekomendasi != null ? suratRekomendasi.getUuid() : null;
     }
 }

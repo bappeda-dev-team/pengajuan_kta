@@ -1,4 +1,4 @@
-package cc.kertaskerja.pengajuan_kta.dto.Pengajuan;
+package cc.kertaskerja.pengajuan_kta.dto.Rekomendasi;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -13,8 +13,8 @@ import lombok.*;
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FilePendukungDTO {
-    @NotBlank(message = "form_uuid tidak boleh kosong!")
-    private String form_uuid;
+    @NotBlank(message = "rekom_uuid tidak boleh kosong!")
+    private String rekom_uuid;
 
     @NotBlank(message = "Url File wajib diisi")
     private String file_url;
