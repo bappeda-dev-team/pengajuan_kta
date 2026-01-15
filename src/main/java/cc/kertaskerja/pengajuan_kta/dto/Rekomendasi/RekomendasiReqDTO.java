@@ -26,10 +26,6 @@ public class RekomendasiReqDTO {
         @JsonProperty("nik")
         private String nik;
 
-        @NotNull(message = "Nomor surat tidak boleh kosong!")
-        @JsonProperty("nomor_surat")
-        private String nomor_surat;
-
         @NotNull(message = "Nomor induk tidak boleh kosong!")
         @JsonProperty("nomor_induk")
         private String nomor_induk;
@@ -45,10 +41,6 @@ public class RekomendasiReqDTO {
         @NotNull(message = "Tempat tidak boleh kosong!")
         @JsonProperty("tempat")
         private String tempat;
-
-        @NotNull(message = "Tanggal berlaku wajib diisi!")
-        @JsonProperty("tanggal_berlaku")
-        private Date tanggal_berlaku;
 
         private String keterangan;
     }

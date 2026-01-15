@@ -1,8 +1,10 @@
 package cc.kertaskerja.pengajuan_kta.dto.Rekomendasi;
 
+import cc.kertaskerja.pengajuan_kta.dto.Auth.AccountResponse;
 import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,6 +25,10 @@ public class RekomendasiResDTO {
     @AllArgsConstructor
     public static class RekomendasiResponse {
         private UUID uuid;
+
+        @JsonProperty("nama")
+        private String nama;
+
         private String nomor_surat;
         private String nomor_induk;
         private String tujuan;
@@ -39,14 +45,21 @@ public class RekomendasiResDTO {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class RekomendasiWithProfileResponse {
+        private RekomendasiResponse rekomendasi;
+        private AccountResponse.Detail profile;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class SaveDataResponse {
         private UUID uuid;
-        private String nomor_surat;
         private String nomor_induk;
         private String tujuan;
         private Date tanggal;
         private String tempat;
-        private Date tanggal_berlaku;
         private String status;
         private String keterangan;
     }

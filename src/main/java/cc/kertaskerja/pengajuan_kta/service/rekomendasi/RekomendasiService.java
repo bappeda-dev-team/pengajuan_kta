@@ -5,12 +5,17 @@ import cc.kertaskerja.pengajuan_kta.dto.Rekomendasi.RekomendasiReqDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Rekomendasi.RekomendasiResDTO;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface RekomendasiService {
+    List<RekomendasiResDTO.RekomendasiResponse> findAll(String authHeader);
+
     RekomendasiResDTO.SaveDataResponse saveData(RekomendasiReqDTO.SaveData dto);
+
+    RekomendasiResDTO.SaveDataResponse editDataRekomendasi(String authHeader, UUID uuid, RekomendasiReqDTO.SaveData dto);
 
     FilePendukungDTO uploadAndSaveFile(MultipartFile file, String rekomUuid, String namaFile);
 
-    RekomendasiResDTO.RekomendasiResponse findByUuidWithFiles(UUID uuid);
+    RekomendasiResDTO.RekomendasiWithProfileResponse findByUuidWithFilesAndProfile(String authHeader, UUID uuid);
 }
