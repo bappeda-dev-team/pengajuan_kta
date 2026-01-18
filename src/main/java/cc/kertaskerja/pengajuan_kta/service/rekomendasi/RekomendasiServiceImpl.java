@@ -26,6 +26,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -234,6 +235,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
               .tanggal(suratRekomendasi.getTanggal())
               .tempat(suratRekomendasi.getTempat())
               .tanggal_berlaku(suratRekomendasi.getTanggalBerlaku())
+              .tanggal_surat(suratRekomendasi.getTanggalSurat())
               .status(suratRekomendasi.getStatus() != null ? suratRekomendasi.getStatus().name() : null)
               .keterangan(suratRekomendasi.getKeterangan())
               .file_pendukung(suratRekomendasi.getFilePendukung().stream()
@@ -249,5 +251,64 @@ public class RekomendasiServiceImpl implements RekomendasiService {
               .rekomendasi(rekomendasi)
               .profile(profile)
               .build();
+    }
+
+    @Override
+    @Transactional
+    public RekomendasiResDTO.VerifyData verifyDataRekomendasi(UUID uuid, RekomendasiReqDTO.Verify dto) {
+        try {
+            SuratRekomendasi rekomendasi = repository.findByUuid(uuid)
+                  .orElseThrow(() -> new ResourceNotFoundException("Data rekomendasi with UUID " + uuid + " is not found"));
+
+            rekomendasi.setNomorSurat(dto.getNomor_surat());
+            rekomendasi.setStatus(dto.getStatus() != null ? StatusPengajuanEnum.valueOf(dto.getStatus()) : StatusPengajuanEnum.PENDING);
+            rekomendasi.setTertanda(dto.getTertanda());
+            rekomendasi.setCatatan(dto.getCatatan());
+            rekomendasi.setTanggalSurat(LocalDateTime.now());
+
+            repository.save(rekomendasi);
+
+            return RekomendasiResDTO.VerifyData.builder()
+                  .nomor_surat(rekomendasi.getNomorSurat())
+                  .nomor_induk(rekomendasi.getNomorInduk())
+                  .status(rekomendasi.getStatus().name())
+                  .tertanda(rekomendasi.getTertanda())
+                  .catatan(rekomendasi.getCatatan())
+                  .tanggal_surat(rekomendasi.getTanggalSurat())
+                  .build();
+
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to verified data pengajuan: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void deleteData(UUID uuid) {
+        SuratRekomendasi suratRekomendasi = repository.findByUuidWithFiles(uuid)
+              .orElseThrow(() -> new ResourceNotFoundException(
+                    "Surat rekomendasi with UUID " + uuid + " not found"));
+
+        if (suratRekomendasi.getStatus() == StatusPengajuanEnum.APPROVED) {
+            throw new ConflictException("Data rekomendasi that has been approved cannot be deleted.");
+        }
+
+        // 1️⃣ Delete file in storage
+        if (suratRekomendasi.getFilePendukung() != null) {
+            for (FilePendukung file : suratRekomendasi.getFilePendukung()) {
+                if (file.getFileUrl() != null && !file.getFileUrl().isBlank()) {
+                    r2StorageService.delete(file.getFileUrl());
+                }
+            }
+        }
+
+        // 2️⃣ Delete child records (FK safe)
+        filePendukungRepository.deleteBySuratRekomendasi(suratRekomendasi);
+        filePendukungRepository.flush();
+
+        // ✅ 3️⃣ Delete parent (FIX)
+        repository.delete(suratRekomendasi);
     }
 }

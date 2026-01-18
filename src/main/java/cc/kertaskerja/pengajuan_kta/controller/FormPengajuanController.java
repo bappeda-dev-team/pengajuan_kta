@@ -19,6 +19,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -219,4 +220,17 @@ public class FormPengajuanController {
               .header(HttpHeaders.CACHE_CONTROL, "max-age=86400")
               .body(bytes);
     }
+
+    @GetMapping("/statistics")
+    public ResponseEntity<ApiResponse<List<FormPengajuanResDTO.PengajuanBulananResponse>>> getPengajuanBulanan(@RequestParam(required = false) Integer tahun) {
+        int year = tahun != null ? tahun : LocalDate.now().getYear();
+
+        return ResponseEntity.ok(
+              ApiResponse.success(
+                    formPengajuanService.getStatisticsPerMonth(year),
+                    "Statistik pengajuan tahun " + year
+              )
+        );
+    }
+
 }

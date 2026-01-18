@@ -91,4 +91,12 @@ public class FormPengajuanResDTO {
         private PengajuanResponse pengajuan;
         private AccountResponse.Detail profile;
     }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class PengajuanBulananResponse {
+        private String month;
+        private Long total;
+    }
 }

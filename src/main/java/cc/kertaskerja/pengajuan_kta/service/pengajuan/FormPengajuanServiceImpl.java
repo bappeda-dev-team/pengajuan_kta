@@ -22,9 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -392,5 +390,35 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
         // 4️⃣ Delete parent
         formPengajuanRepository.delete(form);
+    }
+
+    @Override
+    public List<FormPengajuanResDTO.PengajuanBulananResponse> getStatisticsPerMonth(int year) {
+        List<Object[]> results = formPengajuanRepository.countPengajuanPerMonth(year);
+
+        Map<Integer, Long> monthMap = new HashMap<>();
+        for (Object[] row : results) {
+            Integer month = ((Number) row[0]).intValue();
+            Long total = ((Number) row[1]).longValue();
+            monthMap.put(month, total);
+        }
+
+        String[] months = {
+              "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        };
+
+        List<FormPengajuanResDTO.PengajuanBulananResponse> response = new ArrayList<>();
+
+        for (int i = 1; i <= 12; i++) {
+            response.add(
+                  new FormPengajuanResDTO.PengajuanBulananResponse(
+                        months[i - 1],
+                        monthMap.getOrDefault(i, 0L)
+                  )
+            );
+        }
+
+        return response;
     }
 }

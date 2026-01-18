@@ -32,6 +32,9 @@ public interface SuratRekomendasiRepository extends JpaRepository<SuratRekomenda
     @Query(value = "SELECT * FROM surat_rekomendasi WHERE uuid = :uuid", nativeQuery = true)
     Optional<SuratRekomendasi> findByUuid(@Param("uuid") UUID uuid);
 
+    @Query("SELECT rk FROM SuratRekomendasi rk LEFT JOIN FETCH rk.filePendukung WHERE rk.uuid = :uuid")
+    Optional<SuratRekomendasi> findByUuidWithFiles(@Param("uuid") UUID uuid);
+
     @Query("""
         SELECT rk
             FROM SuratRekomendasi rk

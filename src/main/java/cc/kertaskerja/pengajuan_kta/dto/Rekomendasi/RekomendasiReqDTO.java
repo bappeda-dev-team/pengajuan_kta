@@ -1,8 +1,12 @@
 package cc.kertaskerja.pengajuan_kta.dto.Rekomendasi;
 
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.TertandaDTO;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
@@ -43,5 +47,24 @@ public class RekomendasiReqDTO {
         private String tempat;
 
         private String keterangan;
+    }
+
+    @Getter
+    @Setter
+    public static class Verify {
+        @JsonProperty("nomor_surat")
+        private String nomor_surat;
+
+        @Valid
+        @NotNull(message = "Kolom tertanda tidak boleh kosong!")
+        @JsonAlias("terdanda")
+        private TertandaDTO tertanda;
+
+        @NotBlank(message = "Status harap diisi!")
+        @JsonProperty("status")
+        private String status;
+
+        @JsonProperty("catatan")
+        private String catatan;
     }
 }

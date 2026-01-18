@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -120,5 +121,65 @@ public class SuratRekomendasiController {
         RekomendasiResDTO.SaveDataResponse updated = rekomendasiService.editDataRekomendasi(authHeader, uuid, dto);
 
         return ResponseEntity.ok(ApiResponse.updated(updated));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/verify/{uuid}")
+    @Operation(summary = "Verifikasi data permohonan surat rekomendasi dan update status")
+    public ResponseEntity<ApiResponse<?>> verifyData(@PathVariable UUID uuid,
+                                                     @Valid @RequestBody RekomendasiReqDTO.Verify dto,
+                                                     BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            List<String> errorMessages = bindingResult.getFieldErrors().stream()
+                  .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                  .toList();
+
+            ApiResponse<List<String>> errorResponse = ApiResponse.<List<String>>builder()
+                  .success(false)
+                  .statusCode(400)
+                  .message("Validation failed")
+                  .errors(errorMessages)
+                  .timestamp(LocalDateTime.now())
+                  .build();
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        try {
+            RekomendasiResDTO.VerifyData result = rekomendasiService.verifyDataRekomendasi(uuid, dto);
+
+            return ResponseEntity.ok(ApiResponse.updated(result));
+        } catch (RuntimeException e) {
+            ApiResponse<Object> errorResponse = ApiResponse.builder()
+                  .success(false)
+                  .statusCode(400)
+                  .message(e.getMessage())
+                  .timestamp(LocalDateTime.now())
+                  .build();
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @DeleteMapping("/delete/{uuid}")
+    @Operation(summary = "Hapus data permohonan surat rekomendasi")
+    public ResponseEntity<ApiResponse<?>> deleteRekomendasi(@PathVariable UUID uuid) {
+        try {
+            rekomendasiService.deleteData(uuid);
+
+            return ResponseEntity.ok(
+                  ApiResponse.success(null, "Permohonan surat rekomendasi berhasil dihapus")
+            );
+
+        } catch (RuntimeException e) {
+            ApiResponse<Void> errorResponse = ApiResponse.<Void>builder()
+                  .success(false)
+                  .statusCode(400)
+                  .message(e.getMessage())
+                  .timestamp(LocalDateTime.now())
+                  .build();
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 }

@@ -18,4 +18,8 @@ public interface RekomendasiService {
     FilePendukungDTO uploadAndSaveFile(MultipartFile file, String rekomUuid, String namaFile);
 
     RekomendasiResDTO.RekomendasiWithProfileResponse findByUuidWithFilesAndProfile(String authHeader, UUID uuid);
+
+    RekomendasiResDTO.VerifyData verifyDataRekomendasi(UUID uuid, RekomendasiReqDTO.Verify dto);
+
+    void deleteData(UUID uuid);
 }

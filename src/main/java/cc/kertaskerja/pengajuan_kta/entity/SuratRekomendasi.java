@@ -11,6 +11,7 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -69,8 +70,8 @@ public class SuratRekomendasi extends BaseAuditable {
     @Column(name = "tertanda", columnDefinition = "jsonb", nullable = false)
     private TertandaDTO tertanda;
 
-    @Column(name = "tanggal_surat", nullable = false)
-    private Date tanggalSurat;
+    @Column(name = "tanggal_surat")
+    private LocalDateTime tanggalSurat;
 
     @OneToMany(mappedBy = "suratRekomendasi", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference

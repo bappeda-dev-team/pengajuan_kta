@@ -1,6 +1,7 @@
 package cc.kertaskerja.pengajuan_kta.dto.Rekomendasi;
 
 import cc.kertaskerja.pengajuan_kta.dto.Auth.AccountResponse;
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.TertandaDTO;
 import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -35,10 +36,10 @@ public class RekomendasiResDTO {
         private Date tanggal;
         private String tempat;
         private Date tanggal_berlaku;
+        private LocalDateTime tanggal_surat;
         private String status;
         private String keterangan;
         private List<FilePendukung> file_pendukung;
-        private LocalDateTime status_tanggal;
     }
 
     @Data
@@ -77,5 +78,19 @@ public class RekomendasiResDTO {
 
         @NotBlank(message = "Nama file tidak boleh kosong!")
         private String nama_file;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class VerifyData{
+        private String nomor_surat;
+        private String nomor_induk;
+        private Date tanggal_berlaku;
+        private LocalDateTime tanggal_surat;
+        private String status;
+        private TertandaDTO tertanda;
+        private String catatan;
     }
 }

@@ -29,4 +29,6 @@ public interface FormPengajuanService {
     String editIsAssignedInAccount(String nik);
 
     void deleteData(String uuid);
+
+    List<FormPengajuanResDTO.PengajuanBulananResponse> getStatisticsPerMonth(int year);
 }
