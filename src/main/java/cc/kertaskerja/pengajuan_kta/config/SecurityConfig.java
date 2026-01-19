@@ -71,7 +71,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of(
               "http://localhost:3008",
               "http://192.168.1.38:3000",
-              "https://kta-service.zeabur.app"
+              "https://ktangawikabfe.zeabur.app"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
