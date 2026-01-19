@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -48,9 +49,17 @@ public class SecurityConfig {
               .csrf(csrf -> csrf.disable())
               .cors(cors -> cors.configurationSource(corsConfigurationSource()))
               .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/actuator/health", "/public/**").permitAll()
-                    .requestMatchers("/auth/**").permitAll()
-                    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").authenticated()
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                    .requestMatchers("/kta/api/actuator/health", "/actuator/health").permitAll()
+                    .requestMatchers("/kta/api/public/**", "/public/**").permitAll()
+                    .requestMatchers("/kta/api/auth/**", "/auth/**").permitAll()
+
+                    .requestMatchers(
+                          "/kta/api/v3/api-docs/**", "/kta/api/swagger-ui/**", "/kta/api/swagger-ui.html",
+                          "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
+                    ).authenticated()
+
                     .anyRequest().authenticated()
               )
               .httpBasic(httpBasic -> httpBasic
@@ -68,11 +77,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(
-              "http://localhost:3008",
-              "http://192.168.1.38:3000",
+
+        configuration.setAllowedOriginPatterns(List.of(
+              "http://localhost:*",
+              "http://127.0.0.1:*",
               "https://ktangawikabfe.zeabur.app"
         ));
+
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
