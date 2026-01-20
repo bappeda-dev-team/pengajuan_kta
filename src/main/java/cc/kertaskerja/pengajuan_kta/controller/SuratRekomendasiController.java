@@ -123,10 +123,10 @@ public class SuratRekomendasiController {
         return ResponseEntity.ok(ApiResponse.updated(updated));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/verify/{uuid}")
     @Operation(summary = "Verifikasi data permohonan surat rekomendasi dan update status")
-    public ResponseEntity<ApiResponse<?>> verifyData(@PathVariable UUID uuid,
+    public ResponseEntity<ApiResponse<?>> verifyData(@RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+                                                     @PathVariable UUID uuid,
                                                      @Valid @RequestBody RekomendasiReqDTO.Verify dto,
                                                      BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -146,7 +146,7 @@ public class SuratRekomendasiController {
         }
 
         try {
-            RekomendasiResDTO.VerifyData result = rekomendasiService.verifyDataRekomendasi(uuid, dto);
+            RekomendasiResDTO.VerifyData result = rekomendasiService.verifyDataRekomendasi(authHeader, uuid, dto);
 
             return ResponseEntity.ok(ApiResponse.updated(result));
         } catch (RuntimeException e) {

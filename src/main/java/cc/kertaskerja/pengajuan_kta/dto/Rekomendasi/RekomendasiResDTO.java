@@ -38,8 +38,10 @@ public class RekomendasiResDTO {
         private Date tanggal_berlaku;
         private LocalDateTime tanggal_surat;
         private String status;
+        private TertandaDTO tertanda;
         private String keterangan;
         private List<FilePendukung> file_pendukung;
+        private LocalDateTime created_at;
     }
 
     @Data

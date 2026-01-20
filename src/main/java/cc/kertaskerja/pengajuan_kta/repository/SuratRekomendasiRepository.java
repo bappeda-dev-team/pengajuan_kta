@@ -1,6 +1,7 @@
 package cc.kertaskerja.pengajuan_kta.repository;
 
 import cc.kertaskerja.pengajuan_kta.entity.SuratRekomendasi;
+import cc.kertaskerja.pengajuan_kta.enums.StatusPengajuanEnum;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,6 +20,15 @@ public interface SuratRekomendasiRepository extends JpaRepository<SuratRekomenda
                 JOIN FETCH rk.account a
     """)
     List<SuratRekomendasi> findAllWithAccount();
+
+    @Query("""
+        SELECT DISTINCT rk
+            FROM SuratRekomendasi rk
+                JOIN FETCH rk.account a
+                    WHERE rk.status IN :statuses
+                        ORDER BY rk.createdAt DESC
+    """)
+    List<SuratRekomendasi> findAllByStatusInWithAccount(@Param("statuses") List<StatusPengajuanEnum> statuses);
 
     @Query(value = "SELECT * FROM surat_rekomendasi WHERE nik = :nik", nativeQuery = true)
     List<SuratRekomendasi> findByAccId(@Param("nik") String nik);

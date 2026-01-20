@@ -19,7 +19,7 @@ public interface RekomendasiService {
 
     RekomendasiResDTO.RekomendasiWithProfileResponse findByUuidWithFilesAndProfile(String authHeader, UUID uuid);
 
-    RekomendasiResDTO.VerifyData verifyDataRekomendasi(UUID uuid, RekomendasiReqDTO.Verify dto);
+    RekomendasiResDTO.VerifyData verifyDataRekomendasi(String authHeader, UUID uuid, RekomendasiReqDTO.Verify dto);
 
     void deleteData(UUID uuid);
 }

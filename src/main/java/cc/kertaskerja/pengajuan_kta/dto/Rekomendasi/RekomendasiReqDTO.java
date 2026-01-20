@@ -56,13 +56,15 @@ public class RekomendasiReqDTO {
         private String nomor_surat;
 
         @Valid
-        @NotNull(message = "Kolom tertanda tidak boleh kosong!")
         @JsonAlias("terdanda")
         private TertandaDTO tertanda;
 
         @NotBlank(message = "Status harap diisi!")
         @JsonProperty("status")
         private String status;
+
+        @JsonProperty("tanggal_berlaku")
+        private Date tanggal_berlaku;
 
         @JsonProperty("catatan")
         private String catatan;

@@ -27,17 +27,9 @@ public interface FormPengajuanRepository extends JpaRepository<FormPengajuan, Lo
     List<FormPengajuan> findByAccId(@Param("nik") String nik);
 
     @Query("""
-              SELECT f
-              FROM FormPengajuan f
-              JOIN FETCH f.account a
-          """)
-    List<FormPengajuan> findAllWithAccount();
-
-    @Query("""
               SELECT DISTINCT f
               FROM FormPengajuan f
               JOIN FETCH f.account a
-              LEFT JOIN FETCH f.filePendukung fp
               WHERE f.status IN :statuses
               ORDER BY f.createdAt DESC
           """)

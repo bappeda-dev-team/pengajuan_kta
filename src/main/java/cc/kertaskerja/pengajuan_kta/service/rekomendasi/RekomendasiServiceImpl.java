@@ -29,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -56,7 +57,21 @@ public class RekomendasiServiceImpl implements RekomendasiService {
 
             List<SuratRekomendasi> suratRekomendasi;
             if ("ADMIN".equalsIgnoreCase(role)) {
-                suratRekomendasi = repository.findAllWithAccount();
+                suratRekomendasi = repository.findAllByStatusInWithAccount(
+                      List.of(
+                            StatusPengajuanEnum.APPROVED,
+                            StatusPengajuanEnum.REJECTED,
+                            StatusPengajuanEnum.PENDING_VERIFICATOR
+                      )
+                );
+            } else if ("KEPALA".equalsIgnoreCase(role)) {
+                suratRekomendasi = repository.findAllByStatusInWithAccount(
+                      List.of(
+                            StatusPengajuanEnum.APPROVED,
+                            StatusPengajuanEnum.REJECTED,
+                            StatusPengajuanEnum.PENDING_APPROVAL
+                      )
+                );
             } else {
                 suratRekomendasi = repository.findByAccId(nik);
             }
@@ -237,6 +252,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
               .tanggal_berlaku(suratRekomendasi.getTanggalBerlaku())
               .tanggal_surat(suratRekomendasi.getTanggalSurat())
               .status(suratRekomendasi.getStatus() != null ? suratRekomendasi.getStatus().name() : null)
+              .tertanda(suratRekomendasi.getTertanda())
               .keterangan(suratRekomendasi.getKeterangan())
               .file_pendukung(suratRekomendasi.getFilePendukung().stream()
                     .map(file -> RekomendasiResDTO.FilePendukung.builder()
@@ -245,6 +261,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
                           .nama_file(file.getNamaFile())
                           .build())
                     .toList())
+              .created_at(suratRekomendasi.getCreatedAt())
               .build();
 
         return RekomendasiResDTO.RekomendasiWithProfileResponse.builder()
@@ -255,14 +272,25 @@ public class RekomendasiServiceImpl implements RekomendasiService {
 
     @Override
     @Transactional
-    public RekomendasiResDTO.VerifyData verifyDataRekomendasi(UUID uuid, RekomendasiReqDTO.Verify dto) {
+    public RekomendasiResDTO.VerifyData verifyDataRekomendasi(String authHeader, UUID uuid, RekomendasiReqDTO.Verify dto) {
         try {
+            String token = authHeader.substring(7);
+            Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+            String role = String.valueOf(claims.get("role"));
+
+            Set<String> allowedRoles = Set.of("ADMIN", "KEPALA");
+
+            if (!allowedRoles.contains(role)) {
+                throw new ForbiddenException("You are not allowed to verify surat rekomendasi.");
+            }
+
             SuratRekomendasi rekomendasi = repository.findByUuid(uuid)
                   .orElseThrow(() -> new ResourceNotFoundException("Data rekomendasi with UUID " + uuid + " is not found"));
 
             rekomendasi.setNomorSurat(dto.getNomor_surat());
             rekomendasi.setStatus(dto.getStatus() != null ? StatusPengajuanEnum.valueOf(dto.getStatus()) : StatusPengajuanEnum.PENDING_VERIFICATOR);
             rekomendasi.setTertanda(dto.getTertanda());
+            rekomendasi.setTanggalBerlaku(dto.getTanggal_berlaku());
             rekomendasi.setCatatan(dto.getCatatan());
             rekomendasi.setTanggalSurat(LocalDateTime.now());
 
@@ -272,6 +300,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
                   .nomor_surat(rekomendasi.getNomorSurat())
                   .nomor_induk(rekomendasi.getNomorInduk())
                   .status(rekomendasi.getStatus().name())
+                  .tanggal_berlaku(rekomendasi.getTanggalBerlaku())
                   .tertanda(rekomendasi.getTertanda())
                   .catatan(rekomendasi.getCatatan())
                   .tanggal_surat(rekomendasi.getTanggalSurat())
