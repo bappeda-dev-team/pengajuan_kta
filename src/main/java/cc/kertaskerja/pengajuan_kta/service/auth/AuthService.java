@@ -25,4 +25,8 @@ public interface AuthService {
     AccountResponse.Detail detailAccount(String authHeader, String nik);
 
     AccountResponse.Detail profile(String authHeader);
+
+    String sendPasswordResetPassword(RegisterRequest.SendOtpForgotPassword dto);
+
+    String resetPassword(RegisterRequest.ResetPassword dto);
 }

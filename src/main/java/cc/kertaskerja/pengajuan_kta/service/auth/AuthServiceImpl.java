@@ -63,7 +63,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AccountResponse.SendOtp sendOTP(RegisterRequest.SendOtp request) {
-        if (authAttempService.sendOtpBlocked(request.getEmail())) {
+        if (authAttempService.sendOtpBlocked(request.getNomor_telepon())) {
             throw new RateLimitException("Terlalu banyak percobaan. Silakan coba lagi dalam 1 menit");
         }
 
@@ -309,7 +309,7 @@ public class AuthServiceImpl implements AuthService {
         Map<String, Object> claims = jwtTokenProvider.parseToken(token);
         String role = String.valueOf(claims.get("role"));
 
-        if (!"ADMIN".equalsIgnoreCase(role)) {
+        if (!"ADMIN".equalsIgnoreCase(role) && !"KEPALA".equalsIgnoreCase(role)) {
             throw new ForbiddenException("You are not authorized to access this resource");
         }
 
@@ -408,5 +408,52 @@ public class AuthServiceImpl implements AuthService {
               .createdAt(account.getCreatedAt())
               .updatedAt(account.getUpdatedAt())
               .build();
+    }
+
+    @Override
+    public String sendPasswordResetPassword(RegisterRequest.SendOtpForgotPassword dto) {
+        boolean validateCaptcha = captchaService.verifyCaptcha(dto.getCaptcha_token(), dto.getCaptcha_code());
+
+        if (!validateCaptcha) {
+            throw new BadRequestException("CAPTCHA yang Anda masukkan salah. Silakan coba lagi.");
+        }
+
+        Account account = accountRepository.findByNik(encryptService.encrypt(dto.getNik()))
+              .orElseThrow(() -> new ResourceNotFoundException("NIK tidak ditemukan: " + dto.getNik()));
+
+        if (authAttempService.sendOtpBlocked(account.getNomorTelepon())) {
+            throw new RateLimitException("Terlalu banyak percobaan. Silakan coba lagi dalam 1 menit");
+        }
+
+        String otp = otpService.generateOtp(account.getEmail(), account.getNomorTelepon());
+        smsService.sendOtpWhatsApp(account.getNomorTelepon(), otp, account.getNama());
+
+        authAttempService.sendOtpSucceeded(account.getNomorTelepon());
+
+        return "Success sent OTP";
+    }
+
+    @Override
+    @Transactional
+    public String resetPassword(RegisterRequest.ResetPassword dto) {
+        Account account = accountRepository.findByNik(encryptService.encrypt(dto.getNik()))
+              .orElseThrow(() -> new ResourceNotFoundException("NIK tidak ditemukan: " + dto.getNik()));
+
+        boolean validOtpByEmail = otpService.validateOtp(account.getEmail(), dto.getOtp_code());
+        boolean validOtpByPhone = otpService.validateOtp(account.getNomorTelepon(), dto.getOtp_code());
+
+        if (!validOtpByEmail || !validOtpByPhone) {
+            throw new BadRequestException("Kode OTP salah atau sudah kadaluarsa. Silakan coba lagi.");
+        }
+
+        try {
+            account.setPassword(passwordEncoder.encode(dto.getPassword()));
+
+            accountRepository.save(account);
+
+            return "Success reset password";
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to change password: " + e.getMessage());
+        }
     }
 }

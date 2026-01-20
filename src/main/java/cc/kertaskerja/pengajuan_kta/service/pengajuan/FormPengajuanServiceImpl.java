@@ -50,7 +50,21 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
             List<FormPengajuan> forms;
             if ("ADMIN".equalsIgnoreCase(role)) {
-                forms = formPengajuanRepository.findAllWithAccount();
+                forms = formPengajuanRepository.findAllByStatusInWithAccount(
+                      List.of(
+                            StatusPengajuanEnum.APPROVED,
+                            StatusPengajuanEnum.REJECTED,
+                            StatusPengajuanEnum.PENDING_VERIFICATOR
+                      )
+                );
+            } else if ("KEPALA".equalsIgnoreCase(role)) {
+                forms = formPengajuanRepository.findAllByStatusInWithAccount(
+                      List.of(
+                            StatusPengajuanEnum.APPROVED,
+                            StatusPengajuanEnum.REJECTED,
+                            StatusPengajuanEnum.PENDING_APPROVAL
+                      )
+                );
             } else {
                 forms = formPengajuanRepository.findByAccId(nik);
             }
@@ -59,6 +73,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .map(form -> FormPengajuanResDTO.PengajuanResponse.builder()
                         .uuid(form.getUuid())
                         .nama(form.getAccount().getNama())
+                        .tipe_akun(form.getAccount().getTipeAkun())
                         .induk_organisasi(form.getIndukOrganisasi())
                         .nomor_induk(form.getNomorInduk())
                         .jumlah_anggota(form.getJumlahAnggota() != null ? form.getJumlahAnggota().toString() : "0")
@@ -77,6 +92,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                                     .nama_file(file.getNamaFile())
                                     .build())
                               .toList())
+                        .created_at(form.getCreatedAt())
                         .build())
                   .toList();
 
@@ -104,7 +120,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .jumlahAnggota(dto.getJumlah_anggota())
                   .daerah(dto.getDaerah())
                   .profesi(dto.getProfesi())
-                  .status(StatusPengajuanEnum.PENDING)
+                  .status(StatusPengajuanEnum.PENDING_VERIFICATOR)
                   .keterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-")
                   .build();
 
@@ -197,9 +213,14 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
         String nik = String.valueOf(claims.get("sub"));
         String role = String.valueOf(claims.get("role"));
 
-        if (!owner.getNik().equals(nik) && !role.equals("ADMIN")) {
+        Set<String> allowedRoles = Set.of("ADMIN", "KEPALA");
+
+        if (
+              !owner.getNik().equals(nik)
+                    && !allowedRoles.contains(role)
+        ) {
             throw new ForbiddenException("Data pengajuan is not yours.");
-        };
+        }
 
         FormPengajuanResDTO.PengajuanResponse pengajuan = FormPengajuanResDTO.PengajuanResponse.builder()
               .uuid(formPengajuan.getUuid())
@@ -222,6 +243,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                           .build())
                     .toList())
               .status_tanggal(formPengajuan.getStatusTanggal())
+              .created_at(formPengajuan.getCreatedAt())
               .build();
 
         AccountResponse.Detail profile = AccountResponse.Detail.builder()
@@ -277,7 +299,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .setJumlahAnggota(dto.getJumlah_anggota())
                   .setDaerah(dto.getDaerah())
                   .setProfesi(dto.getProfesi())
-                  .setStatus(StatusPengajuanEnum.PENDING)
+                  .setStatus(StatusPengajuanEnum.PENDING_VERIFICATOR)
                   .setKeterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-");
 
             formPengajuanRepository.save(formPengajuan);
@@ -300,8 +322,18 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
     @Override
     @Transactional
-    public FormPengajuanResDTO.VerifyData verifyDataPengajuan(FormPengajuanReqDTO.VerifyPengajuan dto, UUID uuid) {
+    public FormPengajuanResDTO.VerifyData verifyDataPengajuan(String authHeader, FormPengajuanReqDTO.VerifyPengajuan dto, UUID uuid) {
         try {
+            String token = authHeader.substring(7);
+            Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+            String role = String.valueOf(claims.get("role"));
+
+            Set<String> allowedRoles = Set.of("ADMIN", "KEPALA");
+
+            if (!allowedRoles.contains(role)) {
+                throw new ForbiddenException("You are not allowed to verify data pengajuan.");
+            }
+
             FormPengajuan form = formPengajuanRepository.findByUuid(uuid)
                   .orElseThrow(() -> new ResourceNotFoundException("Form pengajuan is not found"));
 
@@ -310,7 +342,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
             form.setBerlakuDari(dto.getBerlaku_dari());
             form.setBerlakuSampai(dto.getBerlaku_sampai());
-            form.setStatus(dto.getStatus() != null ? StatusPengajuanEnum.valueOf(dto.getStatus()) : StatusPengajuanEnum.PENDING);
+            form.setStatus(dto.getStatus() != null ? StatusPengajuanEnum.valueOf(dto.getStatus()) : StatusPengajuanEnum.PENDING_VERIFICATOR);
             form.setTertanda(dto.getTertanda());
             form.setCatatan(dto.getCatatan());
             form.setStatusTanggal(LocalDateTime.now());

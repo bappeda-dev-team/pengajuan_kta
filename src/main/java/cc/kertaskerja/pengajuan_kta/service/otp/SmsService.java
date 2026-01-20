@@ -28,7 +28,7 @@ public class SmsService {
                         "Halo *%s* 👋,\n\n" +
                         "Gunakan kode OTP berikut untuk memverifikasi akun Anda:\n\n" +
                         "🔹 *%s*\n\n" +
-                        "Kode ini berlaku selama *3 menit*.\n" +
+                        "Kode ini berlaku selama *10 menit*.\n" +
                         "_Jangan bagikan kode ini kepada siapa pun._ 🚫\n\n" +
                         "Terima kasih 🙏\n" +
                         "*Dinas Komunikasi, Informatika, Statistik dan Persandian Kabupaten Ngawi*\n" +

@@ -60,7 +60,6 @@ public class FormPengajuanReqDTO {
         private Date berlaku_sampai;
 
         @Valid
-        @NotNull(message = "Kolom tertanda tidak boleh kosong!")
         @JsonAlias("terdanda")
         private TertandaDTO tertanda;
 

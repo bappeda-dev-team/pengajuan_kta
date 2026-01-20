@@ -95,7 +95,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
                   .tujuan(dto.getTujuan())
                   .tanggal(dto.getTanggal())
                   .tempat(dto.getTempat())
-                  .status(StatusPengajuanEnum.PENDING)
+                  .status(StatusPengajuanEnum.PENDING_VERIFICATOR)
                   .keterangan(dto.getKeterangan())
                   .build();
 
@@ -145,7 +145,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
                   .setTujuan(dto.getTujuan())
                   .setTanggal(dto.getTanggal())
                   .setTempat(dto.getTempat())
-                  .setStatus(StatusPengajuanEnum.PENDING)
+                  .setStatus(StatusPengajuanEnum.PENDING_VERIFICATOR)
                   .setKeterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-");
 
             repository.save(rekomendasi);
@@ -261,7 +261,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
                   .orElseThrow(() -> new ResourceNotFoundException("Data rekomendasi with UUID " + uuid + " is not found"));
 
             rekomendasi.setNomorSurat(dto.getNomor_surat());
-            rekomendasi.setStatus(dto.getStatus() != null ? StatusPengajuanEnum.valueOf(dto.getStatus()) : StatusPengajuanEnum.PENDING);
+            rekomendasi.setStatus(dto.getStatus() != null ? StatusPengajuanEnum.valueOf(dto.getStatus()) : StatusPengajuanEnum.PENDING_VERIFICATOR);
             rekomendasi.setTertanda(dto.getTertanda());
             rekomendasi.setCatatan(dto.getCatatan());
             rekomendasi.setTanggalSurat(LocalDateTime.now());

@@ -1,6 +1,7 @@
 package cc.kertaskerja.pengajuan_kta.repository;
 
 import cc.kertaskerja.pengajuan_kta.entity.FormPengajuan;
+import cc.kertaskerja.pengajuan_kta.enums.StatusPengajuanEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,6 +32,18 @@ public interface FormPengajuanRepository extends JpaRepository<FormPengajuan, Lo
               JOIN FETCH f.account a
           """)
     List<FormPengajuan> findAllWithAccount();
+
+    @Query("""
+              SELECT DISTINCT f
+              FROM FormPengajuan f
+              JOIN FETCH f.account a
+              LEFT JOIN FETCH f.filePendukung fp
+              WHERE f.status IN :statuses
+              ORDER BY f.createdAt DESC
+          """)
+    List<FormPengajuan> findAllByStatusInWithAccount(
+          @Param("statuses") List<StatusPengajuanEnum> statuses
+    );
 
     @Query(value = "SELECT * FROM form_pengajuan WHERE uuid = :uuid", nativeQuery = true)
     Optional<FormPengajuan> findByUuid(@Param("uuid") UUID uuid);

@@ -36,8 +36,8 @@ public class AuthAttemptService {
         sendOtpAttemp.sendOtpFailed(username);
     }
 
-    public boolean sendOtpBlocked (String email) {
-        return sendOtpAttemp.sentOtpBlocked(email);
+    public boolean sendOtpBlocked (String msisdn) {
+        return sendOtpAttemp.sentOtpBlocked(msisdn);
     }
 
     @Getter
@@ -92,26 +92,26 @@ public class AuthAttemptService {
             attemptsCache.remove(username);
         }
 
-        public void sendOtpSucceeded(String email) {
-            AttemptInfo info = attemptsCache.getOrDefault(email, new AttemptInfo(0, null));
+        public void sendOtpSucceeded(String msisdn) {
+            AttemptInfo info = attemptsCache.getOrDefault(msisdn, new AttemptInfo(0, null));
             int newAttempts = info.getAttempts() + 1;
             Instant lockTime = (newAttempts >= MAX_ATTEMPTS) ? Instant.now() : info.getLockedUntil();
-            attemptsCache.put(email, new AttemptInfo(newAttempts, lockTime));
+            attemptsCache.put(msisdn, new AttemptInfo(newAttempts, lockTime));
         }
 
-        public boolean sentOtpBlocked(String email) {
-            return getRemainingLockTime(email) > 0;
+        public boolean sentOtpBlocked(String msisdn) {
+            return getRemainingLockTime(msisdn) > 0;
         }
 
-        public long getRemainingLockTime(String email) {
-            AttemptInfo info = attemptsCache.get(email);
+        public long getRemainingLockTime(String msisdn) {
+            AttemptInfo info = attemptsCache.get(msisdn);
             if (info == null || info.getLockedUntil() == null) return 0;
 
             long elapsed = Duration.between(info.getLockedUntil(), Instant.now()).toMillis();
             long remaining = LOCK_TIME_MS - elapsed;
 
             if (remaining <= 0) {
-                attemptsCache.remove(email);
+                attemptsCache.remove(msisdn);
                 return 0;
             }
             return remaining;

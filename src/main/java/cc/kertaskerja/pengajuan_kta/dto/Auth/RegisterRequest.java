@@ -95,6 +95,30 @@ public class RegisterRequest {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class SendOtpForgotPassword {
+        @NotBlank(message = "NIK tidak boleh kosong")
+        private String nik;
+        private String captcha_token;
+        private String captcha_code;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ResetPassword {
+        @NotBlank(message = "NIK tidak boleh kosong!")
+        private String nik;
+
+        @NotBlank(message = "Password baru tidak boleh kosong")
+        private String password;
+
+        @NotBlank(message = "Kode OTP tidak boleh kosong")
+        private String otp_code;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class VerifyAccount {
         @NotNull(message = "Status tidak boleh kosong")
         private String status;

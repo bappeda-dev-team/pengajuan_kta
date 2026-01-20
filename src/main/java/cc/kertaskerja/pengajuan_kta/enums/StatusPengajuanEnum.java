@@ -5,8 +5,10 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 @JsonFormat(shape = JsonFormat.Shape.STRING)
 public enum StatusPengajuanEnum {
     DRAFT,
-    PENDING,
+    PENDING_VERIFICATOR,
+    PENDING_APPROVAL,
     APPROVED,
     REJECTED,
     VERIFIED
 }
+

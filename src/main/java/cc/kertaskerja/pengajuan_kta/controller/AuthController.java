@@ -55,8 +55,6 @@ public class AuthController {
         try {
              AccountResponse.SendOtp response = authService.sendOTP(request);
 
-//            var response = "SUCCESS";
-//
             return ResponseEntity.ok(
                   ApiResponse.builder()
                         .success(true)
@@ -186,6 +184,61 @@ public class AuthController {
         AccountResponse.Detail response = authService.profile(authHeader);
 
         return ResponseEntity.ok(ApiResponse.success(response, "My account detail retrieved successfully"));
+    }
+
+    @PostMapping("/auth/send-otp-forgot-password")
+    @Operation(summary = "Kirim OTP untuk reset password")
+    public ResponseEntity<ApiResponse<?>> sendOtpResetPassword(@Valid @RequestBody RegisterRequest.SendOtpForgotPassword request,
+                                                               BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            List<String> errorMessages = bindingResult.getFieldErrors().stream()
+                  .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                  .toList();
+
+            return ResponseEntity.badRequest().body(
+                  ApiResponse.<List<String>>builder()
+                        .success(false)
+                        .statusCode(400)
+                        .message("Validation failed")
+                        .errors(errorMessages)
+                        .timestamp(LocalDateTime.now())
+                        .build()
+            );
+        }
+
+        String result = authService.sendPasswordResetPassword(request);
+
+        return ResponseEntity.ok(
+              ApiResponse.success(result, "OTP reset password berhasil dikirim")
+        );
+    }
+
+    @PutMapping("/auth/reset-password")
+    @Operation(summary = "Reset password")
+    public ResponseEntity<ApiResponse<?>> resetPassword(@Valid @RequestBody RegisterRequest.ResetPassword request,
+                                                         BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            List<String> errorMessages = bindingResult.getFieldErrors().stream()
+                  .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                  .toList();
+
+            return ResponseEntity.badRequest().body(
+                  ApiResponse.<List<String>>builder()
+                        .success(false)
+                        .statusCode(400)
+                        .message("Validation failed")
+                        .errors(errorMessages)
+                        .timestamp(LocalDateTime.now())
+                        .build()
+            );
+        }
+
+        String result = authService.resetPassword(request);
+
+        return ResponseEntity.ok(
+              ApiResponse.success(result, "Password berhasil diubah")
+        );
     }
 }
 

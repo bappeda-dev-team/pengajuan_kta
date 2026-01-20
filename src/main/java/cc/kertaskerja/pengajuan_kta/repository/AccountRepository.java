@@ -21,6 +21,15 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     @Query(value = "SELECT * FROM account WHERE email = :email LIMIT 1", nativeQuery = true)
     Optional<Account> findByEmail(@Param("email") String email);
 
+    @Query(
+          value = "SELECT * FROM account WHERE nik = :nik OR email = :email LIMIT 1",
+          nativeQuery = true
+    )
+    Optional<Account> findByNikOrEmail(
+          @Param("nik") String nik,
+          @Param("email") String email
+    );
+
     @Query(value = "SELECT COUNT(*) > 0 FROM account WHERE email = :email", nativeQuery = true)
     boolean existsByEmail(@Param("email") String email);
 

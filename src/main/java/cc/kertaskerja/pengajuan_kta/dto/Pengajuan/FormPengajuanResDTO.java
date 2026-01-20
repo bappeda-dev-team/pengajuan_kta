@@ -25,6 +25,9 @@ public class FormPengajuanResDTO {
         @JsonProperty("nama")
         private String nama;
 
+        @JsonProperty("tipe_akun")
+        private String tipe_akun;
+
         private String induk_organisasi;
         private String nomor_induk;
         private String jumlah_anggota;
@@ -38,6 +41,7 @@ public class FormPengajuanResDTO {
         private TertandaDTO tertanda;
         private List<FilePendukung> file_pendukung;
         private LocalDateTime status_tanggal;
+        private LocalDateTime created_at;
     }
 
     @Data
