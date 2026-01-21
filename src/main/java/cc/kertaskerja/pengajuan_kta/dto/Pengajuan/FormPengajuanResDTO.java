@@ -64,6 +64,8 @@ public class FormPengajuanResDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class FilePendukung {
+        private Long id;
+
         @NotBlank(message = "form_uuid tidak boleh kosong!")
         private String form_uuid;
 

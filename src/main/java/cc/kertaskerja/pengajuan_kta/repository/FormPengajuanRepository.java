@@ -23,7 +23,7 @@ public interface FormPengajuanRepository extends JpaRepository<FormPengajuan, Lo
           nativeQuery = true)
     boolean existsByNomorInduk(@Param("nomorInduk") String nomorInduk);
 
-    @Query(value = "SELECT * FROM form_pengajuan WHERE nik = :nik", nativeQuery = true)
+    @Query(value = "SELECT * FROM form_pengajuan WHERE nik = :nik ORDER BY created_at DESC", nativeQuery = true)
     List<FormPengajuan> findByAccId(@Param("nik") String nik);
 
     @Query("""

@@ -207,6 +207,15 @@ public class FormPengajuanController {
         }
     }
 
+    @DeleteMapping("/file-pendukung/{id}")
+    @Operation(summary = "Hapus 1 file pendukung berdasarkan ID (hapus juga di R2)")
+    public ResponseEntity<ApiResponse<Void>> deleteOne(@RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+                                                       @PathVariable Long id) {
+        formPengajuanService.deleteFilePendukung(authHeader, id);
+
+        return ResponseEntity.ok(ApiResponse.deleted());
+    }
+
     @GetMapping("/image/{key}")
     public ResponseEntity<byte[]> getImage(@PathVariable String key) {
         byte[] bytes = r2StorageService.getObject(key);

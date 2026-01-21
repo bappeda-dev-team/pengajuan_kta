@@ -193,6 +193,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
               .keterangan(formPengajuan.getKeterangan())
               .file_pendukung(formPengajuan.getFilePendukung().stream()
                     .map(file -> FormPengajuanResDTO.FilePendukung.builder()
+                          .id(file.getId())
                           .form_uuid(file.getFormPengajuan().getUuid().toString())
                           .file_url(file.getFileUrl())
                           .nama_file(file.getNamaFile())
@@ -237,6 +238,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
               .tertanda(formPengajuan.getTertanda())
               .file_pendukung(formPengajuan.getFilePendukung() == null ? List.of() : formPengajuan.getFilePendukung().stream()
                     .map(file -> FormPengajuanResDTO.FilePendukung.builder()
+                          .id(file.getId())
                           .form_uuid(file.getFormPengajuan().getUuid().toString())
                           .file_url(file.getFileUrl())
                           .nama_file(file.getNamaFile())
@@ -347,9 +349,11 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
             form.setCatatan(dto.getCatatan());
             form.setStatusTanggal(LocalDateTime.now());
 
-            account.setIsAssigned(false);
-
             formPengajuanRepository.save(form);
+
+            if ("KEPALA".equalsIgnoreCase(role)) {
+                account.setIsAssigned(false);
+            }
 
             return FormPengajuanResDTO.VerifyData.builder()
                   .berlaku_dari(form.getBerlakuDari())
@@ -422,6 +426,43 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
         // 4️⃣ Delete parent
         formPengajuanRepository.delete(form);
+    }
+
+    @Override
+    @Transactional
+    public void deleteFilePendukung(String authHeader, Long id) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthenticationException("Missing or invalid Authorization header");
+        }
+
+        String token = authHeader.substring(7);
+        Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+
+        String nikFromToken = String.valueOf(claims.get("sub"));
+        String role = String.valueOf(claims.get("role"));
+
+        Set<String> allowedRoles = Set.of("ADMIN", "KEPALA");
+
+        FilePendukung file = filePendukungRepository.findById(id)
+              .orElseThrow(() -> new ResourceNotFoundException("File pendukung not found: " + id));
+
+        if (file.getFormPengajuan() != null) {
+            String ownerNik = file.getFormPengajuan().getAccount() != null ? file.getFormPengajuan().getAccount().getNik() : null;
+
+            if (ownerNik != null && !ownerNik.equals(nikFromToken) && !allowedRoles.contains(role)) {
+                throw new ForbiddenException("File pendukung is not yours.");
+            }
+
+            if (file.getFormPengajuan().getStatus() == StatusPengajuanEnum.APPROVED) {
+                throw new ConflictException("File pendukung cannot be deleted because pengajuan is APPROVED.");
+            }
+        }
+
+        if (file.getFileUrl() != null && !file.getFileUrl().isBlank()) {
+            r2StorageService.delete(file.getFileUrl());
+        }
+
+        filePendukungRepository.delete(file);
     }
 
     @Override

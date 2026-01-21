@@ -30,5 +30,7 @@ public interface FormPengajuanService {
 
     void deleteData(String uuid);
 
+    void deleteFilePendukung(String authHeader, Long id);
+
     List<FormPengajuanResDTO.PengajuanBulananResponse> getStatisticsPerMonth(int year);
 }

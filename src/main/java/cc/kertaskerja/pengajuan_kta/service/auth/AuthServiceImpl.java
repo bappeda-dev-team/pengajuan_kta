@@ -345,8 +345,8 @@ public class AuthServiceImpl implements AuthService {
         Map<String, Object> claims = jwtTokenProvider.parseToken(token);
         String role = String.valueOf(claims.get("role"));
 
-        if (!"ADMIN".equalsIgnoreCase(role)) {
-            throw new ForbiddenException("Only ADMIN can verify accounts");
+        if (!"ADMIN".equalsIgnoreCase(role) && !"KEPALA".equalsIgnoreCase(role)) {
+            throw new ForbiddenException("You are not authorized to access this resource");
         }
 
         try {
@@ -383,9 +383,6 @@ public class AuthServiceImpl implements AuthService {
         String token = authHeader.substring(7);
         Map<String, Object> claims = jwtTokenProvider.parseToken(token);
 
-        // IMPORTANT: in your JWT, "sub" is what you put as username during token generation.
-        // In your current login flow, it is account.getNik() (stored encrypted in DB),
-        // so we should lookup by that value directly.
         String nikFromToken = String.valueOf(claims.get("sub"));
 
         Account account = accountRepository.findByNik(nikFromToken)

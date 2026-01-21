@@ -11,6 +11,8 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class R2StorageService {
@@ -72,13 +74,19 @@ public class R2StorageService {
     // ======================
     private String extractKeyFromUrl(String fileUrl) {
         try {
-            URI uri = URI.create(fileUrl);
-            String path = uri.getPath(); // /filename.jpg OR /bucket/filename.jpg
+            // skip if not url
+            if (!fileUrl.startsWith("http://") && !fileUrl.startsWith("https://")) {
+                return fileUrl;
+            }
 
-            // jika baseUrl = https://xxx.r2.dev
-            return path.startsWith("/")
-                  ? path.substring(1)
-                  : path;
+            String sanitized = fileUrl.replace(" ", "%20");
+            URI uri = URI.create(sanitized);
+            String path = uri.getPath(); // /KTA%20NGAWI%20Belakang%208,5x5,5.png
+
+            String keyEncoded = path.startsWith("/") ? path.substring(1) : path;
+
+            // Decode %20 -> space, so it matches the original S3 key
+            return URLDecoder.decode(keyEncoded, StandardCharsets.UTF_8);
 
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid R2 file URL: " + fileUrl, e);
