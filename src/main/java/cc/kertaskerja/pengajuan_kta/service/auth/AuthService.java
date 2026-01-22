@@ -16,6 +16,10 @@ public interface AuthService {
 
     AccountResponse register(RegisterRequest request);
 
+    List<AccountResponse.RegisterAdminResponse> listAdmin(String authHeader);
+
+    AccountResponse.RegisterAdminResponse registerAdmin(String authHeader, RegisterRequest.RegisterAdmin request);
+
     AccountResponse.VerifyAccount verifyAccount(String authHeader, String nik, RegisterRequest.VerifyAccount request);
 
     LoginResponse login(LoginRequest request);

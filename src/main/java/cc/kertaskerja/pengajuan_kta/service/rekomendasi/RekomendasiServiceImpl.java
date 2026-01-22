@@ -1,19 +1,14 @@
 package cc.kertaskerja.pengajuan_kta.service.rekomendasi;
 
 import cc.kertaskerja.pengajuan_kta.dto.Auth.AccountResponse;
-import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanResDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Rekomendasi.FilePendukungDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Rekomendasi.RekomendasiReqDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Rekomendasi.RekomendasiResDTO;
 import cc.kertaskerja.pengajuan_kta.entity.Account;
 import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
-import cc.kertaskerja.pengajuan_kta.entity.FormPengajuan;
 import cc.kertaskerja.pengajuan_kta.entity.SuratRekomendasi;
 import cc.kertaskerja.pengajuan_kta.enums.StatusPengajuanEnum;
-import cc.kertaskerja.pengajuan_kta.exception.ConflictException;
-import cc.kertaskerja.pengajuan_kta.exception.ForbiddenException;
-import cc.kertaskerja.pengajuan_kta.exception.ResourceNotFoundException;
-import cc.kertaskerja.pengajuan_kta.exception.UnauthorizedException;
+import cc.kertaskerja.pengajuan_kta.exception.*;
 import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FilePendukungRepository;
 import cc.kertaskerja.pengajuan_kta.repository.SuratRekomendasiRepository;
@@ -46,37 +41,55 @@ public class RekomendasiServiceImpl implements RekomendasiService {
     public List<RekomendasiResDTO.RekomendasiResponse> findAll(String authHeader) {
         try {
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                throw new RuntimeException("Missing or invalid Authorization header");
+                throw new UnauthorizedException("Missing or invalid Authorization header");
             }
 
             String token = authHeader.substring(7);
             Map<String, Object> claims = jwtTokenProvider.parseToken(token);
 
-            String role = (String) claims.get("role");
+            String role = String.valueOf(claims.get("role"));
             String nik = String.valueOf(claims.get("sub"));
 
-            List<SuratRekomendasi> suratRekomendasi;
+            List<SuratRekomendasi> result = new java.util.ArrayList<>();
+
             if ("ADMIN".equalsIgnoreCase(role)) {
-                suratRekomendasi = repository.findAllByStatusInWithAccount(
-                      List.of(
-                            StatusPengajuanEnum.APPROVED,
-                            StatusPengajuanEnum.REJECTED,
-                            StatusPengajuanEnum.PENDING_VERIFICATOR
+                result.addAll(
+                      repository.findAllByStatusInWithAccount(
+                            List.of(
+                                  StatusPengajuanEnum.APPROVED,
+                                  StatusPengajuanEnum.REJECTED,
+                                  StatusPengajuanEnum.PENDING_VERIFICATOR
+                            )
                       )
                 );
+                result.addAll(repository.findByAccIdWithAccount(nik));
+
             } else if ("KEPALA".equalsIgnoreCase(role)) {
-                suratRekomendasi = repository.findAllByStatusInWithAccount(
-                      List.of(
-                            StatusPengajuanEnum.APPROVED,
-                            StatusPengajuanEnum.REJECTED,
-                            StatusPengajuanEnum.PENDING_APPROVAL
+                result.addAll(
+                      repository.findAllByStatusInWithAccount(
+                            List.of(
+                                  StatusPengajuanEnum.APPROVED,
+                                  StatusPengajuanEnum.REJECTED,
+                                  StatusPengajuanEnum.PENDING_APPROVAL
+                            )
                       )
                 );
+                result.addAll(repository.findByAccIdWithAccount(nik));
+
             } else {
-                suratRekomendasi = repository.findByAccId(nik);
+                result = repository.findByAccIdWithAccount(nik);
             }
 
-            return suratRekomendasi.stream()
+            // 🔹 Remove duplicate (UUID based)
+            Map<UUID, SuratRekomendasi> uniqueMap = result.stream()
+                  .collect(java.util.stream.Collectors.toMap(
+                        SuratRekomendasi::getUuid,
+                        r -> r,
+                        (existing, replacement) -> existing
+                  ));
+
+            return uniqueMap.values().stream()
+                  .sorted(java.util.Comparator.comparing(SuratRekomendasi::getCreatedAt).reversed())
                   .map(rekom -> RekomendasiResDTO.RekomendasiResponse.builder()
                         .uuid(rekom.getUuid())
                         .nama(rekom.getAccount().getNama())
@@ -86,9 +99,11 @@ public class RekomendasiServiceImpl implements RekomendasiService {
                         .tanggal(rekom.getTanggal())
                         .status(rekom.getStatus() != null ? rekom.getStatus().name() : null)
                         .build()
-                  ).toList();
+                  )
+                  .toList();
+
         } catch (Exception e) {
-            throw new RuntimeException("Failed to get all pengajuan: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to get all rekomendasi: " + e.getMessage(), e);
         }
     }
 
@@ -220,9 +235,11 @@ public class RekomendasiServiceImpl implements RekomendasiService {
         String nik = String.valueOf(claims.get("sub"));
         String role = String.valueOf(claims.get("role"));
 
-        if (!owner.getNik().equals(nik) && !role.equals("ADMIN")) {
-            throw new ForbiddenException("Data pengajuan is not yours.");
-        };
+        Set<String> allowedRoles = Set.of("ADMIN", "KEPALA");
+
+        if (!allowedRoles.contains(role)) {
+            throw new ForbiddenException("You are not allowed to verify data pengajuan.");
+        }
 
         AccountResponse.Detail profile = AccountResponse.Detail.builder()
               .id(owner.getId())
@@ -256,6 +273,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
               .keterangan(suratRekomendasi.getKeterangan())
               .file_pendukung(suratRekomendasi.getFilePendukung().stream()
                     .map(file -> RekomendasiResDTO.FilePendukung.builder()
+                          .id(file.getId())
                           .rekom_uuid(file.getSuratRekomendasi().getUuid().toString())
                           .file_url(file.getFileUrl())
                           .nama_file(file.getNamaFile())
@@ -339,5 +357,42 @@ public class RekomendasiServiceImpl implements RekomendasiService {
 
         // ✅ 3️⃣ Delete parent (FIX)
         repository.delete(suratRekomendasi);
+    }
+
+    @Override
+    @Transactional
+    public void deleteFilePendukung(String authHeader, Long id) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthenticationException("Missing or invalid Authorization header");
+        }
+
+        String token = authHeader.substring(7);
+        Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+
+        String nikFromToken = String.valueOf(claims.get("sub"));
+        String role = String.valueOf(claims.get("role"));
+
+        Set<String> allowedRoles = Set.of("ADMIN", "KEPALA");
+
+        FilePendukung file = filePendukungRepository.findById(id)
+              .orElseThrow(() -> new ResourceNotFoundException("File pendukung not found: " + id));
+
+        if (file.getFormPengajuan() != null) {
+            String ownerNik = file.getFormPengajuan().getAccount() != null ? file.getFormPengajuan().getAccount().getNik() : null;
+
+            if (ownerNik != null && !ownerNik.equals(nikFromToken) && !allowedRoles.contains(role)) {
+                throw new ForbiddenException("File pendukung is not yours.");
+            }
+
+            if (file.getFormPengajuan().getStatus() == StatusPengajuanEnum.APPROVED) {
+                throw new ConflictException("File pendukung cannot be deleted because pengajuan is APPROVED.");
+            }
+        }
+
+        if (file.getFileUrl() != null && !file.getFileUrl().isBlank()) {
+            r2StorageService.delete(file.getFileUrl());
+        }
+
+        filePendukungRepository.delete(file);
     }
 }

@@ -2,10 +2,7 @@ package cc.kertaskerja.pengajuan_kta.controller;
 
 import cc.kertaskerja.pengajuan_kta.dto.ApiResponse;
 import cc.kertaskerja.pengajuan_kta.dto.Auth.*;
-import cc.kertaskerja.pengajuan_kta.exception.BadRequestException;
 import cc.kertaskerja.pengajuan_kta.exception.ConflictException;
-import cc.kertaskerja.pengajuan_kta.exception.UnauthenticationException;
-import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
 import cc.kertaskerja.pengajuan_kta.service.auth.AuthService;
 import cc.kertaskerja.pengajuan_kta.service.auth.TokenBlacklistService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,12 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -145,6 +139,42 @@ public class AuthController {
 
         return ResponseEntity.ok(ApiResponse.success(response, "Signin successfully"));
     }
+
+    @GetMapping("/get-all-admin-account")
+    @Operation(summary = "Ambil data akun Admin")
+    public ResponseEntity<ApiResponse<List<AccountResponse.RegisterAdminResponse>>> getAllAdminAcc(@Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+        List<AccountResponse.RegisterAdminResponse> response = authService.listAdmin(authHeader);
+
+        return ResponseEntity.ok(ApiResponse.success(response, "List admin account successfully"));
+    }
+
+    @PostMapping("/register/account-admin")
+    @Operation(summary = "Daftar akun ADMIN / KEPALA OPD")
+    public ResponseEntity<ApiResponse<?>> registerAccountAdmin(@Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+                                                               @Valid @RequestBody RegisterRequest.RegisterAdmin request,
+                                                               BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            List<String> errorMessages = bindingResult.getFieldErrors().stream()
+                  .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                  .toList();
+
+            return ResponseEntity.badRequest().body(
+                  ApiResponse.<List<String>>builder()
+                        .success(false)
+                        .statusCode(400)
+                        .message("Validation failed")
+                        .errors(errorMessages)
+                        .timestamp(LocalDateTime.now())
+                        .build()
+            );
+        }
+
+        AccountResponse.RegisterAdminResponse created = authService.registerAdmin(authHeader, request);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+              .body(ApiResponse.created(created));
+    }
+
 
     @GetMapping("/accounts")
     @Operation(summary = "List akun terdaftar")

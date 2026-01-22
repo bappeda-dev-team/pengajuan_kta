@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -196,6 +197,101 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public List<AccountResponse.RegisterAdminResponse> listAdmin(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthenticationException("Missing or invalid Authorization header");
+        }
+
+        String token = authHeader.substring(7);
+        Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+        String role = String.valueOf(claims.get("role"));
+
+        if (!"ADMIN".equalsIgnoreCase(role) && !"KEPALA".equalsIgnoreCase(role)) {
+            throw new ForbiddenException("You are not authorized to access this resource");
+        }
+
+        try {
+            List<Account> accounts = accountRepository.findAllAdminAccount();
+
+            return accounts.stream()
+                  .map(acc -> AccountResponse.RegisterAdminResponse.builder()
+                        .id(acc.getId())
+                        .nama(acc.getNama())
+                        .nip(acc.getNip())
+                        .pangkat(acc.getPangkat())
+                        .jabatan(acc.getJabatan())
+                        .email(acc.getEmail())
+                        .role(acc.getRole())
+                        .build())
+                  .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get all account: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public AccountResponse.RegisterAdminResponse registerAdmin(String authHeader, RegisterRequest.RegisterAdmin request) {
+        try {
+            String token = authHeader.substring(7);
+            Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+            String role = String.valueOf(claims.get("role"));
+
+            if (!Set.of("ADMIN", "KEPALA").contains(role)) {
+                throw new ForbiddenException("You are not allowed to register ADMIN account.");
+            }
+
+            if (accountRepository.existsByEmail(request.getEmail())) {
+                throw new BadRequestException("Email sudah terdaftar");
+            }
+
+            if (accountRepository.existsByNip(request.getNip())) {
+                throw new BadRequestException("NIP sudah terdaftar");
+            }
+
+            Long generatedId = accountUtils.generateRandom6DigitId();
+
+            int inserted = accountRepository.insertIfAnyPresent(
+                  generatedId,
+                  request.getNama(),
+                  request.getNip(),
+                  request.getPangkat(),
+                  request.getJabatan(),
+                  request.getNik(),
+                  request.getEmail(),
+                  request.getNomor_telepon(),
+                  passwordEncoder.encode(request.getPassword()),
+                  request.getRole()
+            );
+
+            if (inserted == 0) {
+                throw new IllegalArgumentException("No data inserted (all fields are null)");
+            }
+
+            // fetch last inserted admin (example)
+            Account saved = accountRepository.findAllAdminAccount()
+                  .stream()
+                  .findFirst()
+                  .orElseThrow(() -> new RuntimeException("Failed to fetch inserted admin"));
+
+            return AccountResponse.RegisterAdminResponse.builder()
+                  .nama(saved.getNama())
+                  .nip(encryptService.decrypt(saved.getNip()))
+                  .pangkat(saved.getPangkat())
+                  .nik(saved.getNik())
+                  .jabatan(saved.getJabatan())
+                  .email(saved.getEmail())
+                  .role(saved.getRole())
+                  .build();
+
+        } catch (DataIntegrityViolationException e) {
+            throw new RuntimeException("Data integrity violation. Please check NOT NULL, UNIQUE, or foreign key constraints.", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Unexpected error occurred while saving register ADMIN", e);
+        }
+    }
+
+    @Override
     @Transactional
     public AccountResponse.VerifyAccount verifyAccount(String authHeader, String nik, RegisterRequest.VerifyAccount request) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -206,8 +302,8 @@ public class AuthServiceImpl implements AuthService {
         Map<String, Object> claims = jwtTokenProvider.parseToken(token);
         String role = String.valueOf(claims.get("role"));
 
-        if (!"ADMIN".equalsIgnoreCase(role)) {
-            throw new ForbiddenException("Only ADMIN can verify accounts");
+        if (!"ADMIN".equalsIgnoreCase(role) && !"KEPALA".equalsIgnoreCase(role)) {
+            throw new ForbiddenException("You are not authorized to access this resource");
         }
 
         try {
@@ -244,32 +340,41 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
-        boolean validateCaptcha = captchaService.verifyCaptcha(request.getCaptcha_token(), request.getCaptcha_code());
+
+        boolean validateCaptcha = captchaService.verifyCaptcha(
+              request.getCaptcha_token(),
+              request.getCaptcha_code()
+        );
 
         if (!validateCaptcha) {
             throw new ForbiddenException("CAPTCHA yang Anda masukkan salah. Silakan coba lagi.");
         }
 
-        String nik = request.getNik();
-
-        if (authAttempService.loginBlocked(nik)) {
-            throw new RateLimitException("Terlalu banyak percobaan login. Silakan coba lagi dalam 1 menit");
+        if (authAttempService.loginBlocked(request.getEmail())) {
+            throw new RateLimitException(
+                  "Terlalu banyak percobaan login. Silakan coba lagi dalam 1 menit"
+            );
         }
 
         try {
-            Account account = accountRepository.findByNik(encryptService.encrypt(nik))
+            Account account = accountRepository.findByEmail(request.getEmail())
                   .orElseThrow(() -> {
-                      authAttempService.loginFailed(nik);
-                      return new ResourceNotFoundException("Akun Anda belum terdaftar. Silakan daftar terlebih dahulu.");
+                      authAttempService.loginFailed(request.getEmail());
+                      return new ResourceNotFoundException(
+                            "Akun email Anda belum terdaftar."
+                      );
                   });
 
             if (!passwordEncoder.matches(request.getPassword(), account.getPassword())) {
-                authAttempService.loginFailed(nik);
-                throw new ResourceNotFoundException("Password yang Anda masukkan salah. Silakan coba lagi.");
+                authAttempService.loginFailed(request.getEmail());
+                throw new ResourceNotFoundException("Password salah.");
             }
 
-            authAttempService.loginSucceeded(nik);
+            authAttempService.loginSucceeded(request.getEmail());
 
+            boolean isUser = "USER".equals(account.getRole());
+
+            // 🔐 JWT
             String token = jwtTokenProvider.generateToken(
                   account.getId(),
                   account.getNama(),
@@ -279,16 +384,34 @@ public class AuthServiceImpl implements AuthService {
                   account.getRole()
             );
 
-            LoginResponse.Profile profile = new LoginResponse.Profile(
-                  String.valueOf(account.getId()),
-                  account.getNama(),
-                  account.getEmail(),
-                  account.getNik(),
-                  account.getNomorTelepon(),
-                  account.getTipeAkun(),
-                  account.getStatus().name(),
-                  account.getRole()
-            );
+            // 👤 PROFILE
+            LoginResponse.Profile profile;
+
+            if (isUser) {
+                profile = new LoginResponse.Profile(
+                      String.valueOf(account.getId()),
+                      account.getNama(),
+                      account.getEmail(),
+                      account.getNik(),
+                      account.getNomorTelepon(),
+                      account.getTipeAkun(),
+                      account.getStatus() != null
+                            ? account.getStatus().name()
+                            : "ACTIVE",
+                      account.getRole()
+                );
+            } else {
+                profile = new LoginResponse.Profile(
+                      String.valueOf(account.getId()),
+                      account.getNama(),
+                      account.getEmail(),
+                      account.getNik(),
+                      account.getNomorTelepon(),
+                      null,
+                      "VERIFIED",
+                      account.getRole()
+                );
+            }
 
             return new LoginResponse(token, profile);
 
@@ -298,6 +421,7 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Error occurred during login process", e);
         }
     }
+
 
     @Override
     public List<AccountResponse> listAccount(String authHeader) {
@@ -314,7 +438,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         try {
-            List<Account> accounts = accountRepository.findAllData();
+            List<Account> accounts = accountRepository.findAllUser();
 
             return accounts.stream()
                   .map(account -> AccountResponse.builder()
@@ -399,6 +523,9 @@ public class AuthServiceImpl implements AuthService {
               .jenisKelamin(account.getJenisKelamin())
               .alamat(account.getAlamat())
               .tipeAkun(account.getTipeAkun())
+              .nip(account.getNip())
+              .pangkat(account.getPangkat())
+              .jabatan(account.getJabatan())
               .status(account.getStatus() != null ? account.getStatus().name() : null)
               .role(account.getRole())
               .is_assigned(account.getIsAssigned())

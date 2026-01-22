@@ -1,0 +1,10 @@
+ALTER TABLE account
+    ALTER COLUMN nik DROP NOT NULL,
+    ALTER COLUMN password DROP NOT NULL,
+    ALTER COLUMN nomor_telepon DROP NOT NULL,
+    ALTER COLUMN tipe_akun DROP NOT NULL,
+    ALTER COLUMN status DROP NOT NULL,
+    ALTER COLUMN tempat_lahir DROP NOT NULL,
+    ALTER COLUMN tanggal_lahir DROP NOT NULL,
+    ALTER COLUMN alamat DROP NOT NULL,
+    ALTER COLUMN jenis_kelamin DROP NOT NULL;

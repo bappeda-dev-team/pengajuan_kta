@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -181,5 +180,14 @@ public class SuratRekomendasiController {
 
             return ResponseEntity.badRequest().body(errorResponse);
         }
+    }
+
+    @DeleteMapping("/file-pendukung/{id}")
+    @Operation(summary = "Hapus 1 file pendukung berdasarkan ID (hapus juga di R2)")
+    public ResponseEntity<ApiResponse<Void>> deleteOne(@RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+                                                       @PathVariable Long id) {
+        rekomendasiService.deleteFilePendukung(authHeader, id);
+
+        return ResponseEntity.ok(ApiResponse.deleted());
     }
 }

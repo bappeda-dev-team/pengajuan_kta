@@ -15,28 +15,30 @@ import java.util.UUID;
 public interface SuratRekomendasiRepository extends JpaRepository<SuratRekomendasi, Long> {
 
     @Query("""
-        SELECT rk
-            FROM SuratRekomendasi rk
-                JOIN FETCH rk.account a
-    """)
-    List<SuratRekomendasi> findAllWithAccount();
+              SELECT DISTINCT rk
+                  FROM SuratRekomendasi rk
+                      JOIN FETCH rk.account a
+                          WHERE rk.status IN :statuses
+                              ORDER BY rk.createdAt DESC
+          """)
+    List<SuratRekomendasi> findAllByStatusInWithAccount(@Param("statuses") List<StatusPengajuanEnum> statuses);
 
     @Query("""
-        SELECT DISTINCT rk
-            FROM SuratRekomendasi rk
-                JOIN FETCH rk.account a
-                    WHERE rk.status IN :statuses
-                        ORDER BY rk.createdAt DESC
-    """)
-    List<SuratRekomendasi> findAllByStatusInWithAccount(@Param("statuses") List<StatusPengajuanEnum> statuses);
+              SELECT rk
+              FROM SuratRekomendasi rk
+              JOIN FETCH rk.account a
+              WHERE a.nik = :nik
+              ORDER BY rk.createdAt DESC
+          """)
+    List<SuratRekomendasi> findByAccIdWithAccount(@Param("nik") String nik);
 
     @Query(value = "SELECT * FROM surat_rekomendasi WHERE nik = :nik", nativeQuery = true)
     List<SuratRekomendasi> findByAccId(@Param("nik") String nik);
 
     @Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END " +
-            "FROM surat_rekomendasi " +
-            "WHERE nomor_surat = :nomorSurat",
-            nativeQuery = true)
+          "FROM surat_rekomendasi " +
+          "WHERE nomor_surat = :nomorSurat",
+          nativeQuery = true)
     boolean existsByNomorSurat(@Param("nomorSurat") String nomorSurat);
 
     @Query(value = "SELECT * FROM surat_rekomendasi WHERE uuid = :uuid", nativeQuery = true)
@@ -46,11 +48,11 @@ public interface SuratRekomendasiRepository extends JpaRepository<SuratRekomenda
     Optional<SuratRekomendasi> findByUuidWithFiles(@Param("uuid") UUID uuid);
 
     @Query("""
-        SELECT rk
-            FROM SuratRekomendasi rk
-                JOIN FETCH rk.account a
-                    LEFT JOIN FETCH rk.filePendukung fp
-                        WHERE rk.uuid = :uuid
-    """)
+              SELECT rk
+                  FROM SuratRekomendasi rk
+                      JOIN FETCH rk.account a
+                          LEFT JOIN FETCH rk.filePendukung fp
+                              WHERE rk.uuid = :uuid
+          """)
     Optional<SuratRekomendasi> findByUuidWithFilesAndAccount(@Param("uuid") UUID uuid);
 }

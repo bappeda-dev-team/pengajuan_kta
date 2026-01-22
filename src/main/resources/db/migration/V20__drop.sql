@@ -1,0 +1,4 @@
+ALTER TABLE form_pengajuan
+    DROP COLUMN IF EXISTS nip,
+    DROP COLUMN IF EXISTS pangkat,
+    DROP COLUMN IF EXISTS jabatan;

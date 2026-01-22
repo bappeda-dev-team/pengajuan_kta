@@ -22,4 +22,6 @@ public interface RekomendasiService {
     RekomendasiResDTO.VerifyData verifyDataRekomendasi(String authHeader, UUID uuid, RekomendasiReqDTO.Verify dto);
 
     void deleteData(UUID uuid);
+
+    void deleteFilePendukung(String authHeader, Long id);
 }

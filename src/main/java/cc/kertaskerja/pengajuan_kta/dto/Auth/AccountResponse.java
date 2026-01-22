@@ -64,6 +64,15 @@ public class AccountResponse {
         @JsonProperty("tipe_akun")
         private String tipeAkun;
 
+        @JsonProperty("nip")
+        private String nip;
+
+        @JsonProperty("pangkat")
+        private String pangkat;
+
+        @JsonProperty("jabatan")
+        private String jabatan;
+
         private String status;
 
         private Boolean is_assigned;
@@ -134,6 +143,21 @@ public class AccountResponse {
         private String role;
 
         private String status;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RegisterAdminResponse {
+        private Long id;
+        private String nama;
+        private String nip;
+        private String pangkat;
+        private String nik;
+        private String jabatan;
+        private String email;
+        private String role;
     }
 }
 

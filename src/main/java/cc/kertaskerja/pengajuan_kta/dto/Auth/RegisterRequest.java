@@ -30,10 +30,6 @@ public class RegisterRequest {
     private String email;
 
     @NotBlank(message = "Password tidak boleh kosong")
-    @Pattern(
-          regexp = "^(?=.*[A-Z])(?=.*[!@#$%^&*(),.?\":{}|<>]).{8,}$",
-          message = "Password harus minimal 8 karakter, mengandung huruf kapital dan simbol"
-    )
     private String password;
 
     @NotBlank(message = "Harap masukkan nomor whatsapp yang masih aktif")
@@ -122,5 +118,40 @@ public class RegisterRequest {
     public static class VerifyAccount {
         @NotNull(message = "Status tidak boleh kosong")
         private String status;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RegisterAdmin {
+        @NotBlank(message = "Nama tidak boleh kosong!")
+        private String nama;
+
+        @NotBlank(message = "NIP tidak boleh kosong!")
+        private String nip;
+
+        @NotBlank(message = "Pangkat tidak boleh kosong!")
+        private String pangkat;
+
+        @NotBlank(message = "Jabatan tidak boleh kosong!")
+        private String jabatan;
+
+        @NotBlank(message = "NIK tidak boleh kosong!")
+        private String nik;
+
+        @NotBlank(message = "Harap masukkan alamat email!")
+        private String email;
+
+        @Size(min = 10, max = 16, message = "Nomor HP harus antara 10 sampai 16 digit")
+        @Pattern(
+              regexp = "^62\\d{8,14}$",
+              message = "Nomor HP harus dimulai dengan 62 dan diikuti 8–14 digit angka"
+        )
+        private String nomor_telepon;
+
+        private String password;
+
+        @NotBlank(message = "Role harus diisi!")
+        private String role;
     }
 }

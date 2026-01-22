@@ -72,6 +72,8 @@ public class RekomendasiResDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class FilePendukung {
+        private Long id;
+
         @NotBlank(message = "rekom_uuid tidak boleh kosong!")
         private String rekom_uuid;
 

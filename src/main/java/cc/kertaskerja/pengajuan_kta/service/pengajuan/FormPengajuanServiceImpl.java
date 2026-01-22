@@ -23,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -48,35 +49,65 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
             String role = (String) claims.get("role");
             String nik = String.valueOf(claims.get("sub"));
 
-            List<FormPengajuan> forms;
+            List<FormPengajuan> result = new ArrayList<>();
+
             if ("ADMIN".equalsIgnoreCase(role)) {
-                forms = formPengajuanRepository.findAllByStatusInWithAccount(
-                      List.of(
-                            StatusPengajuanEnum.APPROVED,
-                            StatusPengajuanEnum.REJECTED,
-                            StatusPengajuanEnum.PENDING_VERIFICATOR
-                      )
-                );
+                List<FormPengajuan> byStatus =
+                      formPengajuanRepository.findAllByStatusInWithAccount(
+                            List.of(
+                                  StatusPengajuanEnum.APPROVED,
+                                  StatusPengajuanEnum.REJECTED,
+                                  StatusPengajuanEnum.PENDING_VERIFICATOR
+                            )
+                      );
+
+                List<FormPengajuan> byNik =
+                      formPengajuanRepository.findByAccIdWithAccount(nik);
+
+                result.addAll(byStatus);
+                result.addAll(byNik);
+
             } else if ("KEPALA".equalsIgnoreCase(role)) {
-                forms = formPengajuanRepository.findAllByStatusInWithAccount(
-                      List.of(
-                            StatusPengajuanEnum.APPROVED,
-                            StatusPengajuanEnum.REJECTED,
-                            StatusPengajuanEnum.PENDING_APPROVAL
-                      )
-                );
+                List<FormPengajuan> byStatus =
+                      formPengajuanRepository.findAllByStatusInWithAccount(
+                            List.of(
+                                  StatusPengajuanEnum.APPROVED,
+                                  StatusPengajuanEnum.REJECTED,
+                                  StatusPengajuanEnum.PENDING_APPROVAL
+                            )
+                      );
+
+                List<FormPengajuan> byNik =
+                      formPengajuanRepository.findByAccIdWithAccount(nik);
+
+                result.addAll(byStatus);
+                result.addAll(byNik);
+
             } else {
-                forms = formPengajuanRepository.findByAccId(nik);
+                result = formPengajuanRepository.findByAccIdWithAccount(nik);
             }
 
-            return forms.stream()
+            // 🔹 Remove duplicate by UUID
+            Map<UUID, FormPengajuan> uniqueMap = result.stream()
+                  .collect(Collectors.toMap(
+                        FormPengajuan::getUuid,
+                        f -> f,
+                        (existing, replacement) -> existing
+                  ));
+
+            return uniqueMap.values().stream()
+                  .sorted(Comparator.comparing(FormPengajuan::getCreatedAt).reversed())
                   .map(form -> FormPengajuanResDTO.PengajuanResponse.builder()
                         .uuid(form.getUuid())
                         .nama(form.getAccount().getNama())
                         .tipe_akun(form.getAccount().getTipeAkun())
                         .induk_organisasi(form.getIndukOrganisasi())
                         .nomor_induk(form.getNomorInduk())
-                        .jumlah_anggota(form.getJumlahAnggota() != null ? form.getJumlahAnggota().toString() : "0")
+                        .jumlah_anggota(
+                              form.getJumlahAnggota() != null
+                                    ? form.getJumlahAnggota().toString()
+                                    : "0"
+                        )
                         .daerah(form.getDaerah())
                         .berlaku_dari(form.getBerlakuDari())
                         .berlaku_sampai(form.getBerlakuSampai())
@@ -85,15 +116,18 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                         .catatan(form.getCatatan())
                         .status(form.getStatus() != null ? form.getStatus().name() : null)
                         .tertanda(form.getTertanda())
-                        .file_pendukung(form.getFilePendukung().stream()
-                              .map(file -> FormPengajuanResDTO.FilePendukung.builder()
-                                    .form_uuid(file.getFormPengajuan().getUuid().toString())
-                                    .file_url(file.getFileUrl())
-                                    .nama_file(file.getNamaFile())
-                                    .build())
-                              .toList())
+                        .file_pendukung(
+                              form.getFilePendukung().stream()
+                                    .map(file -> FormPengajuanResDTO.FilePendukung.builder()
+                                          .form_uuid(file.getFormPengajuan().getUuid().toString())
+                                          .file_url(file.getFileUrl())
+                                          .nama_file(file.getNamaFile())
+                                          .build())
+                                    .toList()
+                        )
                         .created_at(form.getCreatedAt())
-                        .build())
+                        .build()
+                  )
                   .toList();
 
         } catch (Exception e) {

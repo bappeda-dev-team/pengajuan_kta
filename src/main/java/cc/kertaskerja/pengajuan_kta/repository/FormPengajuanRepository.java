@@ -14,17 +14,11 @@ import java.util.UUID;
 @Repository
 public interface FormPengajuanRepository extends JpaRepository<FormPengajuan, Long> {
 
-    @Query(value = "SELECT * FROM form_pengajuan", nativeQuery = true)
-    List<FormPengajuan> findAllData();
-
     @Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END " +
           "FROM form_pengajuan " +
           "WHERE nomor_induk = :nomorInduk",
           nativeQuery = true)
     boolean existsByNomorInduk(@Param("nomorInduk") String nomorInduk);
-
-    @Query(value = "SELECT * FROM form_pengajuan WHERE nik = :nik ORDER BY created_at DESC", nativeQuery = true)
-    List<FormPengajuan> findByAccId(@Param("nik") String nik);
 
     @Query("""
               SELECT DISTINCT f
@@ -36,6 +30,15 @@ public interface FormPengajuanRepository extends JpaRepository<FormPengajuan, Lo
     List<FormPengajuan> findAllByStatusInWithAccount(
           @Param("statuses") List<StatusPengajuanEnum> statuses
     );
+
+    @Query("""
+    SELECT f
+    FROM FormPengajuan f
+    JOIN FETCH f.account a
+    WHERE a.nik = :nik
+    ORDER BY f.createdAt DESC
+""")
+    List<FormPengajuan> findByAccIdWithAccount(@Param("nik") String nik);
 
     @Query(value = "SELECT * FROM form_pengajuan WHERE uuid = :uuid", nativeQuery = true)
     Optional<FormPengajuan> findByUuid(@Param("uuid") UUID uuid);
