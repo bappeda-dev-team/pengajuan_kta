@@ -14,8 +14,6 @@ import java.util.Optional;
 @Repository
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
-
-
     @Query(value = "SELECT * FROM account WHERE nik = :nik LIMIT 1", nativeQuery = true)
     Optional<Account> findByNik(@Param("nik") String nik);
 

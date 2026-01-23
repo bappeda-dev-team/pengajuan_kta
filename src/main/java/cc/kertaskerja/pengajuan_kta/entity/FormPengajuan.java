@@ -79,4 +79,9 @@ public class FormPengajuan extends BaseAuditable {
     @OneToMany(mappedBy = "formPengajuan", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<FilePendukung> filePendukung;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organisasi_uuid", referencedColumnName = "uuid")
+    @JsonBackReference
+    private Organisasi organisasi;
 }

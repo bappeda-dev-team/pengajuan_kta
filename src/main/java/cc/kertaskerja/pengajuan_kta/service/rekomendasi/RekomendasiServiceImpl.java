@@ -237,7 +237,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
 
         Set<String> allowedRoles = Set.of("ADMIN", "KEPALA");
 
-        if (!allowedRoles.contains(role)) {
+        if (!owner.getNik().equals(nik) && !allowedRoles.contains(role)) {
             throw new ForbiddenException("You are not allowed to verify data pengajuan.");
         }
 

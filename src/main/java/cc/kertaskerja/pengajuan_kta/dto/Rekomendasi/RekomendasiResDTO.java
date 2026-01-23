@@ -73,14 +73,8 @@ public class RekomendasiResDTO {
     @AllArgsConstructor
     public static class FilePendukung {
         private Long id;
-
-        @NotBlank(message = "rekom_uuid tidak boleh kosong!")
         private String rekom_uuid;
-
-        @NotBlank(message = "Url File wajib diisi")
         private String file_url;
-
-        @NotBlank(message = "Nama file tidak boleh kosong!")
         private String nama_file;
     }
 

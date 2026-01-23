@@ -88,7 +88,7 @@ public class SuratRekomendasiController {
     @GetMapping("/detail-with-profile/{uuid}")
     @Operation(summary = "Ambil data pengajuan Surat Rekomendasi berdasarkan uuid")
     public ResponseEntity<ApiResponse<RekomendasiResDTO.RekomendasiWithProfileResponse>> getRekomByUuidWithProfile(@Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-                                                                                             @PathVariable UUID uuid) {
+                                                                                                                    @PathVariable UUID uuid) {
         RekomendasiResDTO.RekomendasiWithProfileResponse result = rekomendasiService.findByUuidWithFilesAndProfile(authHeader, uuid);
         ApiResponse<RekomendasiResDTO.RekomendasiWithProfileResponse> response = ApiResponse.success(result, "Retrieved 1 data successfully");
 

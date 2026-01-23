@@ -250,10 +250,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
         Set<String> allowedRoles = Set.of("ADMIN", "KEPALA");
 
-        if (
-              !owner.getNik().equals(nik)
-                    && !allowedRoles.contains(role)
-        ) {
+        if (!owner.getNik().equals(nik) && !allowedRoles.contains(role)) {
             throw new ForbiddenException("Data pengajuan is not yours.");
         }
 

@@ -76,4 +76,9 @@ public class SuratRekomendasi extends BaseAuditable {
     @OneToMany(mappedBy = "suratRekomendasi", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<FilePendukung> filePendukung;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organisasi_uuid", referencedColumnName = "uuid")
+    @JsonBackReference
+    private Organisasi organisasi;
 }

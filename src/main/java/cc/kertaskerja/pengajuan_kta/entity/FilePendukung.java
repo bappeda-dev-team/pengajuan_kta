@@ -42,4 +42,14 @@ public class FilePendukung extends BaseAuditable {
     public UUID getRekomUuid() {
         return suratRekomendasi != null ? suratRekomendasi.getUuid() : null;
     }
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organisasi_uuid", referencedColumnName = "uuid")
+    @JsonBackReference
+    private Organisasi organisasi;
+
+    // Helper untuk mengambil UUID
+    public UUID getOrganisasiUuid() {
+        return organisasi != null ? organisasi.getUuid() : null;
+    }
 }
