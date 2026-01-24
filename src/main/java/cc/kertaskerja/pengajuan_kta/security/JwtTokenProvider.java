@@ -26,7 +26,7 @@ public class JwtTokenProvider {
 
     public JwtTokenProvider(
           @Value("${jwt.secret:change-this-secret-key}") String secret,
-          @Value("${jwt.expirationMillis:3600000}") long expirationMillis
+          @Value("${jwt.expirationMillis:7200000}") long expirationMillis
     ) {
         // Ensure secret is properly encoded and has sufficient length
         this.secretKey = generateSecretKey(secret);

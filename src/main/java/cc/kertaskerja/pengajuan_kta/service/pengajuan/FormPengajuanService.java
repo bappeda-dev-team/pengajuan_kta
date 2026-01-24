@@ -1,5 +1,6 @@
 package cc.kertaskerja.pengajuan_kta.service.pengajuan;
 
+import cc.kertaskerja.pengajuan_kta.dto.Organisasi.OrganisasiResDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FilePendukungDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanReqDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanResDTO;
@@ -12,6 +13,8 @@ import java.util.UUID;
 
 @Service
 public interface FormPengajuanService {
+    List<OrganisasiResDTO> findAllOrganisasi(String authHeader);
+
     List<FormPengajuanResDTO.PengajuanResponse> findAllDataPengajuan(String authHeader);
 
     FormPengajuanResDTO.SaveDataResponse saveData(FormPengajuanReqDTO.SavePengajuan formPengajuanDTO);

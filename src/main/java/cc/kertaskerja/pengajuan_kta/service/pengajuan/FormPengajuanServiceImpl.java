@@ -1,17 +1,20 @@
 package cc.kertaskerja.pengajuan_kta.service.pengajuan;
 
 import cc.kertaskerja.pengajuan_kta.dto.Auth.AccountResponse;
+import cc.kertaskerja.pengajuan_kta.dto.Organisasi.OrganisasiResDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FilePendukungDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanReqDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanResDTO;
 import cc.kertaskerja.pengajuan_kta.entity.Account;
 import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
 import cc.kertaskerja.pengajuan_kta.entity.FormPengajuan;
+import cc.kertaskerja.pengajuan_kta.entity.Organisasi;
 import cc.kertaskerja.pengajuan_kta.enums.StatusPengajuanEnum;
 import cc.kertaskerja.pengajuan_kta.exception.*;
 import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FilePendukungRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FormPengajuanRepository;
+import cc.kertaskerja.pengajuan_kta.repository.OrganisasiRepository;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
 import cc.kertaskerja.pengajuan_kta.service.external.EncryptService;
 import cc.kertaskerja.pengajuan_kta.service.global.R2StorageService;
@@ -30,11 +33,37 @@ import java.util.stream.Collectors;
 public class FormPengajuanServiceImpl implements FormPengajuanService {
 
     private final AccountRepository accountRepository;
+    private final OrganisasiRepository organisasiRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final FormPengajuanRepository formPengajuanRepository;
     private final FilePendukungRepository filePendukungRepository;
     private final R2StorageService r2StorageService;
     private final EncryptService encryptService;
+
+    @Override
+    public List<OrganisasiResDTO> findAllOrganisasi(String authHeader) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new RuntimeException("Missing or invalid Authorization header");
+            }
+
+            List<Organisasi> organisasiList = organisasiRepository.findAll();
+
+            return organisasiList.stream()
+                  .map(entity -> OrganisasiResDTO.builder()
+                        .uuid(entity.getUuid())
+                        .bidang_keahlian(entity.getBidangKeahlian())
+                        .nama_ketua(entity.getNamaKetua())
+                        .nomor_telepon(entity.getNomorTelepon())
+                        .alamat(entity.getAlamat())
+                        .status(entity.getStatus().name())
+                        .build())
+                  .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching organisasi list: " + e.getMessage(), e);
+        }
+    }
 
     @Override
     public List<FormPengajuanResDTO.PengajuanResponse> findAllDataPengajuan(String authHeader) {

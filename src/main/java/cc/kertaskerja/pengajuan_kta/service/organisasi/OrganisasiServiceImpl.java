@@ -3,11 +3,9 @@ package cc.kertaskerja.pengajuan_kta.service.organisasi;
 import cc.kertaskerja.pengajuan_kta.dto.Auth.AccountResponse;
 import cc.kertaskerja.pengajuan_kta.dto.Organisasi.OrganisasiReqDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Organisasi.OrganisasiResDTO;
-import cc.kertaskerja.pengajuan_kta.dto.Rekomendasi.RekomendasiResDTO;
 import cc.kertaskerja.pengajuan_kta.entity.Account;
 import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
 import cc.kertaskerja.pengajuan_kta.entity.Organisasi;
-import cc.kertaskerja.pengajuan_kta.entity.SuratRekomendasi;
 import cc.kertaskerja.pengajuan_kta.enums.StatusPengajuanEnum;
 import cc.kertaskerja.pengajuan_kta.exception.ForbiddenException;
 import cc.kertaskerja.pengajuan_kta.exception.ResourceNotFoundException;
@@ -23,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,24 +41,7 @@ public class OrganisasiServiceImpl implements OrganisasiService {
                 throw new RuntimeException("Missing or invalid Authorization header");
             }
 
-            String token = authHeader.substring(7);
-            Map<String, Object> claims = jwtTokenProvider.parseToken(token);
-
-            String role = (String) claims.get("role");
-            String nik = String.valueOf(claims.get("sub"));
-
-            List<Organisasi> organisasiList;
-
-            if ("ADMIN".equalsIgnoreCase(role) || "KEPALA".equalsIgnoreCase(role)) {
-                organisasiList = organisasiRepository.findAll();
-            } else {
-                String encryptedNik = encryptService.encrypt(nik);
-                organisasiList = organisasiRepository.findByAccountNik(encryptedNik);
-            }
-
-            if (organisasiList == null || organisasiList.isEmpty()) {
-                return Collections.emptyList();
-            }
+            List<Organisasi> organisasiList = organisasiRepository.findAll();
 
             return organisasiList.stream()
                   .map(entity -> OrganisasiResDTO.builder()
