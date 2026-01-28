@@ -276,24 +276,20 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
         String requesterNik = String.valueOf(claims.get("sub"));
         String requesterRole = String.valueOf(claims.get("role"));
 
-        // 1. Basic Existence Check
         if (formPengajuanRepository.findByUuid(uuid).isEmpty()) {
             throw new ResourceNotFoundException("Data not found");
         }
 
-        // 2. Fetch Form with Files
         FormPengajuan form = formPengajuanRepository.findByUuidWithFilesAndAccount(uuid)
               .orElseThrow(() -> new ResourceNotFoundException("Pengajuan with UUID " + uuid + " not found"));
 
         Account owner = form.getAccount();
 
-        // 3. Authorization Check
         Set<String> allowedRoles = Set.of("ADMIN", "KEPALA");
         if (!owner.getNik().equals(requesterNik) && !allowedRoles.contains(requesterRole)) {
             throw new ForbiddenException("Data pengajuan is not yours.");
         }
 
-        // 4. Build Profile
         AccountResponse.Detail profile = AccountResponse.Detail.builder()
               .id(owner.getId())
               .nama(owner.getNama())
@@ -312,7 +308,6 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
               .updatedAt(owner.getUpdatedAt())
               .build();
 
-        // 5. Build File List (Common)
         List<FormPengajuanResDTO.FilePendukung> filePendukungList = (form.getFilePendukung() == null) ? List.of() :
               form.getFilePendukung().stream()
                     .map(file -> FormPengajuanResDTO.FilePendukung.builder()
@@ -323,11 +318,9 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                           .build())
                     .toList();
 
-        // 6. Initialize Builder with COMMON Data (Used by both Org and Pribadi)
         var pengajuanBuilder = FormPengajuanResDTO.PengajuanResponse.builder()
               .uuid(form.getUuid())
               .nomor_induk(form.getNomorInduk())
-              // Common fields
               .daerah(form.getDaerah())
               .berlaku_dari(form.getBerlakuDari())
               .berlaku_sampai(form.getBerlakuSampai())
@@ -339,7 +332,6 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
               .created_at(form.getCreatedAt())
               .file_pendukung(filePendukungList);
 
-        // 7. Handle Specific Account Types
         if ("Organisasi".equalsIgnoreCase(owner.getTipeAkun())) {
             if (form.getOrganisasi() == null) {
                 throw new ResourceNotFoundException("Data inconsistency: Organization account missing details");
@@ -358,7 +350,6 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                               .build())
                         .toList();
 
-            // Fill Organization specific fields
             pengajuanBuilder
                   .nama_ketua(form.getNamaKetua())
                   .nik_ketua(form.getNikKetua())
@@ -369,8 +360,6 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .jumlah_anggota(form.getJumlahAnggota() != null ? form.getJumlahAnggota().toString() : "0")
                   .file_organisasi(fileOrgList);
         } else {
-            // Handle PRIBADI: Just set the profession
-            // The builder will leave organization fields as null automatically
             pengajuanBuilder.profesi(form.getProfesi());
         }
 
