@@ -30,31 +30,11 @@ public class Organisasi extends BaseAuditable {
     private UUID uuid = UUID.randomUUID();
 
     // Field lain sesuai gambar (nama_ketua, bidang_keahlian, dll)...
-    @Column(name = "nama_ketua")
-    private String namaKetua;
-
     @Column(name = "alamat")
     private String alamat;
 
     @Column(name = "bidang_keahlian")
     private String bidangKeahlian;
-
-    @Column(name = "nomor_telepon")
-    private String nomorTelepon;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 20, nullable = false)
-    private StatusPengajuanEnum status;
-
-    @Column(name = "catatan")
-    private String catatan;
-
-    // --- RELASI KE PARENT (ACCOUNT) ---
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "nik", referencedColumnName = "nik")
-    @JsonBackReference
-    private Account account;
-
     // --- RELASI KE CHILDREN ---
 
     @OneToMany(mappedBy = "organisasi", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

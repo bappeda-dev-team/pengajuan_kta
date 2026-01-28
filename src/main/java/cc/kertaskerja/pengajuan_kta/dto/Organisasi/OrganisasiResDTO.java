@@ -25,22 +25,34 @@ public class OrganisasiResDTO {
     private String nama_ketua;
     private String nomor_telepon;
     private String alamat;
-    private String status;
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class DetailResponse {
+        private UUID uuid;
         private String bidang_keahlian;
-        private String nama_ketua;
-        private String nomor_telepon;
         private String alamat;
         private String status;
         private String catatan;
         private List<FilePendukung> file_pendukung;
+        private List<Pengajuan> pengajuan;
         private LocalDateTime status_tanggal;
         private LocalDateTime created_at;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Pengajuan {
+        private String nomor_induk;
+        private String nama_ketua;
+        private String nik_ketua;
+        private String nomor_telepon;
+        private Integer jumlah_anggota;
+        private String status;
     }
 
     @Data
@@ -50,8 +62,6 @@ public class OrganisasiResDTO {
     public static class SaveResponse {
         private UUID uuid;
         private String bidang_keahlian;
-        private String nama_ketua;
-        private String nomor_telepon;
         private String alamat;
         private String status;
         private LocalDateTime status_tanggal;
@@ -67,14 +77,5 @@ public class OrganisasiResDTO {
         private UUID organisasi_uuid;
         private String file_url;
         private String nama_file;
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class OrganisasiDetailWithProfileResponse {
-        private OrganisasiResDTO.DetailResponse organisasi;
-        private AccountResponse.Detail profile;
     }
 }

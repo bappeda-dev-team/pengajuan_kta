@@ -45,12 +45,12 @@ public class OrganisasiController {
         }
     }
 
-    @GetMapping("/detail-with-profile/{uuid}")
+    @GetMapping("/detail/{uuid}")
     @Operation(summary = "Ambil data organisasi seni berdasarkan uuid")
-    public ResponseEntity<ApiResponse<OrganisasiResDTO.OrganisasiDetailWithProfileResponse>> getOrganisasiByUuidWithProfile(@Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+    public ResponseEntity<ApiResponse<OrganisasiResDTO.DetailResponse>> getDetail(@Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
                                                                                                                             @PathVariable UUID uuid) {
-        OrganisasiResDTO.OrganisasiDetailWithProfileResponse result = organisasiService.detailWithProfile(authHeader, uuid);
-        ApiResponse<OrganisasiResDTO.OrganisasiDetailWithProfileResponse> response = ApiResponse.success(result, "Retrieved 1 data successfully");
+        OrganisasiResDTO.DetailResponse result = organisasiService.detailOrganisasi(authHeader, uuid);
+        ApiResponse<OrganisasiResDTO.DetailResponse> response = ApiResponse.success(result, "Retrieved 1 data successfully");
 
         return ResponseEntity.ok(response);
     }
@@ -80,6 +80,33 @@ public class OrganisasiController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(saved));
     }
 
+    @PutMapping("/update/{uuid}")
+    @Operation(summary = "Ubah data pengajuan organisasi kesenian")
+    public ResponseEntity<ApiResponse<?>> updateOrganisasi(@Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+                                                          @PathVariable UUID uuid,
+                                                          @RequestBody OrganisasiReqDTO.SaveData dto,
+                                                          BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            List<String> errorMessages = bindingResult.getFieldErrors().stream()
+                  .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                  .toList();
+
+            ApiResponse<List<String>> errorResponse = ApiResponse.<List<String>>builder()
+                  .success(false)
+                  .statusCode(400)
+                  .message("Validation failed")
+                  .errors(errorMessages)
+                  .timestamp(LocalDateTime.now())
+                  .build();
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        OrganisasiResDTO.SaveResponse updated = organisasiService.editDataOrganisasi(authHeader, uuid, dto);
+
+        return ResponseEntity.ok(ApiResponse.updated(updated));
+    }
+
     @PostMapping("/upload-file")
     @Operation(summary = "Upload file pendukung")
     public ResponseEntity<ApiResponse<?>> uploadFile(@RequestParam("file") MultipartFile file,
@@ -88,5 +115,35 @@ public class OrganisasiController {
         OrganisasiResDTO.FilePendukung result = organisasiService.uploadFilePendukung(file, organisasiUuid, namaFile);
 
         return ResponseEntity.ok(ApiResponse.created(result));
+    }
+
+    @DeleteMapping("/delete/{uuid}")
+    @Operation(summary = "Hapus data organisasi kesenian via uuid")
+    public ResponseEntity<ApiResponse<Void>> deleteOrganisasi(@PathVariable UUID uuid) {
+        try {
+            organisasiService.deleteData(uuid.toString());
+
+            return ResponseEntity.ok(
+                  ApiResponse.success(null, "Data pengajuan berhasil dihapus")
+            );
+        } catch (RuntimeException e) {
+            ApiResponse<Void> errorResponse = ApiResponse.<Void>builder()
+                  .success(false)
+                  .statusCode(400)
+                  .message(e.getMessage())
+                  .timestamp(LocalDateTime.now())
+                  .build();
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @DeleteMapping("/file-pendukung/{id}")
+    @Operation(summary = "Hapus 1 file organisasi berdasarkan ID (hapus juga di R2)")
+    public ResponseEntity<ApiResponse<Void>> deleteOne(@RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+                                                       @PathVariable Long id) {
+        organisasiService.deleteFilePendukung(authHeader, id);
+
+        return ResponseEntity.ok(ApiResponse.deleted());
     }
 }

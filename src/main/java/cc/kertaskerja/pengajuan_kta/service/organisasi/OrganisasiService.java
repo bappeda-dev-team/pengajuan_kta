@@ -12,9 +12,15 @@ import java.util.UUID;
 public interface OrganisasiService {
     List<OrganisasiResDTO> findAllOrganisasi(String authHeader);
 
-    OrganisasiResDTO.OrganisasiDetailWithProfileResponse detailWithProfile(String authHeader, UUID uuid);
+    OrganisasiResDTO.DetailResponse detailOrganisasi(String authHeader, UUID uuid);
 
     OrganisasiResDTO.SaveResponse saveData(OrganisasiReqDTO.SaveData dto);
 
+    OrganisasiResDTO.SaveResponse editDataOrganisasi(String authHeader, UUID uuid, OrganisasiReqDTO.SaveData dto);
+
     OrganisasiResDTO.FilePendukung uploadFilePendukung(MultipartFile file, String organisasiUuid, String namaFile);
+
+    void deleteData(String uuid);
+
+    void deleteFilePendukung(String authHeader, Long id);
 }

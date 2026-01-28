@@ -25,21 +25,9 @@ public class OrganisasiReqDTO {
         @JsonProperty("bidang_keahlian")
         private String bidang_keahlian;
 
-        @NotBlank(message = "Nama ketua organisasi harap diisi!")
-        @JsonProperty("nama_ketua")
-        private String nama_ketua;
-
-        @NotBlank(message = "Nomor telepon tidak boleh kosong!")
-        @JsonProperty("nomor_telepon")
-        private String nomor_telepon;
-
         @NotBlank(message = "Alamat harap diisi!")
         @JsonProperty("alamat")
         private String alamat;
-
-        @NotNull(message = "NIK tidak boleh kosong!")
-        @JsonProperty("nik")
-        private String nik;
     }
 
     @Getter

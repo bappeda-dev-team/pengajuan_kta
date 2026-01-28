@@ -42,7 +42,7 @@ public class FormPengajuanController {
         }
 
         try {
-            var result = formPengajuanService.findAllDataPengajuan(authHeader);
+            var result = formPengajuanService.getAllPengajuan(authHeader);
             return ResponseEntity.ok(ApiResponse.success(result, "Retrieved " + result.size() + " data pengajuan successfully"));
         } catch (RuntimeException e) {
             var error = ApiResponse.builder()
@@ -92,8 +92,9 @@ public class FormPengajuanController {
 
     @GetMapping("/detail/{uuid}")
     @Operation(summary = "Ambil data pengajuan KTA berdasarkan uuid")
-    public ResponseEntity<ApiResponse<FormPengajuanResDTO.PengajuanResponse>> getFormByUuid(@PathVariable UUID uuid) {
-        FormPengajuanResDTO.PengajuanResponse result = formPengajuanService.findByUuidWithFiles(uuid);
+    public ResponseEntity<ApiResponse<FormPengajuanResDTO.PengajuanResponse>> getFormByUuid(@Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+                                                                                            @PathVariable UUID uuid) {
+        FormPengajuanResDTO.PengajuanResponse result = formPengajuanService.findByUuidWithFiles(authHeader, uuid);
         ApiResponse<FormPengajuanResDTO.PengajuanResponse> response = ApiResponse.success(result, "Retrieved 1 data successfully");
 
         return ResponseEntity.ok(response);

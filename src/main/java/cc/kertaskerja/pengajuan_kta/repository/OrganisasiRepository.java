@@ -6,24 +6,33 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface OrganisasiRepository extends JpaRepository<Organisasi, Long> {
-
-    List<Organisasi> findByAccountNik(String nik);
+    @Query(value = """
+                  SELECT EXISTS (
+                    SELECT 1
+                    FROM organisasi
+                    WHERE UPPER(bidang_keahlian) = UPPER(:bidangKeahlian)
+                  )
+                """,
+          nativeQuery = true
+    )
+    boolean existsBidangKeahlian(@org.springframework.data.repository.query.Param("bidangKeahlian") String bidangKeahlian);
 
     @Query(value = "SELECT * FROM organisasi WHERE uuid = :uuid", nativeQuery = true)
     Optional<Organisasi> findByUuid(@Param("uuid") UUID uuid);
 
+    @Query(value = "SELECT o FROM Organisasi o LEFT JOIN FETCH o.filePendukung WHERE o.uuid = :uuid")
+    Optional<Organisasi> findByUuidWithFiles(@Param("uuid") UUID uuid);
+
     @Query("""
-        SELECT o 
+        SELECT o
             FROM Organisasi o
-                JOIN FETCH o.account a
-                    LEFT JOIN FETCH o.filePendukung fp
-                        WHERE o.uuid = :uuid
+                LEFT JOIN FETCH o.formPengajuan fp
+                    WHERE o.uuid = :uuid
     """)
-    Optional<Organisasi> findByUuidWithFilesAndAccount(@Param("uuid") UUID uuid);
+    Optional<Organisasi> findDetailWithPengajuan(@Param("uuid") UUID uuid);
 }

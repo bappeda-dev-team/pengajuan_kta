@@ -381,7 +381,8 @@ public class AuthServiceImpl implements AuthService {
                   account.getEmail(),
                   account.getNik(),
                   account.getNomorTelepon(),
-                  account.getRole()
+                  account.getRole(),
+                  account.getTipeAkun()
             );
 
             // 👤 PROFILE

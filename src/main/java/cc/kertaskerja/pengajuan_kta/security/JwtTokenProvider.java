@@ -61,7 +61,7 @@ public class JwtTokenProvider {
     /**
      * Generate JWT token with username, msisdn, and role
      */
-    public String generateToken(Long id, String nama, String email, String username, String msisdn, String role) {
+    public String generateToken(Long id, String nama, String email, String username, String msisdn, String role, String tipeAkun) {
         try {
             Instant now = Instant.now();
             Instant expiry = now.plusMillis(expirationMillis);
@@ -73,6 +73,7 @@ public class JwtTokenProvider {
             claims.put("sub", username);
             claims.put("msisdn", msisdn);
             claims.put("role", role);
+            claims.put("tipe_akun", tipeAkun);
 
             String token = Jwts.builder()
                   .setClaims(claims)

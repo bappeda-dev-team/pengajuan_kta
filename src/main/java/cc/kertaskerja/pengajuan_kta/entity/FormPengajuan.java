@@ -38,9 +38,6 @@ public class FormPengajuan extends BaseAuditable {
     @Column(nullable = false, unique = true, updatable = false)
     private UUID uuid = UUID.randomUUID();
 
-    @Column(name = "induk_organisasi", nullable = false)
-    private String indukOrganisasi;
-
     @Column(name = "nomor_induk", length = 100, nullable = false)
     private String nomorInduk;
 
@@ -66,12 +63,24 @@ public class FormPengajuan extends BaseAuditable {
     @Column(name = "keterangan", nullable = false)
     private String keterangan;
 
+    @Column(name = "nama_ketua")
+    private String namaKetua;
+
+    @Column(name = "nik_ketua", nullable = false, unique = true, length = 16)
+    private String nikKetua;
+
+    @Column(name = "nomor_telepon", nullable = false)
+    private String nomorTelepon;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "tertanda", columnDefinition = "jsonb", nullable = false)
     private TertandaDTO tertanda;
 
     @Column(name = "catatan")
     private String catatan;
+
+    @Column(name = "tambahan")
+    private String tambahan;
 
     @Column(name = "status_tanggal")
     private LocalDateTime statusTanggal;

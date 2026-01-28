@@ -7,11 +7,13 @@ import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanResDTO;
 import cc.kertaskerja.pengajuan_kta.entity.Account;
 import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
 import cc.kertaskerja.pengajuan_kta.entity.FormPengajuan;
+import cc.kertaskerja.pengajuan_kta.entity.Organisasi;
 import cc.kertaskerja.pengajuan_kta.enums.StatusPengajuanEnum;
 import cc.kertaskerja.pengajuan_kta.exception.*;
 import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FilePendukungRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FormPengajuanRepository;
+import cc.kertaskerja.pengajuan_kta.repository.OrganisasiRepository;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
 import cc.kertaskerja.pengajuan_kta.service.external.EncryptService;
 import cc.kertaskerja.pengajuan_kta.service.global.R2StorageService;
@@ -30,6 +32,7 @@ import java.util.stream.Collectors;
 public class FormPengajuanServiceImpl implements FormPengajuanService {
 
     private final AccountRepository accountRepository;
+    private final OrganisasiRepository organisasiRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final FormPengajuanRepository formPengajuanRepository;
     private final FilePendukungRepository filePendukungRepository;
@@ -37,7 +40,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
     private final EncryptService encryptService;
 
     @Override
-    public List<FormPengajuanResDTO.PengajuanResponse> findAllDataPengajuan(String authHeader) {
+    public List<FormPengajuanResDTO> getAllPengajuan(String authHeader) { // Added method signature assumption
         try {
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                 throw new RuntimeException("Missing or invalid Authorization header");
@@ -52,34 +55,26 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
             List<FormPengajuan> result = new ArrayList<>();
 
             if ("ADMIN".equalsIgnoreCase(role)) {
-                List<FormPengajuan> byStatus =
-                      formPengajuanRepository.findAllByStatusInWithAccount(
-                            List.of(
-                                  StatusPengajuanEnum.APPROVED,
-                                  StatusPengajuanEnum.REJECTED,
-                                  StatusPengajuanEnum.PENDING_VERIFICATOR
-                            )
-                      );
-
-                List<FormPengajuan> byNik =
-                      formPengajuanRepository.findByAccIdWithAccount(nik);
-
+                List<FormPengajuan> byStatus = formPengajuanRepository.findAllByStatusInWithAccount(
+                      List.of(
+                            StatusPengajuanEnum.APPROVED,
+                            StatusPengajuanEnum.REJECTED,
+                            StatusPengajuanEnum.PENDING_VERIFICATOR
+                      )
+                );
+                List<FormPengajuan> byNik = formPengajuanRepository.findByAccIdWithAccount(nik);
                 result.addAll(byStatus);
                 result.addAll(byNik);
 
             } else if ("KEPALA".equalsIgnoreCase(role)) {
-                List<FormPengajuan> byStatus =
-                      formPengajuanRepository.findAllByStatusInWithAccount(
-                            List.of(
-                                  StatusPengajuanEnum.APPROVED,
-                                  StatusPengajuanEnum.REJECTED,
-                                  StatusPengajuanEnum.PENDING_APPROVAL
-                            )
-                      );
-
-                List<FormPengajuan> byNik =
-                      formPengajuanRepository.findByAccIdWithAccount(nik);
-
+                List<FormPengajuan> byStatus = formPengajuanRepository.findAllByStatusInWithAccount(
+                      List.of(
+                            StatusPengajuanEnum.APPROVED,
+                            StatusPengajuanEnum.REJECTED,
+                            StatusPengajuanEnum.PENDING_APPROVAL
+                      )
+                );
+                List<FormPengajuan> byNik = formPengajuanRepository.findByAccIdWithAccount(nik);
                 result.addAll(byStatus);
                 result.addAll(byNik);
 
@@ -97,38 +92,26 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
             return uniqueMap.values().stream()
                   .sorted(Comparator.comparing(FormPengajuan::getCreatedAt).reversed())
-                  .map(form -> FormPengajuanResDTO.PengajuanResponse.builder()
+                  .map(form -> FormPengajuanResDTO.builder()
                         .uuid(form.getUuid())
                         .nama(form.getAccount().getNama())
+                        .nik(form.getAccount().getNik())
+                        .email(form.getAccount().getEmail())
+                        .profesi(form.getProfesi())
                         .tipe_akun(form.getAccount().getTipeAkun())
-                        .induk_organisasi(form.getIndukOrganisasi())
+                        .nomor_induk(form.getNomorInduk())
+                        .status(form.getStatus() != null ? form.getStatus().name() : null)
+                        .nama_ketua(form.getAccount() != null ? form.getAccount().getNama() : null)
                         .nomor_induk(form.getNomorInduk())
                         .jumlah_anggota(
                               form.getJumlahAnggota() != null
                                     ? form.getJumlahAnggota().toString()
                                     : "0"
                         )
-                        .daerah(form.getDaerah())
-                        .berlaku_dari(form.getBerlakuDari())
-                        .berlaku_sampai(form.getBerlakuSampai())
-                        .profesi(form.getProfesi())
-                        .keterangan(form.getKeterangan())
-                        .catatan(form.getCatatan())
-                        .status(form.getStatus() != null ? form.getStatus().name() : null)
-                        .tertanda(form.getTertanda())
-                        .file_pendukung(
-                              form.getFilePendukung().stream()
-                                    .map(file -> FormPengajuanResDTO.FilePendukung.builder()
-                                          .form_uuid(file.getFormPengajuan().getUuid().toString())
-                                          .file_url(file.getFileUrl())
-                                          .nama_file(file.getNamaFile())
-                                          .build())
-                                    .toList()
-                        )
                         .created_at(form.getCreatedAt())
                         .build()
                   )
-                  .toList();
+                  .collect(Collectors.toList()); // <--- FIXED HERE
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to get all pengajuan: " + e.getMessage(), e);
@@ -141,34 +124,57 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
         Account account = accountRepository.findByNik(encryptService.encrypt(dto.getNik()))
               .orElseThrow(() -> new ResourceNotFoundException("NIK not found: " + dto.getNik()));
 
-        if (formPengajuanRepository.existsByNomorInduk(dto.getNomor_induk())) {
-            throw new ConflictException("Nomor induk '" + dto.getNomor_induk() + "' already exists");
+        Organisasi organisasi = null;
+
+        if ("Organisasi".equalsIgnoreCase(account.getTipeAkun()) && dto.getOrganisasi_uuid() != null) {
+            organisasi = organisasiRepository.findByUuid(dto.getOrganisasi_uuid())
+                  .orElseThrow(() -> new ResourceNotFoundException("Organisasi not found"));
         }
 
         try {
-            FormPengajuan entity = FormPengajuan.builder()
-                  .account(account)
-                  .uuid(UUID.randomUUID())
-                  .indukOrganisasi(dto.getInduk_organisasi())
-                  .nomorInduk(dto.getNomor_induk())
-                  .jumlahAnggota(dto.getJumlah_anggota())
-                  .daerah(dto.getDaerah())
-                  .profesi(dto.getProfesi())
-                  .status(StatusPengajuanEnum.PENDING_VERIFICATOR)
-                  .keterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-")
-                  .build();
+            FormPengajuan entity;
 
+            if ("Organisasi".equalsIgnoreCase(account.getTipeAkun())) {
+                entity = FormPengajuan.builder()
+                      .account(account)
+                      .uuid(UUID.randomUUID())
+                      .organisasi(organisasi)
+                      .namaKetua(dto.getNama_ketua())
+                      .nikKetua(dto.getNik_ketua())
+                      .nomorTelepon(dto.getNomor_telepon())
+                      .jumlahAnggota(dto.getJumlah_anggota())
+                      .daerah(dto.getDaerah())
+                      .status(StatusPengajuanEnum.PENDING_VERIFICATOR)
+                      .tambahan(dto.getTambahan())
+                      .keterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-")
+                      .build();
+            } else {
+                entity = FormPengajuan.builder()
+                      .account(account)
+                      .uuid(UUID.randomUUID())
+                      .namaKetua(dto.getNama_ketua())
+                      .nikKetua(dto.getNik_ketua())
+                      .nomorTelepon(dto.getNomor_telepon())
+                      .profesi(dto.getProfesi())
+                      .status(StatusPengajuanEnum.PENDING_VERIFICATOR)
+                      .keterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-")
+                      .tambahan(dto.getTambahan())
+                      .build();
+            }
             FormPengajuan saved = formPengajuanRepository.save(entity);
 
             return FormPengajuanResDTO.SaveDataResponse.builder()
                   .uuid(saved.getUuid())
-                  .induk_organisasi(saved.getIndukOrganisasi())
                   .nomor_induk(saved.getNomorInduk())
+                  .nama_ketua(saved.getNamaKetua())
+                  .nik_ketua(saved.getNikKetua())
+                  .nomor_telepon(saved.getNomorTelepon())
                   .jumlah_anggota(saved.getJumlahAnggota())
                   .daerah(saved.getDaerah())
                   .profesi(saved.getProfesi())
                   .status(saved.getStatus().name())
                   .keterangan(saved.getKeterangan())
+                  .tambahan(saved.getTambahan())
                   .build();
 
         } catch (DataIntegrityViolationException e) {
@@ -210,75 +216,84 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
     @Override
     @Transactional(readOnly = true)
-    public FormPengajuanResDTO.PengajuanResponse findByUuidWithFiles(UUID uuid) {
-        FormPengajuan formPengajuan = formPengajuanRepository.findByUuidWithFiles(uuid)
+    public FormPengajuanResDTO.PengajuanResponse findByUuidWithFiles(String authHeader, UUID uuid) {
+        String token = authHeader.substring(7);
+        String tipeAkun = (String) jwtTokenProvider.parseToken(token).get("tipe_akun");
+
+        FormPengajuan form = formPengajuanRepository.findByUuidWithFiles(uuid)
               .orElseThrow(() -> new ResourceNotFoundException("Form with UUID " + uuid + " not found"));
 
-        return FormPengajuanResDTO.PengajuanResponse.builder()
-              .uuid(formPengajuan.getUuid())
-              .induk_organisasi(formPengajuan.getIndukOrganisasi())
-              .nomor_induk(formPengajuan.getNomorInduk())
-              .jumlah_anggota(formPengajuan.getJumlahAnggota() != null
-                    ? formPengajuan.getJumlahAnggota().toString()
-                    : "0")
-              .daerah(formPengajuan.getDaerah())
-              .profesi(formPengajuan.getProfesi())
-              .status(formPengajuan.getStatus() != null ? formPengajuan.getStatus().name() : null)
-              .keterangan(formPengajuan.getKeterangan())
-              .file_pendukung(formPengajuan.getFilePendukung().stream()
-                    .map(file -> FormPengajuanResDTO.FilePendukung.builder()
-                          .id(file.getId())
-                          .form_uuid(file.getFormPengajuan().getUuid().toString())
-                          .file_url(file.getFileUrl())
-                          .nama_file(file.getNamaFile())
-                          .build())
-                    .toList())
-              .build();
+        List<FormPengajuanResDTO.FilePendukung> filePendukungList = form.getFilePendukung().stream()
+              .map(file -> FormPengajuanResDTO.FilePendukung.builder()
+                    .id(file.getId())
+                    .form_uuid(form.getUuid().toString())
+                    .file_url(file.getFileUrl())
+                    .nama_file(file.getNamaFile())
+                    .build())
+              .toList();
+
+        var responseBuilder = FormPengajuanResDTO.PengajuanResponse.builder()
+              .uuid(form.getUuid())
+              .nomor_induk(form.getNomorInduk())
+              .nama_ketua(form.getNamaKetua())
+              .nik_ketua(form.getNikKetua())
+              .nomor_telepon(form.getNomorTelepon())
+              .jumlah_anggota(form.getJumlahAnggota() != null ? form.getJumlahAnggota().toString() : "0")
+              .daerah(form.getDaerah())
+              .status(form.getStatus() != null ? form.getStatus().name() : null)
+              .keterangan(form.getKeterangan())
+              .tambahan(form.getTambahan())
+              .file_pendukung(filePendukungList);
+
+        if ("Organisasi".equalsIgnoreCase(tipeAkun)) {
+            Organisasi org = organisasiRepository.findByUuidWithFiles(form.getOrganisasi().getUuid())
+                  .orElseThrow(() -> new ResourceNotFoundException("Organisasi is not found"));
+
+            List<FormPengajuanResDTO.FileOrganisasi> fileOrganisasiList = org.getFilePendukung().stream()
+                  .map(file -> FormPengajuanResDTO.FileOrganisasi.builder()
+                        .id(file.getId())
+                        .organisasi_uuid(org.getUuid().toString())
+                        .file_url(file.getFileUrl())
+                        .nama_file(file.getNamaFile())
+                        .build())
+                  .toList();
+
+            responseBuilder
+                  .induk_organisasi(org.getBidangKeahlian())
+                  .alamat(org.getAlamat())
+                  .file_organisasi(fileOrganisasiList)
+                  .file_pendukung(filePendukungList);
+        }
+
+        return responseBuilder.build();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public FormPengajuanResDTO.PengajuanWithProfileResponse findByUuidWithFilesAndProfile(String authHeader, UUID uuid) {
-        FormPengajuan formPengajuan = formPengajuanRepository.findByUuidWithFilesAndAccount(uuid)
-              .orElseThrow(() -> new ResourceNotFoundException("Form with UUID " + uuid + " not found"));
-
-        Account owner = formPengajuan.getAccount();
-
         String token = authHeader.substring(7);
         Map<String, Object> claims = jwtTokenProvider.parseToken(token);
-        String nik = String.valueOf(claims.get("sub"));
-        String role = String.valueOf(claims.get("role"));
+        String requesterNik = String.valueOf(claims.get("sub"));
+        String requesterRole = String.valueOf(claims.get("role"));
 
+        // 1. Basic Existence Check
+        if (formPengajuanRepository.findByUuid(uuid).isEmpty()) {
+            throw new ResourceNotFoundException("Data not found");
+        }
+
+        // 2. Fetch Form with Files
+        FormPengajuan form = formPengajuanRepository.findByUuidWithFilesAndAccount(uuid)
+              .orElseThrow(() -> new ResourceNotFoundException("Pengajuan with UUID " + uuid + " not found"));
+
+        Account owner = form.getAccount();
+
+        // 3. Authorization Check
         Set<String> allowedRoles = Set.of("ADMIN", "KEPALA");
-
-        if (!owner.getNik().equals(nik) && !allowedRoles.contains(role)) {
+        if (!owner.getNik().equals(requesterNik) && !allowedRoles.contains(requesterRole)) {
             throw new ForbiddenException("Data pengajuan is not yours.");
         }
 
-        FormPengajuanResDTO.PengajuanResponse pengajuan = FormPengajuanResDTO.PengajuanResponse.builder()
-              .uuid(formPengajuan.getUuid())
-              .induk_organisasi(formPengajuan.getIndukOrganisasi())
-              .nomor_induk(formPengajuan.getNomorInduk())
-              .jumlah_anggota(formPengajuan.getJumlahAnggota() != null ? formPengajuan.getJumlahAnggota().toString() : "0")
-              .daerah(formPengajuan.getDaerah())
-              .berlaku_dari(formPengajuan.getBerlakuDari())
-              .berlaku_sampai(formPengajuan.getBerlakuSampai())
-              .profesi(formPengajuan.getProfesi())
-              .keterangan(formPengajuan.getKeterangan())
-              .catatan(formPengajuan.getCatatan())
-              .status(formPengajuan.getStatus() != null ? formPengajuan.getStatus().name() : null)
-              .tertanda(formPengajuan.getTertanda())
-              .file_pendukung(formPengajuan.getFilePendukung() == null ? List.of() : formPengajuan.getFilePendukung().stream()
-                    .map(file -> FormPengajuanResDTO.FilePendukung.builder()
-                          .id(file.getId())
-                          .form_uuid(file.getFormPengajuan().getUuid().toString())
-                          .file_url(file.getFileUrl())
-                          .nama_file(file.getNamaFile())
-                          .build())
-                    .toList())
-              .status_tanggal(formPengajuan.getStatusTanggal())
-              .created_at(formPengajuan.getCreatedAt())
-              .build();
-
+        // 4. Build Profile
         AccountResponse.Detail profile = AccountResponse.Detail.builder()
               .id(owner.getId())
               .nama(owner.getNama())
@@ -297,8 +312,71 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
               .updatedAt(owner.getUpdatedAt())
               .build();
 
+        // 5. Build File List (Common)
+        List<FormPengajuanResDTO.FilePendukung> filePendukungList = (form.getFilePendukung() == null) ? List.of() :
+              form.getFilePendukung().stream()
+                    .map(file -> FormPengajuanResDTO.FilePendukung.builder()
+                          .id(file.getId())
+                          .form_uuid(form.getUuid().toString())
+                          .file_url(file.getFileUrl())
+                          .nama_file(file.getNamaFile())
+                          .build())
+                    .toList();
+
+        // 6. Initialize Builder with COMMON Data (Used by both Org and Pribadi)
+        var pengajuanBuilder = FormPengajuanResDTO.PengajuanResponse.builder()
+              .uuid(form.getUuid())
+              .nomor_induk(form.getNomorInduk())
+              // Common fields
+              .daerah(form.getDaerah())
+              .berlaku_dari(form.getBerlakuDari())
+              .berlaku_sampai(form.getBerlakuSampai())
+              .keterangan(form.getKeterangan())
+              .catatan(form.getCatatan())
+              .status(form.getStatus() != null ? form.getStatus().name() : null)
+              .tertanda(form.getTertanda())
+              .status_tanggal(form.getStatusTanggal())
+              .created_at(form.getCreatedAt())
+              .file_pendukung(filePendukungList);
+
+        // 7. Handle Specific Account Types
+        if ("Organisasi".equalsIgnoreCase(owner.getTipeAkun())) {
+            if (form.getOrganisasi() == null) {
+                throw new ResourceNotFoundException("Data inconsistency: Organization account missing details");
+            }
+
+            Organisasi org = organisasiRepository.findByUuidWithFiles(form.getOrganisasi().getUuid())
+                  .orElseThrow(() -> new ResourceNotFoundException("Organisasi details not found"));
+
+            List<FormPengajuanResDTO.FileOrganisasi> fileOrgList = (org.getFilePendukung() == null) ? List.of() :
+                  org.getFilePendukung().stream()
+                        .map(file -> FormPengajuanResDTO.FileOrganisasi.builder()
+                              .id(file.getId())
+                              .organisasi_uuid(org.getUuid().toString())
+                              .file_url(file.getFileUrl())
+                              .nama_file(file.getNamaFile())
+                              .build())
+                        .toList();
+
+            // Fill Organization specific fields
+            pengajuanBuilder
+                  .nama_ketua(form.getNamaKetua())
+                  .nik_ketua(form.getNikKetua())
+                  .nomor_telepon(form.getNomorTelepon())
+                  .bidang_keahlian(form.getOrganisasi().getBidangKeahlian())
+                  .induk_organisasi(org.getBidangKeahlian())
+                  .alamat(org.getAlamat())
+                  .jumlah_anggota(form.getJumlahAnggota() != null ? form.getJumlahAnggota().toString() : "0")
+                  .file_organisasi(fileOrgList);
+        } else {
+            // Handle PRIBADI: Just set the profession
+            // The builder will leave organization fields as null automatically
+            pengajuanBuilder.profesi(form.getProfesi());
+        }
+
+        // 8. Single Return Point
         return FormPengajuanResDTO.PengajuanWithProfileResponse.builder()
-              .pengajuan(pengajuan)
+              .pengajuan(pengajuanBuilder.build())
               .profile(profile)
               .build();
     }
@@ -327,25 +405,27 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
         try {
             formPengajuan
-                  .setIndukOrganisasi(dto.getInduk_organisasi())
-                  .setNomorInduk(dto.getNomor_induk())
                   .setJumlahAnggota(dto.getJumlah_anggota())
                   .setDaerah(dto.getDaerah())
                   .setProfesi(dto.getProfesi())
                   .setStatus(StatusPengajuanEnum.PENDING_VERIFICATOR)
-                  .setKeterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-");
+                  .setKeterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-")
+                  .setTambahan(dto.getTambahan());
 
             formPengajuanRepository.save(formPengajuan);
 
             return FormPengajuanResDTO.SaveDataResponse.builder()
                   .uuid(formPengajuan.getUuid())
-                  .induk_organisasi(formPengajuan.getIndukOrganisasi())
                   .nomor_induk(formPengajuan.getNomorInduk())
+                  .nama_ketua(formPengajuan.getNamaKetua())
+                  .nik_ketua(formPengajuan.getNikKetua())
+                  .nomor_telepon(formPengajuan.getNomorTelepon())
                   .jumlah_anggota(formPengajuan.getJumlahAnggota())
                   .daerah(formPengajuan.getDaerah())
                   .profesi(formPengajuan.getProfesi())
                   .status(formPengajuan.getStatus().toString())
                   .keterangan(formPengajuan.getKeterangan())
+                  .tambahan(formPengajuan.getTambahan())
                   .build();
 
         } catch (Exception e) {
@@ -373,6 +453,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
             Account account = accountRepository.findByNik(dto.getNik())
                   .orElseThrow(() -> new ResourceNotFoundException("NIK not found: " + encryptService.decrypt(dto.getTertanda().getNip())));
 
+            form.setNomorInduk(dto.getNomor_induk());
             form.setBerlakuDari(dto.getBerlaku_dari());
             form.setBerlakuSampai(dto.getBerlaku_sampai());
             form.setStatus(dto.getStatus() != null ? StatusPengajuanEnum.valueOf(dto.getStatus()) : StatusPengajuanEnum.PENDING_VERIFICATOR);
@@ -387,6 +468,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
             }
 
             return FormPengajuanResDTO.VerifyData.builder()
+                  .nomor_induk(form.getNomorInduk())
                   .berlaku_dari(form.getBerlakuDari())
                   .berlaku_sampai(form.getBerlakuSampai())
                   .status(form.getStatus().name())

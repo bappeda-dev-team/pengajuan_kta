@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.util.Date;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -26,17 +27,21 @@ public class FormPengajuanReqDTO {
         @JsonProperty("nik")
         private String nik;
 
-        @JsonProperty("induk_organisasi")
-        private String induk_organisasi;
+        @JsonProperty("organisasi_uuid")
+        private UUID organisasi_uuid;
 
-        @NotBlank(message = "Harap masukkan Nomor Induk")
-        @JsonProperty("nomor_induk")
-        private String nomor_induk;
-        
+        @JsonProperty("nama_ketua")
+        private String nama_ketua;
+
+        @JsonProperty("nomor_telepon")
+        private String nomor_telepon;
+
+        @JsonProperty("nik_ketua")
+        private String nik_ketua;
+
         @JsonProperty("jumlah_anggota")
         private Integer jumlah_anggota;
 
-        @NotBlank(message = "Nama daerah (kab/kota) wajib diisi")
         @JsonProperty("daerah")
         private String daerah;
 
@@ -44,6 +49,8 @@ public class FormPengajuanReqDTO {
         private String profesi;
 
         private String keterangan;
+
+        private String tambahan;
     }
 
     @Getter
@@ -52,6 +59,9 @@ public class FormPengajuanReqDTO {
         @NotBlank(message = "NIK wajib diisi!")
         @JsonProperty("nik")
         private String nik;
+
+        @JsonProperty("nomor_induk")
+        private String nomor_induk;
 
         @JsonProperty("berlaku_dari")
         private Date berlaku_dari;

@@ -71,10 +71,6 @@ public class Account extends BaseAuditable {
     @Column(name = "jabatan")
     private String jabatan;
 
-    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference // Gunakan ManagedReference untuk parent
-    private List<Organisasi> organisasiList;
-
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<FormPengajuan> formPengajuan;
 }

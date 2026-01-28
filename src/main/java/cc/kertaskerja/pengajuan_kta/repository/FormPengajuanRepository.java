@@ -13,13 +13,6 @@ import java.util.UUID;
 
 @Repository
 public interface FormPengajuanRepository extends JpaRepository<FormPengajuan, Long> {
-
-    @Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END " +
-          "FROM form_pengajuan " +
-          "WHERE nomor_induk = :nomorInduk",
-          nativeQuery = true)
-    boolean existsByNomorInduk(@Param("nomorInduk") String nomorInduk);
-
     @Query("""
               SELECT DISTINCT f
               FROM FormPengajuan f
@@ -32,12 +25,12 @@ public interface FormPengajuanRepository extends JpaRepository<FormPengajuan, Lo
     );
 
     @Query("""
-    SELECT f
-    FROM FormPengajuan f
-    JOIN FETCH f.account a
-    WHERE a.nik = :nik
-    ORDER BY f.createdAt DESC
-""")
+              SELECT f
+              FROM FormPengajuan f
+              JOIN FETCH f.account a
+              WHERE a.nik = :nik
+              ORDER BY f.createdAt DESC
+          """)
     List<FormPengajuan> findByAccIdWithAccount(@Param("nik") String nik);
 
     @Query(value = "SELECT * FROM form_pengajuan WHERE uuid = :uuid", nativeQuery = true)
@@ -47,12 +40,13 @@ public interface FormPengajuanRepository extends JpaRepository<FormPengajuan, Lo
     Optional<FormPengajuan> findByUuidWithFiles(@Param("uuid") UUID uuid);
 
     @Query("""
-              SELECT f
-              FROM FormPengajuan f
-              JOIN FETCH f.account a
-              LEFT JOIN FETCH f.filePendukung fp
-              WHERE f.uuid = :uuid
-          """)
+        SELECT f
+        FROM FormPengajuan f
+        JOIN FETCH f.account a
+        LEFT JOIN FETCH f.organisasi o
+        LEFT JOIN FETCH f.filePendukung fp
+        WHERE f.uuid = :uuid
+    """)
     Optional<FormPengajuan> findByUuidWithFilesAndAccount(@Param("uuid") UUID uuid);
 
     @Query(value = """

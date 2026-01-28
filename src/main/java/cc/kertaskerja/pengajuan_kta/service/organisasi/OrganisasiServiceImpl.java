@@ -1,16 +1,10 @@
 package cc.kertaskerja.pengajuan_kta.service.organisasi;
 
-import cc.kertaskerja.pengajuan_kta.dto.Auth.AccountResponse;
 import cc.kertaskerja.pengajuan_kta.dto.Organisasi.OrganisasiReqDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Organisasi.OrganisasiResDTO;
-import cc.kertaskerja.pengajuan_kta.dto.Rekomendasi.RekomendasiResDTO;
-import cc.kertaskerja.pengajuan_kta.entity.Account;
 import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
 import cc.kertaskerja.pengajuan_kta.entity.Organisasi;
-import cc.kertaskerja.pengajuan_kta.entity.SuratRekomendasi;
-import cc.kertaskerja.pengajuan_kta.enums.StatusPengajuanEnum;
-import cc.kertaskerja.pengajuan_kta.exception.ForbiddenException;
-import cc.kertaskerja.pengajuan_kta.exception.ResourceNotFoundException;
+import cc.kertaskerja.pengajuan_kta.exception.*;
 import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FilePendukungRepository;
 import cc.kertaskerja.pengajuan_kta.repository.OrganisasiRepository;
@@ -23,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,20 +37,7 @@ public class OrganisasiServiceImpl implements OrganisasiService {
                 throw new RuntimeException("Missing or invalid Authorization header");
             }
 
-            String token = authHeader.substring(7);
-            Map<String, Object> claims = jwtTokenProvider.parseToken(token);
-
-            String role = (String) claims.get("role");
-            String nik = String.valueOf(claims.get("sub"));
-
-            List<Organisasi> organisasiList;
-
-            if ("ADMIN".equalsIgnoreCase(role) || "KEPALA".equalsIgnoreCase(role)) {
-                organisasiList = organisasiRepository.findAll();
-            } else {
-                String encryptedNik = encryptService.encrypt(nik);
-                organisasiList = organisasiRepository.findByAccountNik(encryptedNik);
-            }
+            List<Organisasi> organisasiList = organisasiRepository.findAll();
 
             if (organisasiList == null || organisasiList.isEmpty()) {
                 return Collections.emptyList();
@@ -67,10 +47,7 @@ public class OrganisasiServiceImpl implements OrganisasiService {
                   .map(entity -> OrganisasiResDTO.builder()
                         .uuid(entity.getUuid())
                         .bidang_keahlian(entity.getBidangKeahlian())
-                        .nama_ketua(entity.getNamaKetua())
-                        .nomor_telepon(entity.getNomorTelepon())
                         .alamat(entity.getAlamat())
-                        .status(entity.getStatus().name())
                         .build())
                   .collect(Collectors.toList());
 
@@ -80,73 +57,49 @@ public class OrganisasiServiceImpl implements OrganisasiService {
     }
 
     @Override
-    public OrganisasiResDTO.OrganisasiDetailWithProfileResponse detailWithProfile(String authHeader, UUID uuid) {
-        Organisasi entity = organisasiRepository.findByUuidWithFilesAndAccount(uuid)
-              .orElseThrow(() -> new ResourceNotFoundException("Rekomendasi with UUID " + uuid + " not found"));
-
-        Account owner = entity.getAccount();
+    public OrganisasiResDTO.DetailResponse detailOrganisasi(String authHeader, UUID uuid) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("Missing or invalid Authorization header");
+        }
 
         String token = authHeader.substring(7);
         Map<String, Object> claims = jwtTokenProvider.parseToken(token);
-        String nik = String.valueOf(claims.get("sub"));
-        String role = String.valueOf(claims.get("role"));
+        String userId = String.valueOf(claims.get("uid"));
 
-        Set<String> allowedRoles = Set.of("ADMIN", "KEPALA");
+        Organisasi organisasi = organisasiRepository.findDetailWithPengajuan(uuid)
+              .orElseThrow(() -> new ResourceNotFoundException("Organisasi with UUID " + uuid + " not found"));
 
-        if (!owner.getNik().equals(nik) && !allowedRoles.contains(role)) {
-            throw new ForbiddenException("You are not allowed to verify data pengajuan.");
-        }
-
-        AccountResponse.Detail profile = AccountResponse.Detail.builder()
-              .id(owner.getId())
-              .nama(owner.getNama())
-              .email(owner.getEmail())
-              .nik(owner.getNik())
-              .nomorTelepon(owner.getNomorTelepon())
-              .tempatLahir(owner.getTempatLahir())
-              .tanggalLahir(owner.getTanggalLahir())
-              .jenisKelamin(owner.getJenisKelamin())
-              .alamat(owner.getAlamat())
-              .tipeAkun(owner.getTipeAkun())
-              .build();
-
-        OrganisasiResDTO.DetailResponse organisasi = OrganisasiResDTO.DetailResponse.builder()
-              .bidang_keahlian(entity.getBidangKeahlian())
-              .nama_ketua(entity.getNamaKetua())
-              .nomor_telepon(entity.getNomorTelepon())
-              .alamat(entity.getAlamat())
-              .status(entity.getStatus() != null ? entity.getStatus().name() : null)
-              .catatan(entity.getCatatan())
-              .file_pendukung(entity.getFilePendukung().stream()
-                    .map(file -> OrganisasiResDTO.FilePendukung.builder()
-                          .id(file.getId())
-                          .file_url(file.getFileUrl())
-                          .nama_file(file.getNamaFile())
+        return OrganisasiResDTO.DetailResponse.builder()
+              .uuid(organisasi.getUuid())
+              .bidang_keahlian(organisasi.getBidangKeahlian())
+              .alamat(organisasi.getAlamat())
+              .pengajuan(organisasi.getFormPengajuan().stream()
+                    .map(data -> OrganisasiResDTO.Pengajuan.builder()
+                          .nomor_induk(data.getNomorInduk())
+                          .nama_ketua(data.getNamaKetua())
+                          .nik_ketua(data.getNikKetua())
+                          .nomor_telepon(data.getNomorTelepon())
+                          .jumlah_anggota(data.getJumlahAnggota())
+                          .status(data.getStatus().name())
                           .build())
                     .toList())
-              .created_at(entity.getCreatedAt())
-              .build();
-
-        return OrganisasiResDTO.OrganisasiDetailWithProfileResponse.builder()
-              .organisasi(organisasi)
-              .profile(profile)
               .build();
     }
 
     @Override
     @Transactional
     public OrganisasiResDTO.SaveResponse saveData(OrganisasiReqDTO.SaveData dto) {
-        Account account = accountRepository.findByNik(encryptService.encrypt(dto.getNik()))
-              .orElseThrow(() -> new ResourceNotFoundException("NIK not found: " + dto.getNik()));
+        boolean isExist = organisasiRepository.existsBidangKeahlian(dto.getBidang_keahlian());
+
+        if (isExist) {
+            throw new BadRequestException("Organisasi sudah terdaftar");
+        }
+
        try {
            Organisasi entity = Organisasi.builder()
-                 .account(account)
                  .uuid(UUID.randomUUID())
                  .bidangKeahlian(dto.getBidang_keahlian())
-                 .namaKetua(dto.getNama_ketua())
-                 .nomorTelepon(dto.getNomor_telepon())
                  .alamat(dto.getAlamat())
-                 .status(StatusPengajuanEnum.PENDING_VERIFICATOR)
                  .build();
 
            Organisasi saved =  organisasiRepository.save(entity);
@@ -154,16 +107,43 @@ public class OrganisasiServiceImpl implements OrganisasiService {
            return OrganisasiResDTO.SaveResponse.builder()
                  .uuid(saved.getUuid())
                  .bidang_keahlian(saved.getBidangKeahlian())
-                 .nama_ketua(saved.getNamaKetua())
-                 .nomor_telepon(saved.getNomorTelepon())
                  .alamat(saved.getAlamat())
-                 .status(saved.getStatus().name())
                  .build();
        } catch (DataIntegrityViolationException e) {
            throw new RuntimeException("Data integrity violation. Please check NOT NULL, UNIQUE, or foreign key constraints.", e);
        } catch (Exception e) {
            throw new RuntimeException("Unexpected error occurred while saving form_pengajuan", e);
        }
+    }
+
+    @Override
+    @Transactional
+    public OrganisasiResDTO.SaveResponse editDataOrganisasi(String authHeader, UUID uuid, OrganisasiReqDTO.SaveData dto) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("Missing or invalid Authorization header");
+        }
+
+        String token = authHeader.substring(7);
+        Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+        String userId = String.valueOf(claims.get("uid"));
+
+        Organisasi organisasi = organisasiRepository.findByUuid(uuid)
+              .orElseThrow(() -> new ResourceNotFoundException("Organisasi with UUID " + uuid + " not found"));
+
+        try {
+            organisasi
+                  .setBidangKeahlian(dto.getBidang_keahlian())
+                  .setAlamat(dto.getAlamat());
+            Organisasi saved = organisasiRepository.save(organisasi);
+
+            return OrganisasiResDTO.SaveResponse.builder()
+                  .uuid(saved.getUuid())
+                  .bidang_keahlian(saved.getBidangKeahlian())
+                  .alamat(saved.getAlamat())
+                  .build();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to change data organisasi: " + e.getMessage());
+        }
     }
 
     @Override
@@ -179,7 +159,7 @@ public class OrganisasiServiceImpl implements OrganisasiService {
 
             FilePendukung filePendukung = FilePendukung.builder()
                   .fileUrl(fileUrl)
-                  .namaFile(namaFile)
+                  .namaFile(finalNamaFile)
                   .organisasi(organisasi)
                   .build();
 
@@ -193,5 +173,49 @@ public class OrganisasiServiceImpl implements OrganisasiService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to upload and save file: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    @Transactional
+    public void deleteData(String uuid) {
+        UUID organisasiUuid;
+
+        try {
+            organisasiUuid = UUID.fromString(uuid);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Invalid UUID format: " + uuid);
+        }
+
+        Organisasi organisasi = organisasiRepository.findByUuidWithFiles(organisasiUuid)
+              .orElseThrow(() -> new ResourceNotFoundException("Organisasi with UUID " + uuid + " not found"));
+
+        if (organisasi.getFilePendukung() != null && !organisasi.getFilePendukung().isEmpty()) {
+            for (FilePendukung file : organisasi.getFilePendukung()) {
+                if (file.getFileUrl() != null && !file.getFileUrl().isBlank()) {
+                    r2StorageService.delete(file.getFileUrl());
+                }
+            }
+        }
+
+        filePendukungRepository.deleteByOrganisasi(organisasi);
+        filePendukungRepository.flush();
+        organisasiRepository.delete(organisasi);
+    }
+
+    @Override
+    @Transactional
+    public void deleteFilePendukung(String authHeader, Long id) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthenticationException("Missing or invalid Authorization header");
+        }
+
+        FilePendukung file = filePendukungRepository.findById(id)
+              .orElseThrow(() -> new ResourceNotFoundException("File pendukung not found: " + id));
+
+        if (file.getFileUrl() != null && !file.getFileUrl().isBlank()) {
+            r2StorageService.delete(file.getFileUrl());
+        }
+
+        filePendukungRepository.delete(file);
     }
 }
