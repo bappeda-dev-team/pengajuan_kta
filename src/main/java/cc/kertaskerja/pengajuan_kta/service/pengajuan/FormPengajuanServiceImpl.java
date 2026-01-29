@@ -238,6 +238,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
               .nama_ketua(form.getNamaKetua())
               .nik_ketua(form.getNikKetua())
               .nomor_telepon(form.getNomorTelepon())
+              .bidang_keahlian(form.getProfesi())
               .jumlah_anggota(form.getJumlahAnggota() != null ? form.getJumlahAnggota().toString() : "0")
               .daerah(form.getDaerah())
               .status(form.getStatus() != null ? form.getStatus().name() : null)
