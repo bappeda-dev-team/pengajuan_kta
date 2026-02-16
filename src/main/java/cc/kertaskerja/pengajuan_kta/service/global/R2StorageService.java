@@ -1,13 +1,13 @@
 package cc.kertaskerja.pengajuan_kta.service.global;
 
 import cc.kertaskerja.pengajuan_kta.config.CloudFlareProperties;
+import cc.kertaskerja.pengajuan_kta.dto.external.FileDownloadDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.net.URI;
@@ -67,6 +67,34 @@ public class R2StorageService {
                     .key(key)
                     .build()
         );
+    }
+
+    // ======================
+    // DOWNLOAD / READ FILE
+    // ======================
+    public FileDownloadDTO.DownloadRes download(String fileUrl) {
+        String key = extractKeyFromUrl(fileUrl);
+
+        try {
+            // Use getObjectAsBytes to retrieve both the content and the response metadata
+            ResponseBytes<GetObjectResponse> objectBytes = r2Client.getObjectAsBytes(
+                  GetObjectRequest.builder()
+                        .bucket(props.getBucket())
+                        .key(key)
+                        .build()
+            );
+
+            return FileDownloadDTO.DownloadRes.builder()
+                  .data(objectBytes.asByteArray()) // The actual file content
+                  .filename(key)
+                  .contentType(objectBytes.response().contentType()) // e.g., "application/pdf"
+                  .build();
+
+        } catch (NoSuchKeyException e) {
+            throw new RuntimeException("File not found in storage: " + key);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to download file from R2: " + e.getMessage(), e);
+        }
     }
 
     // ======================
