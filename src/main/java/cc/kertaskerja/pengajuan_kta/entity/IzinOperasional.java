@@ -17,14 +17,14 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "form_pengajuan")
+@Table(name = "izin_operasional")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Accessors(chain = true)
-public class FormPengajuan extends BaseAuditable {
+public class IzinOperasional extends BaseAuditable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -34,27 +34,23 @@ public class FormPengajuan extends BaseAuditable {
     @JsonBackReference
     private Account account;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "form_uuid", referencedColumnName = "uuid", nullable = false)
+    @JsonBackReference
+    private FormPengajuan formPengajuan;
+
     @Builder.Default
     @Column(nullable = false, unique = true, updatable = false)
     private UUID uuid = UUID.randomUUID();
 
-    @Column(name = "nomor_induk", length = 100, nullable = false)
-    private String nomorInduk;
-
-    @Column(name = "jumlah_anggota", nullable = false)
-    private Integer jumlahAnggota;
-
-    @Column(name = "daerah", length = 50, nullable = false)
-    private String daerah;
+    @Column(name = "tanggal_pendirian", nullable = false)
+    private Date tanggalPendirian;
 
     @Column(name = "berlaku_dari", nullable = false)
     private Date berlakuDari;
 
     @Column(name = "berlaku_sampai", nullable = false)
     private Date berlakuSampai;
-
-    @Column(name = "profesi", nullable = false)
-    private String profesi;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)
@@ -63,38 +59,20 @@ public class FormPengajuan extends BaseAuditable {
     @Column(name = "keterangan", nullable = false)
     private String keterangan;
 
-    @Column(name = "nama_ketua")
-    private String namaKetua;
-
-    @Column(name = "nik_ketua", nullable = false, unique = true, length = 16)
-    private String nikKetua;
-
-    @Column(name = "nomor_telepon", nullable = false)
-    private String nomorTelepon;
+    @Column(name = "catatan")
+    private String catatan;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "tertanda", columnDefinition = "jsonb", nullable = false)
     private TertandaDTO tertanda;
 
-    @Column(name = "catatan")
-    private String catatan;
-
-    @Column(name = "tambahan")
-    private String tambahan;
+    @Column(name = "nomor_surat")
+    private String nomorSurat;
 
     @Column(name = "status_tanggal")
     private LocalDateTime statusTanggal;
 
-    @OneToMany(mappedBy = "formPengajuan", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
-    private List<IzinOperasional> izinOperasional;
-
-    @OneToMany(mappedBy = "formPengajuan", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "operasional", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<FilePendukung> filePendukung;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organisasi_uuid", referencedColumnName = "uuid")
-    @JsonBackReference
-    private Organisasi organisasi;
 }

@@ -31,9 +31,14 @@ public class FilePendukung extends BaseAuditable {
     private FormPengajuan formPengajuan;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rekom_uuid", referencedColumnName = "uuid", nullable = false)
+    @JoinColumn(name = "rekom_uuid", referencedColumnName = "uuid")
     @JsonBackReference
     private SuratRekomendasi suratRekomendasi;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "operasional_uuid", referencedColumnName = "uuid")
+    @JsonBackReference
+    private IzinOperasional operasional;
 
     public UUID getFormUuid() {
         return formPengajuan != null ? formPengajuan.getUuid() : null;
@@ -41,6 +46,10 @@ public class FilePendukung extends BaseAuditable {
 
     public UUID getRekomUuid() {
         return suratRekomendasi != null ? suratRekomendasi.getUuid() : null;
+    }
+
+    public UUID getOperasionalUuid() {
+        return operasional != null ? operasional.getUuid() : null;
     }
 
     @ManyToOne(fetch = FetchType.LAZY)

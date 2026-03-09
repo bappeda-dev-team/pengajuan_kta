@@ -180,6 +180,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
         } catch (DataIntegrityViolationException e) {
             throw new RuntimeException("Data integrity violation. Please check NOT NULL, UNIQUE, or foreign key constraints.", e);
         } catch (Exception e) {
+            System.out.println("ERROR " + e.getMessage());
             throw new RuntimeException("Unexpected error occurred while saving form_pengajuan", e);
         }
     }
@@ -320,6 +321,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                     .toList();
 
         var pengajuanBuilder = FormPengajuanResDTO.PengajuanResponse.builder()
+              .organisasi_uuid(form.getOrganisasi().getUuid())
               .uuid(form.getUuid())
               .nomor_induk(form.getNomorInduk())
               .daerah(form.getDaerah())
@@ -381,11 +383,14 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
         String token = authHeader.substring(7);
         Map<String, Object> claims = jwtTokenProvider.parseToken(token);
         String userId = String.valueOf(claims.get("uid"));
+        String requesterRole = String.valueOf(claims.get("role"));
 
         FormPengajuan formPengajuan = formPengajuanRepository.findByUuid(uuid)
               .orElseThrow(() -> new ResourceNotFoundException("Data pengajuan with UUID " + uuid + " is not found"));
 
-        if (!userId.equals(formPengajuan.getAccount().getId().toString())) {
+        Set<String> allowedRoles = Set.of("ADMIN", "KEPALA");
+
+        if (!userId.equals(formPengajuan.getAccount().getId().toString()) && !allowedRoles.contains(requesterRole)) {
             throw new ForbiddenException("Data pengajuan that has been changed is not yours.");
         }
 
@@ -396,9 +401,12 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
         try {
             formPengajuan
                   .setJumlahAnggota(dto.getJumlah_anggota())
+                  .setNamaKetua(dto.getNama_ketua())
+                  .setNikKetua(dto.getNik_ketua())
+                  .setNomorTelepon(dto.getNomor_telepon())
                   .setDaerah(dto.getDaerah())
                   .setProfesi(dto.getProfesi())
-                  .setStatus(StatusPengajuanEnum.PENDING_VERIFICATOR)
+                  .setJumlahAnggota(dto.getJumlah_anggota())
                   .setKeterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-")
                   .setTambahan(dto.getTambahan());
 

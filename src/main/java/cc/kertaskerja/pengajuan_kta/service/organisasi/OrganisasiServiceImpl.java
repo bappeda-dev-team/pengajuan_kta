@@ -75,6 +75,7 @@ public class OrganisasiServiceImpl implements OrganisasiService {
               .alamat(organisasi.getAlamat())
               .pengajuan(organisasi.getFormPengajuan().stream()
                     .map(data -> OrganisasiResDTO.Pengajuan.builder()
+                          .uuid(data.getUuid())
                           .nomor_induk(data.getNomorInduk())
                           .nama_ketua(data.getNamaKetua())
                           .nik_ketua(data.getNikKetua())

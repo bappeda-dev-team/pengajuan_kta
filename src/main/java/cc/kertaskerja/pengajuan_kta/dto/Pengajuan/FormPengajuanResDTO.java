@@ -38,6 +38,7 @@ public class FormPengajuanResDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class PengajuanResponse {
+        private UUID organisasi_uuid;
         private UUID uuid;
         private String profesi;
         private String induk_organisasi;

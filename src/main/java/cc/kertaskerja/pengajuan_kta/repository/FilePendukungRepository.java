@@ -1,9 +1,6 @@
 package cc.kertaskerja.pengajuan_kta.repository;
 
-import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
-import cc.kertaskerja.pengajuan_kta.entity.FormPengajuan;
-import cc.kertaskerja.pengajuan_kta.entity.Organisasi;
-import cc.kertaskerja.pengajuan_kta.entity.SuratRekomendasi;
+import cc.kertaskerja.pengajuan_kta.entity.*;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -23,4 +20,7 @@ public interface FilePendukungRepository extends JpaRepository<FilePendukung, Lo
     @Transactional
     void deleteBySuratRekomendasi(SuratRekomendasi rekomendasi);
 
+    @Modifying
+    @Transactional
+    void deleteByOperasional(IzinOperasional operasional);
 }
