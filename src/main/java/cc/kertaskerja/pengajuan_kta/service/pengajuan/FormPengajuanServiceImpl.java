@@ -321,7 +321,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                     .toList();
 
         var pengajuanBuilder = FormPengajuanResDTO.PengajuanResponse.builder()
-              .organisasi_uuid(form.getOrganisasi().getUuid())
+              .organisasi_uuid(form.getOrganisasi() != null ? form.getOrganisasi().getUuid() : null)
               .uuid(form.getUuid())
               .nomor_induk(form.getNomorInduk())
               .daerah(form.getDaerah())
