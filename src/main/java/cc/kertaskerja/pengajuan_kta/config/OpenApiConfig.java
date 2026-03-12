@@ -27,6 +27,7 @@ public class OpenApiConfig {
                     new Server()
 //                          .url("http://localhost:8080/kta/api")
 //                          .description("Development server")
+
                           .url("https://ktangawikabfe.zeabur.app/kta/api")
                           .description("Production server")
               ))
