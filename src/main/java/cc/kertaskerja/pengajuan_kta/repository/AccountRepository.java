@@ -88,4 +88,9 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
     @Query(value = "SELECT * FROM account", nativeQuery = true)
     List<Account> findAllData();
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM account WHERE nik = :nik", nativeQuery = true)
+    int deleteByNik(@Param("nik") String nik);
 }

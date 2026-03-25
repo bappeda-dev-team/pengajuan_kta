@@ -154,4 +154,36 @@ public class RegisterRequest {
         @NotBlank(message = "Role harus diisi!")
         private String role;
     }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class EditAdmin {
+        @NotBlank(message = "Nama tidak boleh kosong!")
+        private String nama;
+
+        @NotBlank(message = "NIP tidak boleh kosong!")
+        private String nip;
+
+        @NotBlank(message = "Pangkat tidak boleh kosong!")
+        private String pangkat;
+
+        @NotBlank(message = "Jabatan tidak boleh kosong!")
+        private String jabatan;
+
+        @NotBlank(message = "Harap masukkan alamat email!")
+        private String email;
+
+        @Size(min = 10, max = 16, message = "Nomor HP harus antara 10 sampai 16 digit")
+        @Pattern(
+              regexp = "^62\\d{8,14}$",
+              message = "Nomor HP harus dimulai dengan 62 dan diikuti 8–14 digit angka"
+        )
+        private String nomor_telepon;
+
+        private String password;
+
+        @NotBlank(message = "Role harus diisi!")
+        private String role;
+    }
 }

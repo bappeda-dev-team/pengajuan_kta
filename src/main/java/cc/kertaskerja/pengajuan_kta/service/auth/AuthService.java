@@ -16,9 +16,11 @@ public interface AuthService {
 
     AccountResponse register(RegisterRequest request);
 
-    List<AccountResponse.RegisterAdminResponse> listAdmin(String authHeader);
+    List<AccountResponse.AdminResponse> listAdmin(String authHeader);
 
-    AccountResponse.RegisterAdminResponse registerAdmin(String authHeader, RegisterRequest.RegisterAdmin request);
+    AccountResponse.AdminResponse registerAdmin(String authHeader, RegisterRequest.RegisterAdmin request);
+
+    AccountResponse.AdminResponse editAdmin(String nik, RegisterRequest.EditAdmin request);
 
     AccountResponse.VerifyAccount verifyAccount(String authHeader, String nik, RegisterRequest.VerifyAccount request);
 
@@ -33,4 +35,6 @@ public interface AuthService {
     String sendPasswordResetPassword(RegisterRequest.SendOtpForgotPassword dto);
 
     String resetPassword(RegisterRequest.ResetPassword dto);
+
+    String deleteAccountByNik(String authHeader, String nik);
 }

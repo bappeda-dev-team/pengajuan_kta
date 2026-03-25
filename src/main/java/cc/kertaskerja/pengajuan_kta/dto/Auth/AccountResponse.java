@@ -149,7 +149,7 @@ public class AccountResponse {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class RegisterAdminResponse {
+    public static class AdminResponse {
         private Long id;
         private String nama;
         private String nip;
@@ -157,6 +157,7 @@ public class AccountResponse {
         private String nik;
         private String jabatan;
         private String email;
+        private String nomorTelepon;
         private String role;
     }
 }

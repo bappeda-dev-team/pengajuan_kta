@@ -197,7 +197,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public List<AccountResponse.RegisterAdminResponse> listAdmin(String authHeader) {
+    public List<AccountResponse.AdminResponse> listAdmin(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new UnauthenticationException("Missing or invalid Authorization header");
         }
@@ -214,10 +214,11 @@ public class AuthServiceImpl implements AuthService {
             List<Account> accounts = accountRepository.findAllAdminAccount();
 
             return accounts.stream()
-                  .map(acc -> AccountResponse.RegisterAdminResponse.builder()
+                  .map(acc -> AccountResponse.AdminResponse.builder()
                         .id(acc.getId())
                         .nama(acc.getNama())
                         .nip(acc.getNip())
+                        .nik(acc.getNik())
                         .pangkat(acc.getPangkat())
                         .jabatan(acc.getJabatan())
                         .email(acc.getEmail())
@@ -231,7 +232,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public AccountResponse.RegisterAdminResponse registerAdmin(String authHeader, RegisterRequest.RegisterAdmin request) {
+    public AccountResponse.AdminResponse registerAdmin(String authHeader, RegisterRequest.RegisterAdmin request) {
         try {
             String token = authHeader.substring(7);
             Map<String, Object> claims = jwtTokenProvider.parseToken(token);
@@ -274,12 +275,13 @@ public class AuthServiceImpl implements AuthService {
                   .findFirst()
                   .orElseThrow(() -> new RuntimeException("Failed to fetch inserted admin"));
 
-            return AccountResponse.RegisterAdminResponse.builder()
+            return AccountResponse.AdminResponse.builder()
                   .nama(saved.getNama())
                   .nip(encryptService.decrypt(saved.getNip()))
                   .pangkat(saved.getPangkat())
                   .nik(saved.getNik())
                   .jabatan(saved.getJabatan())
+                  .nomorTelepon(saved.getNomorTelepon())
                   .email(saved.getEmail())
                   .role(saved.getRole())
                   .build();
@@ -289,6 +291,59 @@ public class AuthServiceImpl implements AuthService {
         } catch (Exception e) {
             throw new RuntimeException("Unexpected error occurred while saving register ADMIN", e);
         }
+    }
+
+    @Override
+    @Transactional
+    public AccountResponse.AdminResponse editAdmin(String nik, RegisterRequest.EditAdmin request) {
+        Account account = accountRepository.findByNik(nik)
+              .orElseThrow(() -> new ResourceNotFoundException("Akun admin tidak ditemukan dengan NIK: " + nik));
+
+        if (request.getEmail() != null && !request.getEmail().equals(account.getEmail())) {
+            if (accountRepository.existsByEmail(request.getEmail())) {
+                throw new BadRequestException("Email sudah terdaftar");
+            }
+            account.setEmail(request.getEmail());
+        }
+
+        if (request.getNip() != null && !request.getNip().equals(account.getNip())) {
+            if (accountRepository.existsByNip(request.getNip())) {
+                throw new BadRequestException("NIP sudah terdaftar");
+            }
+            account.setNip(request.getNip());
+        }
+
+        if (request.getNama() != null) {
+            account.setNama(request.getNama());
+        }
+        if (request.getPangkat() != null) {
+            account.setPangkat(request.getPangkat());
+        }
+        if (request.getJabatan() != null) {
+            account.setJabatan(request.getJabatan());
+        }
+        if (request.getNomor_telepon() != null) {
+            account.setNomorTelepon(request.getNomor_telepon());
+        }
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            account.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+        if (request.getRole() != null) {
+            account.setRole(request.getRole());
+        }
+
+        Account saved = accountRepository.save(account);
+
+        return AccountResponse.AdminResponse.builder()
+              .id(saved.getId())
+              .nama(saved.getNama())
+              .nip(saved.getNip())
+              .pangkat(saved.getPangkat())
+              .nik(saved.getNik())
+              .jabatan(saved.getJabatan())
+              .email(saved.getEmail())
+              .role(saved.getRole())
+              .build();
     }
 
     @Override
@@ -478,6 +533,23 @@ public class AuthServiceImpl implements AuthService {
             Account account = accountRepository.findByNik(nik)
                   .orElseThrow(() -> new ResourceNotFoundException("Account not found: " + nik));
 
+            String accountRole = account.getRole();
+
+            if ("KEPALA".equalsIgnoreCase(accountRole) || "ADMIN".equalsIgnoreCase(accountRole)) {
+                return AccountResponse.Detail.builder()
+                      .id(account.getId())
+                      .nama(account.getNama())
+                      .nip(account.getNip())
+                      .jabatan(account.getJabatan())
+                      .email(account.getEmail())
+                      .pangkat(account.getPangkat())
+                      .role(accountRole)
+                      .tipeAkun(account.getTipeAkun())
+                      .createdAt(account.getCreatedAt())
+                      .updatedAt(account.getUpdatedAt())
+                      .build();
+            }
+
             return AccountResponse.Detail.builder()
                   .id(account.getId())
                   .nama(account.getNama())
@@ -580,5 +652,28 @@ public class AuthServiceImpl implements AuthService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to change password: " + e.getMessage());
         }
+    }
+
+    @Override
+    @Transactional
+    public String deleteAccountByNik(String authHeader, String nik) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthenticationException("Missing or invalid Authorization header");
+        }
+
+        String token = authHeader.substring(7);
+        Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+        String role = String.valueOf(claims.get("role"));
+
+        if (!"ADMIN".equalsIgnoreCase(role) && !"KEPALA".equalsIgnoreCase(role)) {
+            throw new ForbiddenException("You are not authorized to delete this account");
+        }
+
+        Account account = accountRepository.findByNik(nik)
+              .orElseThrow(() -> new ResourceNotFoundException("Akun tidak ditemukan dengan NIK: " + nik));
+
+        accountRepository.delete(account);
+
+        return "Akun dengan NIK " + nik + " berhasil dihapus";
     }
 }

@@ -14,12 +14,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,46 +32,17 @@ public class FormPengajuanController {
 
     @GetMapping
     @Operation(summary = "Ambil semua data pengajuan KTA berdasarkan role & token JWT")
-    public ResponseEntity<ApiResponse<?>> findAllPengajuan(@RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false)
-                                                           String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new RuntimeException("Missing or invalid Authorization header");
-        }
+    public ResponseEntity<ApiResponse<List<FormPengajuanResDTO>>> findAllPengajuan(
+          @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+        var result = formPengajuanService.getAllPengajuan(authHeader);
 
-        try {
-            var result = formPengajuanService.getAllPengajuan(authHeader);
-            return ResponseEntity.ok(ApiResponse.success(result, "Retrieved " + result.size() + " data pengajuan successfully"));
-        } catch (RuntimeException e) {
-            var error = ApiResponse.builder()
-                  .success(false)
-                  .statusCode(400)
-                  .message(e.getMessage())
-                  .timestamp(LocalDateTime.now())
-                  .build();
-            return ResponseEntity.badRequest().body(error);
-        }
+        return ResponseEntity.ok(ApiResponse.success(result, "Retrieved " + result.size() + " data pengajuan successfully"));
     }
 
     @PostMapping
     @Operation(summary = "Simpan data pengajuan KTA")
-    public ResponseEntity<ApiResponse<?>> saveData(@Valid @RequestBody FormPengajuanReqDTO.SavePengajuan dto,
-                                                   BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            List<String> errorMessages = bindingResult.getFieldErrors().stream()
-                  .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                  .toList();
-
-            ApiResponse<List<String>> errorResponse = ApiResponse.<List<String>>builder()
-                  .success(false)
-                  .statusCode(400)
-                  .message("Validation failed")
-                  .errors(errorMessages)
-                  .timestamp(LocalDateTime.now())
-                  .build();
-
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
-
+    public ResponseEntity<ApiResponse<FormPengajuanResDTO.SaveDataResponse>> saveData(
+          @Valid @RequestBody FormPengajuanReqDTO.SavePengajuan dto) {
         FormPengajuanResDTO.SaveDataResponse saved = formPengajuanService.saveData(dto);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(saved));
@@ -81,9 +50,10 @@ public class FormPengajuanController {
 
     @PostMapping("/upload-file")
     @Operation(summary = "Upload file")
-    public ResponseEntity<ApiResponse<?>> uploadAndSaveFile(@RequestParam("file") MultipartFile file,
-                                                            @RequestParam("form_uuid") String formUuid,
-                                                            @RequestParam(value = "nama_file", required = false) String namaFile) {
+    public ResponseEntity<ApiResponse<FilePendukungDTO>> uploadAndSaveFile(
+          @RequestParam("file") MultipartFile file,
+          @RequestParam("form_uuid") String formUuid,
+          @RequestParam(value = "nama_file", required = false) String namaFile) {
         FilePendukungDTO result = formPengajuanService.uploadAndSaveFile(file, formUuid, namaFile);
 
         return ResponseEntity.ok(ApiResponse.created(result));
@@ -91,36 +61,20 @@ public class FormPengajuanController {
 
     @GetMapping("/detail/{uuid}")
     @Operation(summary = "Ambil data pengajuan KTA berdasarkan uuid")
-    public ResponseEntity<ApiResponse<FormPengajuanResDTO.PengajuanResponse>> getFormByUuid(@Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-                                                                                            @PathVariable UUID uuid) {
+    public ResponseEntity<ApiResponse<FormPengajuanResDTO.PengajuanResponse>> getFormByUuid(
+          @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+          @PathVariable UUID uuid) {
         FormPengajuanResDTO.PengajuanResponse result = formPengajuanService.findByUuidWithFiles(authHeader, uuid);
-        ApiResponse<FormPengajuanResDTO.PengajuanResponse> response = ApiResponse.success(result, "Retrieved 1 data successfully");
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(result, "Retrieved 1 data successfully"));
     }
 
     @PutMapping("/update/{uuid}")
     @Operation(summary = "Ubah data pengajuan KTA")
-    public ResponseEntity<ApiResponse<?>> updatePengajuan(@Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-                                                          @PathVariable UUID uuid,
-                                                          @RequestBody FormPengajuanReqDTO.SavePengajuan dto,
-                                                          BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            List<String> errorMessages = bindingResult.getFieldErrors().stream()
-                  .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                  .toList();
-
-            ApiResponse<List<String>> errorResponse = ApiResponse.<List<String>>builder()
-                  .success(false)
-                  .statusCode(400)
-                  .message("Validation failed")
-                  .errors(errorMessages)
-                  .timestamp(LocalDateTime.now())
-                  .build();
-
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
-
+    public ResponseEntity<ApiResponse<FormPengajuanResDTO.SaveDataResponse>> updatePengajuan(
+          @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+          @PathVariable UUID uuid,
+          @RequestBody FormPengajuanReqDTO.SavePengajuan dto) {
         FormPengajuanResDTO.SaveDataResponse updated = formPengajuanService.editDataPengajuan(authHeader, uuid, dto);
 
         return ResponseEntity.ok(ApiResponse.updated(updated));
@@ -128,49 +82,20 @@ public class FormPengajuanController {
 
     @PutMapping("/verify/{uuid}")
     @Operation(summary = "Verifikasi data pengajuan KTA dan update status")
-    public ResponseEntity<ApiResponse<?>> verifyData(@RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-                                                     @PathVariable UUID uuid,
-                                                     @Valid @RequestBody FormPengajuanReqDTO.VerifyPengajuan dto,
-                                                     BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            List<String> errorMessages = bindingResult.getFieldErrors().stream()
-                  .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                  .toList();
+    public ResponseEntity<ApiResponse<FormPengajuanResDTO.VerifyData>> verifyData(
+          @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+          @PathVariable UUID uuid,
+          @Valid @RequestBody FormPengajuanReqDTO.VerifyPengajuan dto) {
+        FormPengajuanResDTO.VerifyData result = formPengajuanService.verifyDataPengajuan(authHeader, dto, uuid);
 
-            ApiResponse<List<String>> errorResponse = ApiResponse.<List<String>>builder()
-                  .success(false)
-                  .statusCode(400)
-                  .message("Validation failed")
-                  .errors(errorMessages)
-                  .timestamp(LocalDateTime.now())
-                  .build();
-
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
-
-        try {
-            FormPengajuanResDTO.VerifyData result = formPengajuanService.verifyDataPengajuan(authHeader, dto, uuid);
-
-            return ResponseEntity.ok(ApiResponse.updated(result));
-
-        } catch (RuntimeException e) {
-            ApiResponse<Object> errorResponse = ApiResponse.builder()
-                  .success(false)
-                  .statusCode(400)
-                  .message(e.getMessage())
-                  .timestamp(LocalDateTime.now())
-                  .build();
-
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
+        return ResponseEntity.ok(ApiResponse.updated(result));
     }
 
     @GetMapping("/detail-with-profile/{uuid}")
     @Operation(summary = "Ambil detail pengajuan + profile pemilik (account) berdasarkan uuid")
     public ResponseEntity<ApiResponse<FormPengajuanResDTO.PengajuanWithProfileResponse>> getDetailWithProfile(
-          @Valid @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-          @PathVariable UUID uuid
-    ) {
+          @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+          @PathVariable UUID uuid) {
         FormPengajuanResDTO.PengajuanWithProfileResponse result =
               formPengajuanService.findByUuidWithFilesAndProfile(authHeader, uuid);
 
@@ -188,29 +113,16 @@ public class FormPengajuanController {
     @DeleteMapping("/delete/{uuid}")
     @Operation(summary = "Hapus Data Pengajuan via uuid")
     public ResponseEntity<ApiResponse<Void>> deletePengajuan(@PathVariable UUID uuid) {
-        try {
-            formPengajuanService.deleteData(uuid.toString());
+        formPengajuanService.deleteData(uuid.toString());
 
-            return ResponseEntity.ok(
-                  ApiResponse.success(null, "Data pengajuan berhasil dihapus")
-            );
-
-        } catch (RuntimeException e) {
-            ApiResponse<Void> errorResponse = ApiResponse.<Void>builder()
-                  .success(false)
-                  .statusCode(400)
-                  .message(e.getMessage())
-                  .timestamp(LocalDateTime.now())
-                  .build();
-
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
+        return ResponseEntity.ok(ApiResponse.success(null, "Data pengajuan berhasil dihapus"));
     }
 
     @DeleteMapping("/file-pendukung/{id}")
     @Operation(summary = "Hapus 1 file pendukung berdasarkan ID (hapus juga di R2)")
-    public ResponseEntity<ApiResponse<Void>> deleteOne(@RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-                                                       @PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteOne(
+          @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+          @PathVariable Long id) {
         formPengajuanService.deleteFilePendukung(authHeader, id);
 
         return ResponseEntity.ok(ApiResponse.deleted());
@@ -231,15 +143,12 @@ public class FormPengajuanController {
     }
 
     @GetMapping("/statistics")
-    public ResponseEntity<ApiResponse<List<FormPengajuanResDTO.PengajuanBulananResponse>>> getPengajuanBulanan(@RequestParam(required = false) Integer tahun) {
+    public ResponseEntity<ApiResponse<List<FormPengajuanResDTO.PengajuanBulananResponse>>> getPengajuanBulanan(
+          @RequestParam(required = false) Integer tahun) {
         int year = tahun != null ? tahun : LocalDate.now().getYear();
 
         return ResponseEntity.ok(
-              ApiResponse.success(
-                    formPengajuanService.getStatisticsPerMonth(year),
-                    "Statistik pengajuan tahun " + year
-              )
+              ApiResponse.success(formPengajuanService.getStatisticsPerMonth(year), "Statistik pengajuan tahun " + year)
         );
     }
-
 }
