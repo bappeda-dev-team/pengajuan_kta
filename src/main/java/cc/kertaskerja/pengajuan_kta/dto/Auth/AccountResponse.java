@@ -1,6 +1,8 @@
 package cc.kertaskerja.pengajuan_kta.dto.Auth;
 
+import cc.kertaskerja.pengajuan_kta.enums.TipeAkunEnum;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -159,6 +161,23 @@ public class AccountResponse {
         private String email;
         private String nomorTelepon;
         private String role;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UserResponse {
+        private String nama;
+        private String nik;
+        private String email;
+        private String nomor_telepon;
+        private String tempat_lahir;
+        private Date tanggal_lahir;
+        private String alamat;
+        private String jenis_kelamin;
+        private String otp_code;
+        private TipeAkunEnum tipe_akun;
     }
 }
 

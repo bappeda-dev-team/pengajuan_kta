@@ -22,6 +22,8 @@ public interface AuthService {
 
     AccountResponse.AdminResponse editAdmin(String nik, RegisterRequest.EditAdmin request);
 
+    AccountResponse.UserResponse editUser(String authHeader, String nik, RegisterRequest.EditUser request);
+
     AccountResponse.VerifyAccount verifyAccount(String authHeader, String nik, RegisterRequest.VerifyAccount request);
 
     LoginResponse login(LoginRequest request);

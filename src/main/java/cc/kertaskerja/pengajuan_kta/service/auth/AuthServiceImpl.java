@@ -348,6 +348,98 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
+    public AccountResponse.UserResponse editUser(String authHeader, String nik, RegisterRequest.EditUser request) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthenticationException("Missing or invalid Authorization header");
+        }
+
+        String token = authHeader.substring(7);
+        Map<String, Object> claims = jwtTokenProvider.parseToken(token);
+        String requesterRole = String.valueOf(claims.get("role"));
+
+        Set<String> allowedRoles = Set.of("ADMIN", "KEPALA");
+
+        if (!allowedRoles.contains(requesterRole)) {
+            throw new ForbiddenException("You are not allowed to edit this user.");
+        }
+
+        Account account = accountRepository.findByNik(nik)
+              .orElseThrow(() -> new ResourceNotFoundException("Akun user tidak ditemukan dengan NIK: " + nik));
+
+        if (request.getEmail() != null && !request.getEmail().equals(account.getEmail())) {
+            if (accountRepository.existsByEmail(request.getEmail())) {
+                throw new BadRequestException("Email sudah terdaftar");
+            }
+            account.setEmail(request.getEmail());
+        }
+
+        if (request.getNomor_telepon() != null && !request.getNomor_telepon().equals(account.getNomorTelepon())) {
+            if (accountRepository.existsByNomorTelepon(request.getNomor_telepon())) {
+                throw new BadRequestException("Nomor telepon sudah terdaftar");
+            }
+            account.setNomorTelepon(request.getNomor_telepon());
+        }
+
+        if (request.getNik() != null) {
+            String encryptedNewNik = encryptService.encrypt(request.getNik());
+            if (!encryptedNewNik.equals(account.getNik())) {
+                if (accountRepository.findByNik(encryptedNewNik).isPresent()) {
+                    throw new BadRequestException("NIK sudah terdaftar");
+                }
+                account.setNik(encryptedNewNik);
+            }
+        }
+
+        if (request.getNama() != null) {
+            account.setNama(request.getNama());
+        }
+
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            account.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        if (request.getTempat_lahir() != null) {
+            account.setTempatLahir(request.getTempat_lahir());
+        }
+
+        if (request.getTanggal_lahir() != null) {
+            account.setTanggalLahir(request.getTanggal_lahir());
+        }
+
+        if (request.getAlamat() != null) {
+            account.setAlamat(request.getAlamat());
+        }
+
+        if (request.getJenis_kelamin() != null) {
+            account.setJenisKelamin(request.getJenis_kelamin());
+        }
+
+        if (request.getTipe_akun() != null) {
+            account.setTipeAkun(request.getTipe_akun().name());
+        }
+
+        try {
+            Account saved = accountRepository.save(account);
+
+            return AccountResponse.UserResponse.builder()
+                  .nama(saved.getNama())
+                  .nik(encryptService.decrypt(saved.getNik()))
+                  .email(saved.getEmail())
+                  .nomor_telepon(saved.getNomorTelepon())
+                  .tempat_lahir(saved.getTempatLahir())
+                  .tanggal_lahir(saved.getTanggalLahir())
+                  .alamat(saved.getAlamat())
+                  .jenis_kelamin(saved.getJenisKelamin())
+                  .tipe_akun(cc.kertaskerja.pengajuan_kta.enums.TipeAkunEnum.valueOf(saved.getTipeAkun()))
+                  .build();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Unexpected error occurred while updating user", e);
+        }
+    }
+
+    @Override
+    @Transactional
     public AccountResponse.VerifyAccount verifyAccount(String authHeader, String nik, RegisterRequest.VerifyAccount request) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new UnauthenticationException("Missing or invalid Authorization header");

@@ -95,6 +95,17 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(updated, "Admin account updated successfully"));
     }
 
+    @PutMapping("/edit-user/{nik}")
+    @Operation(summary = "Edit akun ADMIN")
+    public ResponseEntity<ApiResponse<AccountResponse.UserResponse>> editUser(
+          @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+          @PathVariable String nik,
+          @Valid @RequestBody RegisterRequest.EditUser request) {
+        AccountResponse.UserResponse updated = authService.editUser(authHeader, nik, request);
+
+        return ResponseEntity.ok(ApiResponse.success(updated, "User account updated successfully"));
+    }
+
     @GetMapping("/accounts")
     @Operation(summary = "List akun terdaftar")
     public ResponseEntity<ApiResponse<List<AccountResponse>>> listAccount(

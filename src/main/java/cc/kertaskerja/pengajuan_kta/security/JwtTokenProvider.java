@@ -1,10 +1,12 @@
 
+
 package cc.kertaskerja.pengajuan_kta.security;
 
 import cc.kertaskerja.pengajuan_kta.exception.UnauthenticationException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -145,5 +147,16 @@ public class JwtTokenProvider {
             log.error("🔒 Unexpected error while parsing token: {}", e.getMessage(), e);
             throw new UnauthenticationException("Invalid or expired token");
         }
+    }
+
+    public Map<String, Object> getClaimsFromRequest(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthenticationException("Missing or invalid Authorization header");
+        }
+
+        String token = authHeader.substring(7);
+        return parseToken(token);
     }
 }

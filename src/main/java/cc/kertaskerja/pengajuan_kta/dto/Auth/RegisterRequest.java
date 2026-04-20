@@ -186,4 +186,46 @@ public class RegisterRequest {
         @NotBlank(message = "Role harus diisi!")
         private String role;
     }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class EditUser {
+        @NotBlank(message = "Harap isi nama lengkap Anda")
+        private String nama;
+
+        @NotBlank
+        @Size(min = 16, max = 16)
+        @Pattern(regexp = "\\d{16}", message = "NIK must be exactly 16 digits")
+        private String nik;
+
+        @NotBlank(message = "Email tidak boleh kosong")
+        @Email(message = "Format email tidak valid")
+        private String email;
+
+        private String password;
+
+        @NotBlank(message = "Harap masukkan nomor whatsapp yang masih aktif")
+        @Size(min = 10, max = 16, message = "Nomor HP harus antara 10 sampai 16 digit")
+        @Pattern(
+              regexp = "^62\\d{8,14}$",
+              message = "Nomor HP harus dimulai dengan 62 dan diikuti 8–14 digit angka"
+        )
+        private String nomor_telepon;
+
+        @NotBlank(message = "Tempat lahir wajib diisi")
+        private String tempat_lahir;
+
+        @NotNull(message = "Tanggal lahir wajib diisi")
+        private Date tanggal_lahir;
+
+        @NotBlank(message = "Alamat wajib diisi")
+        private String alamat;
+
+        @NotBlank(message = "Jenis kelamin wajib diisi")
+        private String jenis_kelamin;
+
+        @NotNull(message = "Harap masukkan tipe akun yang Anda daftarkan")
+        private TipeAkunEnum tipe_akun;
+    }
 }
