@@ -1,0 +1,46 @@
+name: Deploy to AWS EC2
+
+on:
+  workflow_run:
+    workflows: ["Commit stage"]
+    types: [completed]
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: bappeda-dev-team/pengajuan-kta
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ec2-user/kta-app
+
+            echo "[$(date)] Starting deployment..." >> deploy.log
+
+            git pull origin main
+
+            docker compose down
+            docker compose up -d --build
+
+            sleep 10
+
+            if curl -sf http://localhost:8080/kta/api/v3/api-docs > /dev/null; then
+              echo "[$(date)] Deploy SUCCESS" >> deploy.log
+            else
+              echo "[$(date)] Deploy FAILED - app not responding" >> deploy.log
+              docker compose logs --tail=50 app >> deploy.log
+              exit 1
+            fi
+
+            docker image prune -f

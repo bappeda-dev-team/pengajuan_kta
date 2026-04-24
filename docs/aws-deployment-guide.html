@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS Deployment Guide - Pengajuan KTA (Bappeda)</title>
+<style>
+@media print {
+  body { font-size: 10pt; }
+  pre { page-break-inside: avoid; }
+  h1, h2, h3 { page-break-after: avoid; }
+  .no-print { display: none; }
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.7;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  color: #1a1a2e;
+  background: #fff;
+}
+h1 {
+  color: #16213e;
+  border-bottom: 3px solid #0f3460;
+  padding-bottom: 12px;
+  font-size: 28px;
+}
+h2 {
+  color: #0f3460;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-top: 48px;
+  font-size: 22px;
+}
+h3 {
+  color: #16213e;
+  margin-top: 32px;
+  font-size: 17px;
+}
+pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 16px 20px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.5;
+  border-left: 4px solid #3b82f6;
+}
+code {
+  background: #f1f5f9;
+  color: #e11d48;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+pre code {
+  background: none;
+  color: #e2e8f0;
+  padding: 0;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+  font-size: 14px;
+}
+th, td {
+  border: 1px solid #cbd5e1;
+  padding: 10px 14px;
+  text-align: left;
+}
+th {
+  background: #0f3460;
+  color: white;
+  font-weight: 600;
+}
+tr:nth-child(even) { background: #f8fafc; }
+tr:hover { background: #e2e8f0; }
+blockquote {
+  border-left: 4px solid #f59e0b;
+  background: #fffbeb;
+  padding: 12px 20px;
+  margin: 16px 0;
+  border-radius: 0 8px 8px 0;
+  color: #92400e;
+}
+hr {
+  border: none;
+  border-top: 2px solid #e2e8f0;
+  margin: 40px 0;
+}
+.print-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #0f3460;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 1000;
+}
+.print-btn:hover { background: #1e40af; }
+ul, ol { padding-left: 24px; }
+li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<button class="print-btn no-print" onclick="window.print()">Print / Save PDF</button>
+<h1>AWS Deployment Guide: Pengajuan KTA — Bappeda</h1>
+<br>
+<blockquote>
+<p><strong>Versi</strong>: 1.0</p>
+<p><strong>Tanggal</strong>: April 2026</p>
+<p><strong>Stack</strong>: Spring Boot 3.5.5 · Java 21 · PostgreSQL · Redis · Docker</p>
+<p><strong>Target</strong>: AWS (ap-southeast-1 / Singapore)</p>
+</blockquote>
+<br>
+<hr>
+<br>
+<h2 id="daftar-isi">Daftar Isi</h2>
+<br>
+<p>1. <a href="#1-overview--architecture">Overview & Architecture</a></p>
+<p>2. <a href="#2-prerequisites">Prerequisites</a></p>
+<p>3. <a href="#3-phase-1-networking">Phase 1: Networking (VPC, Subnet, Security)</a></p>
+<p>4. <a href="#4-phase-2-database">Phase 2: Database (RDS PostgreSQL)</a></p>
+<p>5. <a href="#5-phase-3-cache">Phase 3: Cache (ElastiCache Redis)</a></p>
+<p>6. <a href="#6-phase-4-compute">Phase 4: Compute (EC2 + Docker)</a></p>
+<p>7. <a href="#7-phase-5-domain--ssl">Phase 5: Domain & SSL</a></p>
+<p>8. <a href="#8-phase-6-cicd-pipeline">Phase 6: CI/CD Pipeline</a></p>
+<p>9. <a href="#9-phase-7-monitoring--logging">Phase 7: Monitoring & Logging</a></p>
+<p>10. <a href="#10-phase-8-backup--disaster-recovery">Phase 8: Backup & Disaster Recovery</a></p>
+<p>11. <a href="#11-troubleshooting">Troubleshooting</a></p>
+<p>12. <a href="#12-cost-summary">Cost Summary</a></p>
+<p>13. <a href="#13-quick-reference">Quick Reference</a></p>
+<br>
+<hr>
+<br>
+<h2 id="1.-overview--architecture">1. Overview & Architecture</h2>
+<br>
+<h3>1.1 Aplikasi yang Akan Di-deploy</h3>
+<br>
+<table>
+<tr><th>Komponen</th><th>Detail</th></tr>
+<tr><td>Framework</td><td>Spring Boot 3.5.5 (Java 21, Gradle)</td></tr>
+<tr><td>Database</td><td>PostgreSQL (via JPA + Flyway migration)</td></tr>
+<tr><td>Cache</td><td>Redis (token blacklist, OTP, session)</td></tr>
+<tr><td>File Storage</td><td>Cloudflare R2 (S3-compatible)</td></tr>
+<tr><td>Auth</td><td>JWT + reCAPTCHA</td></tr>
+<tr><td>Integrasi</td><td>SMTP Email, WhatsApp API</td></tr>
+<tr><td>Container</td><td>Multi-stage Dockerfile (sudah ada)</td></tr>
+<tr><td>API Port</td><td>8080 (context path: <code>/kta/api</code>)</td></tr>
+<tr><td>API Docs</td><td>Swagger UI (<code>/kta/api/swagger-ui.html</code>)</td></tr>
+</table>
+<br>
+<h3>1.2 Arsitektur Target</h3>
+<br>
+<pre><code>
+                            INTERNET
+                               │
+                               ▼
+                      ┌────────────────┐
+                      │   Route 53     │  ← DNS: kta.bappeda.go.id
+                      │   (DNS)        │     mengarah ke Elastic IP
+                      └───────┬────────┘
+                              │
+                              ▼
+                     ┌─────────────────┐
+                     │ Internet Gateway│  ← Gerbang masuk ke VPC
+                     │    (igw-xxx)    │
+                     └────────┬────────┘
+                              │
+ ┌────────────────────────────┼────────────────────────────────────┐
+ │                            │                                    │
+ │  VPC: 10.0.0.0/16         │         Region: ap-southeast-1     │
+ │  ═══════════════           │         (Singapore)                │
+ │                            │                                    │
+ │  ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐  │
+ │    PUBLIC SUBNET           │                                    │
+ │  │ 10.0.1.0/24            │            AZ: ap-southeast-1a │  │
+ │    (Bisa diakses           │                                    │
+ │  │  dari internet)         ▼                                │  │
+ │               ┌───────────────────────────┐                     │
+ │  │            │ EC2 Instance              │                 │  │
+ │               │ ┌───────────────────────┐ │                     │
+ │  │            │ │    Elastic IP         │ │  ← IP statis    │  │
+ │               │ │    (13.x.x.x)        │ │    tidak berubah     │
+ │  │            │ └───────────────────────┘ │                 │  │
+ │               │                           │                     │
+ │  │            │ ┌───────────────────────┐ │                 │  │
+ │               │ │  Nginx Container      │ │                     │
+ │  │            │ │  :443 (HTTPS)         │ │  ← SSL/TLS      │  │
+ │               │ │  :80 → redirect 443   │ │    termination       │
+ │  │            │ └───────────┬───────────┘ │                 │  │
+ │               │             │             │                     │
+ │  │            │ ┌───────────▼───────────┐ │                 │  │
+ │               │ │  Spring Boot App      │ │                     │
+ │  │            │ │  pengajuan_kta        │ │  ← Aplikasi     │  │
+ │               │ │  :8080 (/kta/api)     │ │    utama             │
+ │  │            │ └───────────────────────┘ │                 │  │
+ │               │                           │                     │
+ │  │            │ Security Group: sg-app    │                 │  │
+ │               │ IN:  443, 80, 22(limited)│                     │
+ │  │            │ OUT: all                  │                 │  │
+ │               └─────────────┬─────────────┘                     │
+ │  └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┼─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘  │
+ │                             │                                   │
+ │         (Traffic internal   │  via private IP 10.0.x.x)        │
+ │                             │                                   │
+ │  ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┼─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐  │
+ │    PRIVATE SUBNET A         │                                   │
+ │  │ 10.0.10.0/24            │            AZ: ap-southeast-1a│  │
+ │    (TIDAK bisa diakses      │                                   │
+ │  │  dari internet)          │                               │  │
+ │                  ┌──────────┴──────────┐                        │
+ │  │               │                     │                    │  │
+ │          ┌───────▼────────┐   ┌────────▼───────┐                │
+ │  │       │ RDS PostgreSQL │   │ ElastiCache    │            │  │
+ │          │ db.t3.micro    │   │ Redis          │                │
+ │  │       │ :5432          │   │ cache.t3.micro │            │  │
+ │          │                │   │ :6379          │                │
+ │  │       │ sg-database    │   │ sg-cache       │            │  │
+ │          │ IN: 5432       │   │ IN: 6379       │                │
+ │  │       │  from sg-app   │   │  from sg-app   │            │  │
+ │          └────────────────┘   └────────────────┘                │
+ │  └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘  │
+ │                                                                 │
+ │  ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐  │
+ │    PRIVATE SUBNET B                                             │
+ │  │ 10.0.11.0/24                         AZ: ap-southeast-1b│  │
+ │    (Wajib ada untuk RDS                                         │
+ │  │  Subnet Group, minimal 2 AZ)                             │  │
+ │  └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘  │
+ │                                                                 │
+ └─────────────────────────────────────────────────────────────────┘
+          │                              │
+          ▼                              ▼
+ ┌─────────────────┐          ┌──────────────────┐
+ │ Cloudflare R2   │          │ External APIs    │
+ │ (File Storage)  │          │ • SMTP Mail      │
+ │                 │          │ • WhatsApp API   │
+ │                 │          │ • reCAPTCHA      │
+ └─────────────────┘          └──────────────────┘
+</code></pre>
+<br>
+<h3>1.3 Kenapa Arsitektur Ini?</h3>
+<br>
+<table>
+<tr><th>Keputusan</th><th>Alasan</th></tr>
+<tr><td>EC2 (bukan ECS Fargate)</td><td>User kecil, tidak perlu ALB, lebih hemat</td></tr>
+<tr><td>Nginx di Docker (bukan ALB)</td><td>Hemat ~$18/bulan, cukup untuk traffic kecil</td></tr>
+<tr><td>RDS Managed (bukan self-hosted)</td><td>Automated backup, patching, encryption by default</td></tr>
+<tr><td>ElastiCache Managed</td><td>Tidak perlu manage Redis, auto failover ready</td></tr>
+<tr><td>Private Subnet untuk DB/Redis</td><td>Database tidak bisa diakses dari internet</td></tr>
+<tr><td>Elastic IP</td><td>IP publik statis, tidak berubah saat restart</td></tr>
+<tr><td>Tanpa NAT Gateway</td><td>Hemat ~$32/bulan, DB/Redis tidak perlu internet</td></tr>
+</table>
+<br>
+<h3>1.4 Penjelasan Konsep (untuk Beginner)</h3>
+<br>
+<table>
+<tr><th>Istilah</th><th>Analogi Sederhana</th></tr>
+<tr><td><strong>VPC</strong></td><td>Komplek perumahan tertutup (area aman kamu di AWS)</td></tr>
+<tr><td><strong>Subnet</strong></td><td>Blok-blok rumah dalam komplek</td></tr>
+<tr><td><strong>Public Subnet</strong></td><td>Blok yang menghadap jalan raya (bisa diakses orang luar)</td></tr>
+<tr><td><strong>Private Subnet</strong></td><td>Blok di dalam komplek (hanya penghuni yang bisa masuk)</td></tr>
+<tr><td><strong>Internet Gateway</strong></td><td>Gerbang utama komplek ke jalan raya</td></tr>
+<tr><td><strong>Security Group</strong></td><td>Satpam di setiap rumah (cek siapa yang boleh masuk per port)</td></tr>
+<tr><td><strong>Network ACL</strong></td><td>Satpam di gerbang blok (filter per subnet)</td></tr>
+<tr><td><strong>Route Table</strong></td><td>Papan petunjuk arah di setiap blok</td></tr>
+<tr><td><strong>Elastic IP</strong></td><td>Nomor rumah tetap (tidak berubah walau pindah rumah)</td></tr>
+<tr><td><strong>EC2</strong></td><td>Rumah/server tempat aplikasi berjalan</td></tr>
+<tr><td><strong>RDS</strong></td><td>Gudang data (database) yang dijaga AWS</td></tr>
+<tr><td><strong>ElastiCache</strong></td><td>Meja resepsionis (cache cepat untuk data sering diakses)</td></tr>
+</table>
+<br>
+<hr>
+<br>
+<h2 id="2.-prerequisites">2. Prerequisites</h2>
+<br>
+<h3>2.1 Checklist Sebelum Mulai</h3>
+<br>
+<p>&#9744; AWS Account aktif (https://aws.amazon.com)</p>
+<p>&#9744; AWS CLI terinstall di laptop</p>
+<p>&#9744; SSH client (terminal macOS/Linux sudah built-in)</p>
+<p>&#9744; Git terinstall</p>
+<p>&#9744; Domain name (opsional, bisa pakai IP dulu)</p>
+<p>&#9744; Source code <code>pengajuan_kta</code> (sudah ada)</p>
+<p>&#9744; Dockerfile (sudah ada)</p>
+<br>
+<h3>2.2 Install AWS CLI</h3>
+<br>
+<p><strong>macOS:</strong></p>
+<br>
+<pre><code>
+brew install awscli
+</code></pre>
+<br>
+<p><strong>Linux:</strong></p>
+<br>
+<pre><code>
+curl &quot;https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip&quot; -o &quot;awscliv2.zip&quot;
+unzip awscliv2.zip
+sudo ./aws/install
+</code></pre>
+<br>
+<p><strong>Verifikasi:</strong></p>
+<br>
+<pre><code>
+aws --version
+# Output: aws-cli/2.x.x ...
+</code></pre>
+<br>
+<h3>2.3 Konfigurasi AWS CLI</h3>
+<br>
+<p><strong>Cara mendapatkan Access Key:</strong></p>
+<br>
+<p>1. Login ke AWS Console</p>
+<p>2. Klik nama kamu di pojok kanan atas → <strong>Security credentials</strong></p>
+<p>3. Atau buka: IAM → Users → Pilih user → Security credentials tab</p>
+<p>4. Klik <strong>Create access key</strong> → pilih "Command Line Interface (CLI)"</p>
+<p>5. Simpan Access Key ID dan Secret Access Key</p>
+<br>
+<p><strong>Jalankan konfigurasi:</strong></p>
+<br>
+<pre><code>
+aws configure
+</code></pre>
+<br>
+<pre><code>
+AWS Access Key ID [None]: AKIAXXXXXXXXXXXXXXXXX
+AWS Secret Access Key [None]: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Default region name [None]: ap-southeast-1
+Default output format [None]: json
+</code></pre>
+<br>
+<p><strong>Verifikasi koneksi:</strong></p>
+<br>
+<pre><code>
+aws sts get-caller-identity
+</code></pre>
+<br>
+<p>Harus menampilkan Account ID dan ARN kamu.</p>
+<br>
+<hr>
+<br>
+<h2 id="3.-phase-1:-networking">3. Phase 1: Networking</h2>
+<br>
+<h3>Overview Phase Ini</h3>
+<br>
+<pre><code>
+Yang akan dibuat:
+  ☐ 3.1  VPC
+  ☐ 3.2  Internet Gateway
+  ☐ 3.3  Public Subnet (10.0.1.0/24)
+  ☐ 3.4  Private Subnet A (10.0.10.0/24) — AZ-1a
+  ☐ 3.5  Private Subnet B (10.0.11.0/24) — AZ-1b
+  ☐ 3.6  Route Table (Public)
+  ☐ 3.7  Route Table (Private)
+  ☐ 3.8  Security Groups (3 buah)
+  ☐ 3.9  Network ACL
+</code></pre>
+<br>
+<h3>3.1 Buat VPC</h3>
+<br>
+<p><strong>Apa itu?</strong> VPC (Virtual Private Cloud) = jaringan virtual terisolasi milik kamu di AWS. Semua resource akan hidup di dalam VPC ini.</p>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. Buka <strong>VPC</strong> → <strong>Your VPCs</strong> → <strong>Create VPC</strong></p>
+<p>2. Isi:</p>
+<p>   - <strong>Name tag</strong>: <code>kta-vpc</code></p>
+<p>   - <strong>IPv4 CIDR block</strong>: <code>10.0.0.0/16</code></p>
+<p>   - <strong>IPv6 CIDR block</strong>: No IPv6</p>
+<p>   - <strong>Tenancy</strong>: Default</p>
+<p>3. Klik <strong>Create VPC</strong></p>
+<br>
+<p><strong>Via CLI:</strong></p>
+<br>
+<pre><code>
+# Buat VPC
+aws ec2 create-vpc \
+  --cidr-block 10.0.0.0/16 \
+  --tag-specifications &#x27;ResourceType=vpc,Tags=[{Key=Name,Value=kta-vpc}]&#x27; \
+  --query &#x27;Vpc.VpcId&#x27; --output text
+
+# Catat VPC_ID yang muncul (vpc-xxxxxxxxx)
+
+# Enable DNS hostnames (WAJIB untuk RDS)
+aws ec2 modify-vpc-attribute \
+  --vpc-id vpc-XXXXX \
+  --enable-dns-hostnames &#x27;{&quot;Value&quot;:true}&#x27;
+
+aws ec2 modify-vpc-attribute \
+  --vpc-id vpc-XXXXX \
+  --enable-dns-support &#x27;{&quot;Value&quot;:true}&#x27;
+</code></pre>
+<br>
+<blockquote>
+<p><strong>Penjelasan CIDR <code>10.0.0.0/16</code>:</strong></p>
+<p>- <code>/16</code> berarti 16 bit pertama (10.0) tidak berubah</p>
+<p>- Tersedia 65.536 IP: <code>10.0.0.0</code> sampai <code>10.0.255.255</code></p>
+<p>- Lebih dari cukup untuk kebutuhan kita</p>
+</blockquote>
+<br>
+<h3>3.2 Buat Internet Gateway (IGW)</h3>
+<br>
+<p><strong>Apa itu?</strong> Gerbang yang menghubungkan VPC ke internet. Tanpa IGW, tidak ada resource yang bisa diakses dari luar.</p>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. <strong>VPC</strong> → <strong>Internet Gateways</strong> → <strong>Create Internet Gateway</strong></p>
+<p>2. <strong>Name tag</strong>: <code>kta-igw</code></p>
+<p>3. Setelah dibuat, klik <strong>Actions</strong> → <strong>Attach to VPC</strong> → pilih <code>kta-vpc</code></p>
+<br>
+<p><strong>Via CLI:</strong></p>
+<br>
+<pre><code>
+# Buat IGW
+aws ec2 create-internet-gateway \
+  --tag-specifications &#x27;ResourceType=internet-gateway,Tags=[{Key=Name,Value=kta-igw}]&#x27; \
+  --query &#x27;InternetGateway.InternetGatewayId&#x27; --output text
+
+# Attach ke VPC
+aws ec2 attach-internet-gateway \
+  --internet-gateway-id igw-XXXXX \
+  --vpc-id vpc-XXXXX
+</code></pre>
+<br>
+<h3>3.3 Buat Public Subnet</h3>
+<br>
+<p><strong>Apa itu?</strong> Subnet yang bisa diakses dari internet. EC2 (server app) akan tinggal di sini.</p>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. <strong>VPC</strong> → <strong>Subnets</strong> → <strong>Create Subnet</strong></p>
+<p>2. Isi:</p>
+<p>   - <strong>VPC</strong>: <code>kta-vpc</code></p>
+<p>   - <strong>Name</strong>: <code>kta-public-1a</code></p>
+<p>   - <strong>Availability Zone</strong>: <code>ap-southeast-1a</code></p>
+<p>   - <strong>IPv4 CIDR</strong>: <code>10.0.1.0/24</code></p>
+<p>3. Setelah dibuat, pilih subnet → <strong>Actions</strong> → <strong>Edit subnet settings</strong></p>
+<p>4. Centang <strong>Enable auto-assign public IPv4 address</strong> → Save</p>
+<br>
+<blockquote>
+<p><strong>Penjelasan <code>10.0.1.0/24</code>:</strong> 256 IP address (<code>10.0.1.0</code> - <code>10.0.1.255</code>). Cukup untuk kebutuhan kita yang hanya 1 EC2.</p>
+</blockquote>
+<br>
+<h3>3.4 Buat Private Subnet A</h3>
+<br>
+<p><strong>Apa itu?</strong> Subnet yang TIDAK bisa diakses dari internet. Database dan Redis akan tinggal di sini agar aman.</p>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. <strong>VPC</strong> → <strong>Subnets</strong> → <strong>Create Subnet</strong></p>
+<p>2. Isi:</p>
+<p>   - <strong>VPC</strong>: <code>kta-vpc</code></p>
+<p>   - <strong>Name</strong>: <code>kta-private-1a</code></p>
+<p>   - <strong>Availability Zone</strong>: <code>ap-southeast-1a</code></p>
+<p>   - <strong>IPv4 CIDR</strong>: <code>10.0.10.0/24</code></p>
+<br>
+<h3>3.5 Buat Private Subnet B</h3>
+<br>
+<p><strong>Kenapa perlu 2 Private Subnet?</strong> AWS RDS <strong>mewajibkan</strong> minimal 2 subnet di Availability Zone yang <strong>berbeda</strong> untuk membuat DB Subnet Group. Ini syarat dari AWS, meskipun kita hanya deploy 1 instance RDS.</p>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. <strong>VPC</strong> → <strong>Subnets</strong> → <strong>Create Subnet</strong></p>
+<p>2. Isi:</p>
+<p>   - <strong>VPC</strong>: <code>kta-vpc</code></p>
+<p>   - <strong>Name</strong>: <code>kta-private-1b</code></p>
+<p>   - <strong>Availability Zone</strong>: <code>ap-southeast-1b</code> ← <strong>BEDA AZ dari yang sebelumnya!</strong></p>
+<p>   - <strong>IPv4 CIDR</strong>: <code>10.0.11.0/24</code></p>
+<br>
+<h3>Hasil Setelah Step 3.1 - 3.5</h3>
+<br>
+<pre><code>
+┌─────────────────────────────────────────────────────┐
+│ VPC: kta-vpc (10.0.0.0/16)                          │
+│                                                      │
+│  ┌────────────────────────────┐                      │
+│  │ kta-public-1a             │   AZ: 1a             │
+│  │ 10.0.1.0/24               │   (EC2 di sini)      │
+│  └────────────────────────────┘                      │
+│                                                      │
+│  ┌────────────────────────────┐                      │
+│  │ kta-private-1a            │   AZ: 1a             │
+│  │ 10.0.10.0/24              │   (RDS + Redis)      │
+│  └────────────────────────────┘                      │
+│                                                      │
+│  ┌────────────────────────────┐                      │
+│  │ kta-private-1b            │   AZ: 1b             │
+│  │ 10.0.11.0/24              │   (RDS Subnet Group) │
+│  └────────────────────────────┘                      │
+│                                                      │
+│  Internet Gateway: kta-igw (attached)                │
+└─────────────────────────────────────────────────────┘
+</code></pre>
+<br>
+<h3>3.6 Buat Route Table — Public</h3>
+<br>
+<p><strong>Apa itu?</strong> Route Table menentukan ke mana traffic jaringan diarahkan. Public Route Table akan mengarahkan traffic internet ke IGW.</p>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. <strong>VPC</strong> → <strong>Route Tables</strong> → <strong>Create Route Table</strong></p>
+<p>   - <strong>Name</strong>: <code>kta-rt-public</code></p>
+<p>   - <strong>VPC</strong>: <code>kta-vpc</code></p>
+<p>2. Pilih route table → tab <strong>Routes</strong> → <strong>Edit routes</strong> → <strong>Add route</strong>:</p>
+<p>   - <strong>Destination</strong>: <code>0.0.0.0/0</code></p>
+<p>   - <strong>Target</strong>: Internet Gateway → <code>kta-igw</code></p>
+<p>   - Klik <strong>Save changes</strong></p>
+<p>3. Tab <strong>Subnet associations</strong> → <strong>Edit subnet associations</strong> → centang <code>kta-public-1a</code> → Save</p>
+<br>
+<blockquote>
+<p><strong>Artinya:</strong> "Semua traffic yang tujuannya ke internet (<code>0.0.0.0/0</code>), lewatkan melalui Internet Gateway."</p>
+</blockquote>
+<br>
+<h3>3.7 Buat Route Table — Private</h3>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. <strong>VPC</strong> → <strong>Route Tables</strong> → <strong>Create Route Table</strong></p>
+<p>   - <strong>Name</strong>: <code>kta-rt-private</code></p>
+<p>   - <strong>VPC</strong>: <code>kta-vpc</code></p>
+<p>2. <strong>JANGAN</strong> tambah route ke internet. Biarkan hanya ada route <code>local</code>:</p>
+<p>   - <code>10.0.0.0/16</code> → <code>local</code> (sudah otomatis ada)</p>
+<p>3. Tab <strong>Subnet associations</strong> → <strong>Edit</strong> → centang <code>kta-private-1a</code> dan <code>kta-private-1b</code> → Save</p>
+<br>
+<blockquote>
+<p><strong>Artinya:</strong> "Resource di private subnet hanya bisa komunikasi di dalam VPC. Tidak bisa ke internet."</p>
+</blockquote>
+<br>
+<h3>3.8 Buat Security Groups</h3>
+<br>
+<p>Security Group = firewall virtual pada level instance. Mengontrol traffic masuk (inbound) dan keluar (outbound).</p>
+<br>
+<h4>SG 1: `kta-sg-app` (untuk EC2)</h4>
+<br>
+<table>
+<tr><th>Direction</th><th>Type</th><th>Port</th><th>Source</th><th>Keterangan</th></tr>
+<tr><td>Inbound</td><td>HTTPS</td><td>443</td><td><code>0.0.0.0/0</code></td><td>Akses web dari mana saja</td></tr>
+<tr><td>Inbound</td><td>HTTP</td><td>80</td><td><code>0.0.0.0/0</code></td><td>Redirect ke HTTPS</td></tr>
+<tr><td>Inbound</td><td>SSH</td><td>22</td><td><code>IP_KANTOR/32</code></td><td>SSH hanya dari IP kantor</td></tr>
+<tr><td>Outbound</td><td>All traffic</td><td>All</td><td><code>0.0.0.0/0</code></td><td>Akses internet keluar</td></tr>
+</table>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. <strong>VPC</strong> → <strong>Security Groups</strong> → <strong>Create Security Group</strong></p>
+<p>2. <strong>Name</strong>: <code>kta-sg-app</code> · <strong>VPC</strong>: <code>kta-vpc</code></p>
+<p>3. Tambah Inbound Rules sesuai tabel di atas</p>
+<p>4. Outbound biarkan default (All traffic)</p>
+<br>
+<blockquote>
+<p><strong>PENTING:</strong> Ganti <code>IP_KANTOR/32</code> dengan IP publik kantor/rumah kamu. Cek di https://whatismyipaddress.com. <code>/32</code> artinya hanya 1 IP itu saja yang diizinkan.</p>
+</blockquote>
+<br>
+<h4>SG 2: `kta-sg-database` (untuk RDS)</h4>
+<br>
+<table>
+<tr><th>Direction</th><th>Type</th><th>Port</th><th>Source</th><th>Keterangan</th></tr>
+<tr><td>Inbound</td><td>PostgreSQL</td><td>5432</td><td><code>kta-sg-app</code></td><td>Hanya dari EC2 app</td></tr>
+<tr><td>Outbound</td><td>—</td><td>—</td><td>—</td><td>Tidak perlu</td></tr>
+</table>
+<br>
+<h4>SG 3: `kta-sg-cache` (untuk ElastiCache Redis)</h4>
+<br>
+<table>
+<tr><th>Direction</th><th>Type</th><th>Port</th><th>Source</th><th>Keterangan</th></tr>
+<tr><td>Inbound</td><td>Custom TCP</td><td>6379</td><td><code>kta-sg-app</code></td><td>Hanya dari EC2 app</td></tr>
+<tr><td>Outbound</td><td>—</td><td>—</td><td>—</td><td>Tidak perlu</td></tr>
+</table>
+<br>
+<blockquote>
+<p><strong>Prinsip Least Privilege:</strong> Database dan Redis HANYA menerima koneksi dari Security Group <code>kta-sg-app</code>. Tidak ada akses dari internet.</p>
+</blockquote>
+<br>
+<h3>Security Visualization</h3>
+<br>
+<pre><code>
+                    INTERNET
+                       │
+    ┌──────────────────┼──────────────────┐
+    │                  ▼                  │
+    │        ┌─────────────────┐          │
+    │        │   kta-sg-app    │          │
+    │        │ ✅ 443 from ALL │          │
+    │        │ ✅ 80  from ALL │          │
+    │        │ ✅ 22  from IP  │          │
+    │        └──┬──────────┬───┘          │
+    │           │          │              │
+    │     ┌─────▼─────┐ ┌──▼────────┐    │
+    │     │sg-database│ │ sg-cache  │    │
+    │     │✅ 5432    │ │ ✅ 6379   │    │
+    │     │from sg-app│ │ from      │    │
+    │     │ ONLY      │ │ sg-app    │    │
+    │     │           │ │ ONLY      │    │
+    │     │❌ internet│ │ ❌internet│    │
+    │     └───────────┘ └───────────┘    │
+    └─────────────────────────────────────┘
+</code></pre>
+<br>
+<h3>3.9 Network ACL (Optional, Extra Layer)</h3>
+<br>
+<p>Network ACL = firewall pada level <strong>subnet</strong> (bukan per instance). Ini opsional tapi menambah layer keamanan.</p>
+<br>
+<h4>NACL Public Subnet</h4>
+<br>
+<table>
+<tr><th>Rule</th><th>Direction</th><th>Type</th><th>Port</th><th>Source/Dest</th><th>Action</th></tr>
+<tr><td>100</td><td>Inbound</td><td>HTTPS</td><td>443</td><td><code>0.0.0.0/0</code></td><td>ALLOW</td></tr>
+<tr><td>110</td><td>Inbound</td><td>HTTP</td><td>80</td><td><code>0.0.0.0/0</code></td><td>ALLOW</td></tr>
+<tr><td>120</td><td>Inbound</td><td>SSH</td><td>22</td><td><code>IP_KANTOR/32</code></td><td>ALLOW</td></tr>
+<tr><td>130</td><td>Inbound</td><td>Custom TCP</td><td>1024-65535</td><td><code>0.0.0.0/0</code></td><td>ALLOW</td></tr>
+<tr><td>*</td><td>Inbound</td><td>All</td><td>All</td><td><code>0.0.0.0/0</code></td><td>DENY</td></tr>
+<tr><td>100</td><td>Outbound</td><td>All</td><td>All</td><td><code>0.0.0.0/0</code></td><td>ALLOW</td></tr>
+</table>
+<br>
+<blockquote>
+<p><strong>Port 1024-65535</strong> = ephemeral ports, diperlukan untuk response traffic.</p>
+</blockquote>
+<br>
+<h4>NACL Private Subnet</h4>
+<br>
+<table>
+<tr><th>Rule</th><th>Direction</th><th>Type</th><th>Port</th><th>Source/Dest</th><th>Action</th></tr>
+<tr><td>100</td><td>Inbound</td><td>Custom TCP</td><td>5432</td><td><code>10.0.1.0/24</code></td><td>ALLOW</td></tr>
+<tr><td>110</td><td>Inbound</td><td>Custom TCP</td><td>6379</td><td><code>10.0.1.0/24</code></td><td>ALLOW</td></tr>
+<tr><td>*</td><td>Inbound</td><td>All</td><td>All</td><td><code>0.0.0.0/0</code></td><td>DENY</td></tr>
+<tr><td>100</td><td>Outbound</td><td>Custom TCP</td><td>1024-65535</td><td><code>10.0.1.0/24</code></td><td>ALLOW</td></tr>
+<tr><td>*</td><td>Outbound</td><td>All</td><td>All</td><td><code>0.0.0.0/0</code></td><td>DENY</td></tr>
+</table>
+<br>
+<hr>
+<br>
+<h2 id="4.-phase-2:-database-rds-postgresql">4. Phase 2: Database (RDS PostgreSQL)</h2>
+<br>
+<h3>4.1 Buat DB Subnet Group</h3>
+<br>
+<p><strong>Apa itu?</strong> Kumpulan subnet tempat RDS boleh di-deploy. AWS mewajibkan minimal 2 subnet di AZ berbeda.</p>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. <strong>RDS</strong> → <strong>Subnet groups</strong> → <strong>Create DB subnet group</strong></p>
+<p>2. Isi:</p>
+<p>   - <strong>Name</strong>: <code>kta-db-subnet-group</code></p>
+<p>   - <strong>Description</strong>: <code>Subnet group for KTA database</code></p>
+<p>   - <strong>VPC</strong>: <code>kta-vpc</code></p>
+<p>3. Add subnets:</p>
+<p>   - <strong>AZ <code>ap-southeast-1a</code></strong> → pilih <code>kta-private-1a</code> (10.0.10.0/24)</p>
+<p>   - <strong>AZ <code>ap-southeast-1b</code></strong> → pilih <code>kta-private-1b</code> (10.0.11.0/24)</p>
+<p>4. Klik <strong>Create</strong></p>
+<br>
+<h3>4.2 Buat RDS PostgreSQL Instance</h3>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. <strong>RDS</strong> → <strong>Databases</strong> → <strong>Create database</strong></p>
+<p>2. Isi sebagai berikut:</p>
+<br>
+<table>
+<tr><th>Setting</th><th>Value</th></tr>
+<tr><td><strong>Creation method</strong></td><td>Standard Create</td></tr>
+<tr><td><strong>Engine</strong></td><td>PostgreSQL</td></tr>
+<tr><td><strong>Engine version</strong></td><td>16.x (pilih yang terbaru)</td></tr>
+<tr><td><strong>Template</strong></td><td><strong>Free Tier</strong> ← pilih ini untuk hemat</td></tr>
+<tr><td><strong>DB instance identifier</strong></td><td><code>kta-database</code></td></tr>
+<tr><td><strong>Master username</strong></td><td><code>kta_admin</code></td></tr>
+<tr><td><strong>Master password</strong></td><td>*(buat password kuat, catat!)*</td></tr>
+<tr><td><strong>Instance class</strong></td><td><code>db.t3.micro</code></td></tr>
+<tr><td><strong>Storage type</strong></td><td>gp3</td></tr>
+<tr><td><strong>Allocated storage</strong></td><td>20 GB</td></tr>
+<tr><td><strong>Storage autoscaling</strong></td><td>Enable (max 50 GB)</td></tr>
+<tr><td><strong>VPC</strong></td><td><code>kta-vpc</code></td></tr>
+<tr><td><strong>DB subnet group</strong></td><td><code>kta-db-subnet-group</code></td></tr>
+<tr><td><strong>Public access</strong></td><td><strong>No</strong> ← PENTING!</td></tr>
+<tr><td><strong>Security group</strong></td><td><code>kta-sg-database</code></td></tr>
+<tr><td><strong>Database port</strong></td><td>5432</td></tr>
+<tr><td><strong>Initial database name</strong></td><td><code>pengajuan_kta</code></td></tr>
+<tr><td><strong>Backup retention</strong></td><td>7 days</td></tr>
+<tr><td><strong>Encryption</strong></td><td>Enable</td></tr>
+<tr><td><strong>Monitoring</strong></td><td>Enable Enhanced Monitoring (free tier: 60s)</td></tr>
+</table>
+<br>
+<p>3. Klik <strong>Create database</strong> (pembuatan memakan waktu ~10 menit)</p>
+<br>
+<p><strong>Via CLI:</strong></p>
+<br>
+<pre><code>
+aws rds create-db-instance \
+  --db-instance-identifier kta-database \
+  --db-instance-class db.t3.micro \
+  --engine postgres \
+  --engine-version 16.4 \
+  --master-username kta_admin \
+  --master-user-password &quot;YOUR_STRONG_PASSWORD&quot; \
+  --allocated-storage 20 \
+  --storage-type gp3 \
+  --db-name pengajuan_kta \
+  --vpc-security-group-ids sg-XXXXX \
+  --db-subnet-group-name kta-db-subnet-group \
+  --backup-retention-period 7 \
+  --no-publicly-accessible \
+  --storage-encrypted \
+  --port 5432
+</code></pre>
+<br>
+<p>4. <strong>Setelah RDS selesai dibuat</strong>, catat endpoint:</p>
+<br>
+<pre><code>
+kta-database.xxxxxxxxxxxx.ap-southeast-1.rds.amazonaws.com
+</code></pre>
+<br>
+<p>Endpoint ini yang akan dipakai di environment variable <code>SPRING_DATASOURCE_URL</code>.</p>
+<br>
+<hr>
+<br>
+<h2 id="5.-phase-3:-cache-elasticache-redis">5. Phase 3: Cache (ElastiCache Redis)</h2>
+<br>
+<h3>5.1 Buat Cache Subnet Group</h3>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. <strong>ElastiCache</strong> → <strong>Subnet groups</strong> → <strong>Create subnet group</strong></p>
+<p>2. Isi:</p>
+<p>   - <strong>Name</strong>: <code>kta-cache-subnet-group</code></p>
+<p>   - <strong>VPC</strong>: <code>kta-vpc</code></p>
+<p>   - <strong>Subnets</strong>: pilih <code>kta-private-1a</code> (10.0.10.0/24)</p>
+<br>
+<h3>5.2 Buat Redis Cluster</h3>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. <strong>ElastiCache</strong> → <strong>Redis caches</strong> → <strong>Create Redis cache</strong></p>
+<p>2. Isi:</p>
+<br>
+<table>
+<tr><th>Setting</th><th>Value</th></tr>
+<tr><td><strong>Cluster mode</strong></td><td>Disabled</td></tr>
+<tr><td><strong>Name</strong></td><td><code>kta-redis</code></td></tr>
+<tr><td><strong>Description</strong></td><td><code>Redis cache for KTA app</code></td></tr>
+<tr><td><strong>Node type</strong></td><td><code>cache.t3.micro</code></td></tr>
+<tr><td><strong>Number of replicas</strong></td><td>0 (hemat biaya)</td></tr>
+<tr><td><strong>Subnet group</strong></td><td><code>kta-cache-subnet-group</code></td></tr>
+<tr><td><strong>Security group</strong></td><td><code>kta-sg-cache</code></td></tr>
+<tr><td><strong>Encryption in-transit</strong></td><td>Enable</td></tr>
+<tr><td><strong>Encryption at-rest</strong></td><td>Enable</td></tr>
+<tr><td><strong>Port</strong></td><td>6379</td></tr>
+</table>
+<br>
+<p>3. Klik <strong>Create</strong></p>
+<br>
+<p><strong>Setelah selesai, catat endpoint:</strong></p>
+<br>
+<pre><code>
+kta-redis.xxxxxx.0001.apse1.cache.amazonaws.com:6379
+</code></pre>
+<br>
+<hr>
+<br>
+<h2 id="6.-phase-4:-compute-ec2-+-docker">6. Phase 4: Compute (EC2 + Docker)</h2>
+<br>
+<h3>6.1 Buat Key Pair</h3>
+<br>
+<p>Key Pair digunakan untuk SSH ke EC2. Ini seperti "kunci rumah" digital.</p>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. <strong>EC2</strong> → <strong>Key Pairs</strong> → <strong>Create key pair</strong></p>
+<p>2. Isi:</p>
+<p>   - <strong>Name</strong>: <code>kta-keypair</code></p>
+<p>   - <strong>Type</strong>: RSA</p>
+<p>   - <strong>Format</strong>: <code>.pem</code> (untuk macOS/Linux)</p>
+<p>3. File <code>.pem</code> akan otomatis ter-download. <strong>Simpan dengan aman! File ini tidak bisa di-download ulang.</strong></p>
+<br>
+<pre><code>
+# Set permission (WAJIB, SSH menolak key dengan permission terlalu terbuka)
+chmod 400 ~/Downloads/kta-keypair.pem
+
+# Pindahkan ke folder yang aman
+mv ~/Downloads/kta-keypair.pem ~/.ssh/kta-keypair.pem
+</code></pre>
+<br>
+<h3>6.2 Launch EC2 Instance</h3>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. <strong>EC2</strong> → <strong>Instances</strong> → <strong>Launch instances</strong></p>
+<p>2. Isi:</p>
+<br>
+<table>
+<tr><th>Setting</th><th>Value</th></tr>
+<tr><td><strong>Name</strong></td><td><code>kta-app-server</code></td></tr>
+<tr><td><strong>AMI</strong></td><td>Amazon Linux 2023 (Free Tier eligible)</td></tr>
+<tr><td><strong>Instance type</strong></td><td><code>t3.small</code> (2 vCPU, 2 GB RAM)</td></tr>
+<tr><td><strong>Key pair</strong></td><td><code>kta-keypair</code></td></tr>
+<tr><td><strong>VPC</strong></td><td><code>kta-vpc</code></td></tr>
+<tr><td><strong>Subnet</strong></td><td><code>kta-public-1a</code></td></tr>
+<tr><td><strong>Auto-assign public IP</strong></td><td>Enable</td></tr>
+<tr><td><strong>Security group</strong></td><td><code>kta-sg-app</code> (select existing)</td></tr>
+<tr><td><strong>Storage</strong></td><td>30 GB gp3</td></tr>
+</table>
+<br>
+<p>3. Klik <strong>Launch instance</strong></p>
+<br>
+<blockquote>
+<p><strong>Kenapa <code>t3.small</code>?</strong> Spring Boot + Docker membutuhkan minimal ~1.5 GB RAM. <code>t3.micro</code> (1 GB) bisa ketat. <code>t3.small</code> (2 GB) lebih aman.</p>
+</blockquote>
+<br>
+<h3>6.3 Allocate Elastic IP</h3>
+<br>
+<p><strong>Kenapa?</strong> Public IP EC2 <strong>berubah</strong> setiap kali instance di-restart. Elastic IP = IP publik yang <strong>tetap</strong>.</p>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. <strong>EC2</strong> → <strong>Elastic IPs</strong> → <strong>Allocate Elastic IP address</strong> → Allocate</p>
+<p>2. Pilih Elastic IP yang baru → <strong>Actions</strong> → <strong>Associate Elastic IP address</strong></p>
+<p>3. Pilih instance: <code>kta-app-server</code> → Associate</p>
+<br>
+<p><strong>Catat Elastic IP ini</strong> (misalnya <code>13.212.xxx.xxx</code>). Ini akan jadi IP publik server kamu.</p>
+<br>
+<h3>6.4 SSH ke EC2</h3>
+<br>
+<pre><code>
+ssh -i ~/.ssh/kta-keypair.pem ec2-user@ELASTIC_IP
+</code></pre>
+<br>
+<p>Ketik <code>yes</code> saat diminta fingerprint confirmation.</p>
+<br>
+<h3>6.5 Install Docker & Docker Compose di EC2</h3>
+<br>
+<p>Jalankan perintah berikut setelah SSH:</p>
+<br>
+<pre><code>
+# Update system
+sudo dnf update -y
+
+# Install Docker
+sudo dnf install docker -y
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Tambah user ec2-user ke group docker (agar bisa jalankan docker tanpa sudo)
+sudo usermod -aG docker ec2-user
+
+# Install Docker Compose v2
+sudo mkdir -p /usr/local/lib/docker/cli-plugins
+sudo curl -SL &quot;https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)&quot; \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+# Install git (untuk clone repo)
+sudo dnf install git -y
+
+# PENTING: Logout dan login ulang agar group docker aktif
+exit
+</code></pre>
+<br>
+<pre><code>
+# Login ulang
+ssh -i ~/.ssh/kta-keypair.pem ec2-user@ELASTIC_IP
+
+# Verifikasi
+docker --version
+docker compose version
+git --version
+</code></pre>
+<br>
+<h3>6.6 Setup Aplikasi di EC2</h3>
+<br>
+<pre><code>
+# Buat directory
+mkdir -p /home/ec2-user/kta-app
+cd /home/ec2-user/kta-app
+
+# Clone repository
+git clone https://github.com/bappeda-dev-team/pengajuan-kta.git .
+</code></pre>
+<br>
+<p><strong>Buat file <code>.env</code>:</strong></p>
+<br>
+<pre><code>
+nano .env
+</code></pre>
+<br>
+<p>Isi dengan (ganti value sesuai environment kamu):</p>
+<br>
+<pre><code>
+# Database (gunakan endpoint RDS dari Phase 2)
+SPRING_DATASOURCE_URL=jdbc:postgresql://kta-database.xxxxx.ap-southeast-1.rds.amazonaws.com:5432/pengajuan_kta
+SPRING_DATASOURCE_USERNAME=kta_admin
+SPRING_DATASOURCE_PASSWORD=password_rds_kamu
+
+# Redis (gunakan endpoint ElastiCache dari Phase 3)
+SPRING_DATA_REDIS_HOST=kta-redis.xxxxx.0001.apse1.cache.amazonaws.com
+SPRING_DATA_REDIS_PORT=6379
+
+# JWT
+JWT_SECRET=your_very_long_random_jwt_secret_at_least_64_characters
+JWT_EXPIRATION_MILLIS=86400000
+
+# Mail
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your_email@gmail.com
+MAIL_PASSWORD=your_app_password
+
+# Cloudflare R2
+CLOUDFLARE_BUCKET=your_bucket_name
+CLOUDFLARE_ENDPOINT=https://xxxxx.r2.cloudflarestorage.com
+CLOUDFLARE_ACCESS_KEY=your_access_key
+CLOUDFLARE_SECRET_KEY=your_secret_key
+CLOUDFLARE_BASE_URL=https://your-public-r2-url.com
+
+# WhatsApp
+WHATSAPP_API_URL=https://api.whatsapp.com/xxx
+WHATSAPP_API_TOKEN=your_token
+
+# reCAPTCHA
+RECAPTCHA_SITE_KEY=your_site_key
+RECAPTCHA_SECRET_KEY=your_secret_key
+</code></pre>
+<br>
+<p><strong>Buat Nginx config:</strong></p>
+<br>
+<pre><code>
+mkdir -p nginx/conf.d nginx/ssl
+</code></pre>
+<br>
+<p>File <code>nginx/conf.d/default.conf</code> sudah disediakan di repository (lihat bagian file yang dibuat di bawah).</p>
+<br>
+<h3>6.7 Build & Jalankan</h3>
+<br>
+<pre><code>
+cd /home/ec2-user/kta-app
+
+# Build dan jalankan semua service
+docker compose up -d --build
+
+# Cek status (semua harus &quot;Up&quot;)
+docker compose ps
+
+# Cek log aplikasi (Ctrl+C untuk keluar)
+docker compose logs -f app
+
+# Test endpoint
+curl http://localhost:8080/kta/api/v3/api-docs
+</code></pre>
+<br>
+<h3>Hasil Setelah Phase 4</h3>
+<br>
+<pre><code>
+EC2 Instance:
+  ┌────────────────────────────────────┐
+  │  Nginx (:443) ─── SSL ───┐        │
+  │  Nginx (:80)  ─── redirect 443    │
+  │                           │        │
+  │                    ┌──────▼─────┐  │
+  │                    │ Spring Boot│  │
+  │                    │ :8080      │  │
+  │                    │ /kta/api/* │  │
+  │                    └──────┬─────┘  │
+  │                           │        │
+  │              ┌────────────┼─────┐  │
+  │              ▼            ▼     │  │
+  │          RDS:5432    Redis:6379 │  │
+  │         (private)   (private)  │  │
+  └────────────────────────────────────┘
+</code></pre>
+<br>
+<hr>
+<br>
+<h2 id="7.-phase-5:-domain--ssl">7. Phase 5: Domain & SSL</h2>
+<br>
+<h3>7.1 Setup DNS (Route 53)</h3>
+<br>
+<p><strong>Jika menggunakan Route 53:</strong></p>
+<br>
+<p>1. <strong>Route 53</strong> → <strong>Hosted zones</strong> → <strong>Create hosted zone</strong></p>
+<p>   - <strong>Domain</strong>: <code>bappeda.go.id</code> (atau domain kamu)</p>
+<p>2. <strong>Create record</strong>:</p>
+<p>   - <strong>Name</strong>: <code>kta</code> (menjadi <code>kta.bappeda.go.id</code>)</p>
+<p>   - <strong>Type</strong>: A</p>
+<p>   - <strong>Value</strong>: *(Elastic IP EC2 kamu)*</p>
+<p>   - <strong>TTL</strong>: 300</p>
+<br>
+<p><strong>Jika domain di-manage di luar AWS:</strong></p>
+<br>
+<p>Tambahkan A record di DNS provider kamu:</p>
+<p>&#8226; <strong>Host</strong>: <code>kta</code></p>
+<p>&#8226; <strong>Type</strong>: A</p>
+<p>&#8226; <strong>Value</strong>: *(Elastic IP kamu)*</p>
+<br>
+<h3>7.2 Setup SSL (Let's Encrypt)</h3>
+<br>
+<p>SSL membuat koneksi terenkripsi (HTTPS). Gratis dengan Let's Encrypt.</p>
+<br>
+<pre><code>
+# SSH ke EC2
+ssh -i ~/.ssh/kta-keypair.pem ec2-user@ELASTIC_IP
+
+# Install Certbot
+sudo dnf install certbot -y
+
+# Stop Nginx dulu (port 80 harus free untuk verifikasi)
+cd /home/ec2-user/kta-app
+docker compose stop nginx
+
+# Generate SSL certificate
+sudo certbot certonly --standalone \
+  -d kta.bappeda.go.id \
+  --email admin@bappeda.go.id \
+  --agree-tos \
+  --no-eff-email
+
+# Copy certificate ke folder nginx
+sudo cp /etc/letsencrypt/live/kta.bappeda.go.id/fullchain.pem nginx/ssl/
+sudo cp /etc/letsencrypt/live/kta.bappeda.go.id/privkey.pem nginx/ssl/
+sudo chown ec2-user:ec2-user nginx/ssl/*.pem
+
+# Jalankan Nginx lagi
+docker compose up -d nginx
+
+# Test HTTPS
+curl -I https://kta.bappeda.go.id/kta/api/v3/api-docs
+</code></pre>
+<br>
+<h3>7.3 Auto-Renew SSL</h3>
+<br>
+<p>SSL Let's Encrypt berlaku 90 hari. Setup auto-renew:</p>
+<br>
+<pre><code>
+# Buat script renewal
+cat &lt;&lt; &#x27;SCRIPT&#x27; &gt; /home/ec2-user/renew-ssl.sh
+#!/bin/bash
+set -e
+cd /home/ec2-user/kta-app
+docker compose stop nginx
+sudo certbot renew --quiet
+sudo cp /etc/letsencrypt/live/kta.bappeda.go.id/fullchain.pem nginx/ssl/
+sudo cp /etc/letsencrypt/live/kta.bappeda.go.id/privkey.pem nginx/ssl/
+sudo chown ec2-user:ec2-user nginx/ssl/*.pem
+docker compose up -d nginx
+echo &quot;[$(date)] SSL renewed successfully&quot; &gt;&gt; /home/ec2-user/ssl-renew.log
+SCRIPT
+
+chmod +x /home/ec2-user/renew-ssl.sh
+
+# Jalankan otomatis setiap tanggal 1 jam 3 pagi
+(crontab -l 2&gt;/dev/null; echo &quot;0 3 1 * * /home/ec2-user/renew-ssl.sh&quot;) | crontab -
+</code></pre>
+<br>
+<hr>
+<br>
+<h2 id="8.-phase-6:-ci/cd-pipeline">8. Phase 6: CI/CD Pipeline</h2>
+<br>
+<h3>8.1 Deployment Flow</h3>
+<br>
+<pre><code>
+Developer                GitHub                   AWS EC2
+   │                        │                        │
+   │  git push main         │                        │
+   │ ──────────────────────▶│                        │
+   │                        │                        │
+   │                        │  1. Checkout code      │
+   │                        │  2. Vulnerability scan │
+   │                        │  3. Build Docker image │
+   │                        │  4. Push to GHCR       │
+   │                        │                        │
+   │                        │  5. SSH to EC2         │
+   │                        │ ──────────────────────▶│
+   │                        │                        │  6. Pull image
+   │                        │                        │  7. Restart app
+   │                        │                        │
+   │                        │  Deploy complete ✅    │
+   │                        │ ◀──────────────────────│
+   │                        │                        │
+</code></pre>
+<br>
+<h3>8.2 GitHub Actions: Deploy Stage</h3>
+<br>
+<p>Tambahkan deploy job ke workflow yang sudah ada, atau buat workflow terpisah.</p>
+<br>
+<p>File: <code>.github/workflows/deploy.yml</code> (sudah disediakan di repository, lihat di bawah)</p>
+<br>
+<h3>8.3 Setup GitHub Secrets</h3>
+<br>
+<p>Buka repository di GitHub → <strong>Settings</strong> → <strong>Secrets and variables</strong> → <strong>Actions</strong> → <strong>New repository secret</strong></p>
+<br>
+<table>
+<tr><th>Secret Name</th><th>Value</th><th>Cara Mendapatkan</th></tr>
+<tr><td><code>EC2_HOST</code></td><td><code>13.212.xxx.xxx</code></td><td>Elastic IP dari Phase 4</td></tr>
+<tr><td><code>EC2_SSH_KEY</code></td><td>*(isi dari file kta-keypair.pem)*</td><td><code>cat ~/.ssh/kta-keypair.pem</code> lalu paste seluruh isi</td></tr>
+</table>
+<br>
+<h3>8.4 Cara Deploy Manual (tanpa CI/CD)</h3>
+<br>
+<p>Jika CI/CD belum siap, bisa deploy manual:</p>
+<br>
+<pre><code>
+# SSH ke EC2
+ssh -i ~/.ssh/kta-keypair.pem ec2-user@ELASTIC_IP
+
+# Pull code terbaru
+cd /home/ec2-user/kta-app
+git pull origin main
+
+# Rebuild dan restart
+docker compose down
+docker compose up -d --build
+
+# Bersihkan image lama
+docker image prune -f
+
+# Verifikasi
+docker compose ps
+docker compose logs -f app
+</code></pre>
+<br>
+<hr>
+<br>
+<h2 id="9.-phase-7:-monitoring--logging">9. Phase 7: Monitoring & Logging</h2>
+<br>
+<h3>9.1 CloudWatch Alarms</h3>
+<br>
+<p>Setup alarm agar kamu dikirim email jika ada masalah.</p>
+<br>
+<p><strong>Via Console:</strong></p>
+<br>
+<p>1. <strong>CloudWatch</strong> → <strong>Alarms</strong> → <strong>Create alarm</strong></p>
+<br>
+<table>
+<tr><th>Alarm</th><th>Metric</th><th>Threshold</th><th>Aksi</th></tr>
+<tr><td>CPU Tinggi</td><td>EC2 CPUUtilization</td><td>> 80% selama 5 menit</td><td>Email via SNS</td></tr>
+<tr><td>Disk Penuh</td><td>EBS VolumeWriteBytes</td><td>> 85% used</td><td>Email via SNS</td></tr>
+<tr><td>RDS CPU</td><td>RDS CPUUtilization</td><td>> 80% selama 5 menit</td><td>Email via SNS</td></tr>
+<tr><td>RDS Storage</td><td>RDS FreeStorageSpace</td><td>< 2 GB</td><td>Email via SNS</td></tr>
+</table>
+<br>
+<p><strong>Setup SNS untuk notifikasi email:</strong></p>
+<br>
+<p>1. <strong>SNS</strong> → <strong>Topics</strong> → <strong>Create topic</strong></p>
+<p>   - <strong>Type</strong>: Standard</p>
+<p>   - <strong>Name</strong>: <code>kta-alerts</code></p>
+<p>2. <strong>Create subscription</strong>:</p>
+<p>   - <strong>Protocol</strong>: Email</p>
+<p>   - <strong>Endpoint</strong>: <code>admin@bappeda.go.id</code></p>
+<p>3. Konfirmasi email yang dikirim AWS</p>
+<br>
+<h3>9.2 Application Log Management</h3>
+<br>
+<pre><code>
+# Lihat log real-time
+docker compose logs -f app
+docker compose logs -f nginx
+
+# Lihat 100 baris terakhir
+docker compose logs --tail=100 app
+
+# Setup log rotation (agar disk tidak penuh)
+sudo tee /etc/logrotate.d/docker-containers &gt; /dev/null &lt;&lt; &#x27;EOF&#x27;
+/var/lib/docker/containers/*/*.log {
+  rotate 7
+  daily
+  compress
+  size=10M
+  missingok
+  delaycompress
+  copytruncate
+}
+EOF
+</code></pre>
+<br>
+<h3>9.3 Health Check Script</h3>
+<br>
+<pre><code>
+# Buat script health check
+cat &lt;&lt; &#x27;SCRIPT&#x27; &gt; /home/ec2-user/healthcheck.sh
+#!/bin/bash
+
+STATUS=$(curl -s -o /dev/null -w &quot;%{http_code}&quot; http://localhost:8080/kta/api/v3/api-docs)
+
+if [ &quot;$STATUS&quot; != &quot;200&quot; ]; then
+  echo &quot;[$(date)] App DOWN (HTTP $STATUS) - Restarting...&quot; &gt;&gt; /home/ec2-user/healthcheck.log
+  cd /home/ec2-user/kta-app
+  docker compose restart app
+else
+  echo &quot;[$(date)] App OK (HTTP $STATUS)&quot; &gt;&gt; /home/ec2-user/healthcheck.log
+fi
+SCRIPT
+
+chmod +x /home/ec2-user/healthcheck.sh
+
+# Jalankan setiap 5 menit
+(crontab -l 2&gt;/dev/null; echo &quot;*/5 * * * * /home/ec2-user/healthcheck.sh&quot;) | crontab -
+</code></pre>
+<br>
+<hr>
+<br>
+<h2 id="10.-phase-8:-backup--disaster-recovery">10. Phase 8: Backup & Disaster Recovery</h2>
+<br>
+<h3>10.1 Backup Strategy</h3>
+<br>
+<pre><code>
+ Komponen          │ Metode              │ Frekuensi    │ Retensi
+ ──────────────────┼─────────────────────┼──────────────┼──────────
+ RDS PostgreSQL    │ Automated Backup    │ Daily        │ 7 hari
+                   │ Manual Snapshot     │ Sebelum      │ Permanen
+                   │                     │ deploy besar │
+ ──────────────────┼─────────────────────┼──────────────┼──────────
+ EC2 / EBS Volume  │ EBS Snapshot        │ Weekly       │ 4 minggu
+                   │ AMI Backup          │ Setelah      │ Permanen
+                   │                     │ setup awal   │
+ ──────────────────┼─────────────────────┼──────────────┼──────────
+ Application Code  │ Git repository      │ Every push   │ Unlimited
+ ──────────────────┼─────────────────────┼──────────────┼──────────
+ Config / Secrets  │ .env backup         │ Setiap ada   │ Encrypted
+                   │ (encrypted)         │ perubahan    │
+</code></pre>
+<br>
+<h3>10.2 Automated EBS Snapshot</h3>
+<br>
+<pre><code>
+cat &lt;&lt; &#x27;SCRIPT&#x27; &gt; /home/ec2-user/backup-ebs.sh
+#!/bin/bash
+
+INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+VOLUME_ID=$(aws ec2 describe-instances \
+  --instance-ids &quot;$INSTANCE_ID&quot; \
+  --query &#x27;Reservations[0].Instances[0].BlockDeviceMappings[0].Ebs.VolumeId&#x27; \
+  --output text)
+
+SNAPSHOT_ID=$(aws ec2 create-snapshot \
+  --volume-id &quot;$VOLUME_ID&quot; \
+  --description &quot;KTA App Weekly Backup $(date +%Y-%m-%d)&quot; \
+  --query &#x27;SnapshotId&#x27; --output text)
+
+echo &quot;[$(date)] Snapshot created: $SNAPSHOT_ID&quot; &gt;&gt; /home/ec2-user/backup.log
+
+# Hapus snapshot yang lebih dari 30 hari
+aws ec2 describe-snapshots \
+  --owner-ids self \
+  --query &quot;Snapshots[?StartTime&lt;=&#x27;$(date -d &#x27;30 days ago&#x27; +%Y-%m-%d)&#x27;].SnapshotId&quot; \
+  --output text | tr &#x27;\t&#x27; &#x27;\n&#x27; | while read sid; do
+    aws ec2 delete-snapshot --snapshot-id &quot;$sid&quot;
+    echo &quot;[$(date)] Deleted old snapshot: $sid&quot; &gt;&gt; /home/ec2-user/backup.log
+done
+SCRIPT
+
+chmod +x /home/ec2-user/backup-ebs.sh
+
+# Jalankan setiap Minggu jam 2 pagi
+(crontab -l 2&gt;/dev/null; echo &quot;0 2 * * 0 /home/ec2-user/backup-ebs.sh&quot;) | crontab -
+</code></pre>
+<br>
+<h3>10.3 RDS Manual Snapshot (Sebelum Deploy Besar)</h3>
+<br>
+<pre><code>
+aws rds create-db-snapshot \
+  --db-instance-identifier kta-database \
+  --db-snapshot-identifier &quot;kta-pre-deploy-$(date +%Y%m%d)&quot;
+</code></pre>
+<br>
+<h3>10.4 Recovery Procedures</h3>
+<br>
+<p><strong>Jika EC2 mati:</strong></p>
+<br>
+<pre><code>
+# Restore dari EBS Snapshot
+# 1. Buat volume baru dari snapshot
+aws ec2 create-volume --snapshot-id snap-XXXXX --availability-zone ap-southeast-1a
+
+# 2. Detach volume lama, attach volume baru ke EC2
+# 3. Atau: Launch EC2 baru dengan AMI backup
+</code></pre>
+<br>
+<p><strong>Jika Database corrupt:</strong></p>
+<br>
+<pre><code>
+# Restore RDS dari automated backup (point-in-time)
+aws rds restore-db-instance-to-point-in-time \
+  --source-db-instance-identifier kta-database \
+  --target-db-instance-identifier kta-database-restored \
+  --restore-time &quot;2026-04-01T12:00:00Z&quot;
+</code></pre>
+<br>
+<h3>10.5 Recovery Objectives</h3>
+<br>
+<table>
+<tr><th>Metric</th><th>Target</th><th>Keterangan</th></tr>
+<tr><td><strong>RTO</strong> (Recovery Time Objective)</td><td>< 1 jam</td><td>Waktu dari gagal → kembali online</td></tr>
+<tr><td><strong>RPO</strong> (Recovery Point Objective)</td><td>< 24 jam</td><td>Maksimal data yang hilang</td></tr>
+</table>
+<br>
+<hr>
+<br>
+<h2 id="11.-troubleshooting">11. Troubleshooting</h2>
+<br>
+<h3>Masalah Umum & Solusi</h3>
+<br>
+<table>
+<tr><th>Masalah</th><th>Kemungkinan Penyebab</th><th>Solusi</th></tr>
+<tr><td><strong>Tidak bisa akses web</strong></td><td>Security Group port 80/443 belum open</td><td>Cek inbound rules <code>kta-sg-app</code></td></tr>
+<tr><td></td><td>Nginx tidak running</td><td><code>docker compose ps</code> → restart nginx</td></tr>
+<tr><td></td><td>Elastic IP belum di-associate</td><td>Cek EC2 → Elastic IPs</td></tr>
+<tr><td><strong>App tidak connect ke RDS</strong></td><td>SG database tidak izinkan dari sg-app</td><td>Cek <code>kta-sg-database</code> inbound</td></tr>
+<tr><td></td><td>Endpoint RDS salah di <code>.env</code></td><td>Cek RDS → Connectivity & security</td></tr>
+<tr><td></td><td>RDS belum ready (status != Available)</td><td>Tunggu sampai status "Available"</td></tr>
+<tr><td><strong>App tidak connect ke Redis</strong></td><td>SG cache tidak izinkan dari sg-app</td><td>Cek <code>kta-sg-cache</code> inbound</td></tr>
+<tr><td></td><td>Endpoint Redis salah di <code>.env</code></td><td>Cek ElastiCache → cluster details</td></tr>
+<tr><td><strong>SSH timeout</strong></td><td>Port 22 tidak open untuk IP kamu</td><td>Update SG, tambah IP kamu</td></tr>
+<tr><td></td><td>IP kamu berubah (ISP dynamic)</td><td>Update SG dengan IP baru</td></tr>
+<tr><td><strong>Disk penuh</strong></td><td>Docker images/logs menumpuk</td><td><code>docker system prune -a</code></td></tr>
+<tr><td><strong>Out of memory</strong></td><td>Instance terlalu kecil</td><td>Upgrade ke <code>t3.medium</code> (4 GB)</td></tr>
+<tr><td></td><td></td><td>Atau tambah swap space</td></tr>
+</table>
+<br>
+<h3>Perintah Debug Berguna</h3>
+<br>
+<pre><code>
+# Cek status semua container
+docker compose ps
+
+# Lihat log error aplikasi
+docker compose logs --tail=200 app | grep -i error
+
+# Cek penggunaan disk
+df -h
+
+# Cek penggunaan memory
+free -m
+
+# Cek koneksi ke RDS dari dalam container
+docker exec -it pengajuan-kta bash
+# Lalu di dalam container:
+curl -v telnet://RDS_ENDPOINT:5432
+
+# Cek koneksi ke Redis dari dalam container
+docker exec -it pengajuan-kta bash
+curl -v telnet://REDIS_ENDPOINT:6379
+
+# Restart aplikasi saja (tanpa rebuild)
+docker compose restart app
+
+# Full rebuild dari awal
+docker compose down
+docker compose up -d --build
+
+# Bersihkan semua (HATI-HATI: hapus semua container &amp; image)
+docker system prune -a
+</code></pre>
+<br>
+<h3>Menambah Swap Space (jika memory kurang)</h3>
+<br>
+<pre><code>
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo &#x27;/swapfile swap swap defaults 0 0&#x27; | sudo tee -a /etc/fstab
+</code></pre>
+<br>
+<hr>
+<br>
+<h2 id="12.-cost-summary">12. Cost Summary</h2>
+<br>
+<h3>Estimasi Biaya Bulanan</h3>
+<br>
+<table>
+<tr><th>Service</th><th>Spec</th><th>Biaya/bulan</th><th>Catatan</th></tr>
+<tr><td>EC2</td><td>t3.small (2 vCPU, 2 GB)</td><td>~$15.26</td><td>On-demand</td></tr>
+<tr><td>EBS</td><td>30 GB gp3</td><td>~$2.40</td><td></td></tr>
+<tr><td>Elastic IP</td><td>1 IP</td><td>~$3.60</td><td></td></tr>
+<tr><td>RDS PostgreSQL</td><td>db.t3.micro</td><td>~$12.41</td><td>Free tier: $0 tahun 1</td></tr>
+<tr><td>ElastiCache Redis</td><td>cache.t3.micro</td><td>~$12.24</td><td></td></tr>
+<tr><td>Route 53</td><td>1 hosted zone</td><td>~$0.50</td><td></td></tr>
+<tr><td>Data Transfer</td><td>~5 GB/bulan</td><td>~$0.45</td><td></td></tr>
+<tr><td>CloudWatch</td><td>Basic + 1 alarm</td><td>~$3.00</td><td></td></tr>
+<tr><td><strong>TOTAL</strong></td><td></td><td><strong>~$50/bulan</strong></td><td><strong>~Rp 800.000</strong></td></tr>
+</table>
+<br>
+<h3>Tips Menghemat Biaya</h3>
+<br>
+<p>1. <strong>Reserved Instance</strong> (1 tahun commit): Hemat ~30% untuk EC2 dan RDS</p>
+<p>2. <strong>Free Tier</strong> RDS: Tahun pertama gratis untuk <code>db.t3.micro</code></p>
+<p>3. <strong>Spot Instance</strong> untuk development: Hemat sampai 70% (tidak untuk production)</p>
+<p>4. <strong>Matikan environment dev</strong> saat tidak dipakai</p>
+<p>5. <strong>Monitor billing</strong>: AWS Console → Billing → Cost Explorer</p>
+<br>
+<h3>Alternatif Paling Hemat: All-in-One EC2</h3>
+<br>
+<p>Jika ingin lebih hemat, jalankan PostgreSQL dan Redis sebagai container Docker di EC2 yang sama:</p>
+<br>
+<pre><code>
+EC2 t3.small ($15) + EBS ($2.40) + EIP ($3.60) = ~$21/bulan
+</code></pre>
+<br>
+<p>Trade-off: Jika EC2 mati, database juga mati. Harus rajin backup.</p>
+<br>
+<hr>
+<br>
+<h2 id="13.-quick-reference">13. Quick Reference</h2>
+<br>
+<h3>Semua Endpoint</h3>
+<br>
+<pre><code>
+Application  : https://kta.bappeda.go.id/kta/api
+Swagger UI   : https://kta.bappeda.go.id/kta/api/swagger-ui.html
+API Docs     : https://kta.bappeda.go.id/kta/api/v3/api-docs
+</code></pre>
+<br>
+<h3>SSH</h3>
+<br>
+<pre><code>
+ssh -i ~/.ssh/kta-keypair.pem ec2-user@ELASTIC_IP
+</code></pre>
+<br>
+<h3>Docker Commands</h3>
+<br>
+<pre><code>
+cd /home/ec2-user/kta-app
+docker compose ps              # Status
+docker compose logs -f app     # Log aplikasi
+docker compose restart app     # Restart
+docker compose down            # Stop semua
+docker compose up -d --build   # Rebuild &amp; start
+</code></pre>
+<br>
+<h3>Resource Identifiers</h3>
+<br>
+<table>
+<tr><th>Resource</th><th>Name/ID</th></tr>
+<tr><td>VPC</td><td><code>kta-vpc</code></td></tr>
+<tr><td>Public Subnet</td><td><code>kta-public-1a</code> (10.0.1.0/24)</td></tr>
+<tr><td>Private Subnet A</td><td><code>kta-private-1a</code> (10.0.10.0/24)</td></tr>
+<tr><td>Private Subnet B</td><td><code>kta-private-1b</code> (10.0.11.0/24)</td></tr>
+<tr><td>Internet Gateway</td><td><code>kta-igw</code></td></tr>
+<tr><td>Route Table Public</td><td><code>kta-rt-public</code></td></tr>
+<tr><td>Route Table Private</td><td><code>kta-rt-private</code></td></tr>
+<tr><td>SG App</td><td><code>kta-sg-app</code></td></tr>
+<tr><td>SG Database</td><td><code>kta-sg-database</code></td></tr>
+<tr><td>SG Cache</td><td><code>kta-sg-cache</code></td></tr>
+<tr><td>EC2</td><td><code>kta-app-server</code></td></tr>
+<tr><td>Key Pair</td><td><code>kta-keypair</code></td></tr>
+<tr><td>RDS</td><td><code>kta-database</code></td></tr>
+<tr><td>ElastiCache</td><td><code>kta-redis</code></td></tr>
+</table>
+<br>
+<hr>
+<br>
+<p>*Guide ini dibuat untuk deployment aplikasi Pengajuan KTA — Bappeda ke AWS.*</p>
+<p>*Terakhir diperbarui: April 2026*</p>
+<br>
+</body>
+</html>

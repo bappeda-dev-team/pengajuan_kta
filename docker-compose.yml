@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: pengajuan-kta-db
+    environment:
+      POSTGRES_USER: majapahit
+      POSTGRES_PASSWORD: Madiun@123
+      POSTGRES_DB: pengajuan-kta
+    ports:
+      - "5432:5432"
+    networks:
+      - pengajuan-kta-network
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U majapahit -d pengajuan-kta"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: pengajuan-kta-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - pengajuan-kta-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: pengajuan-kta-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - pengajuan-kta-network
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/pengajuan-kta
+      - SPRING_DATASOURCE_USERNAME=majapahit
+      - SPRING_DATASOURCE_PASSWORD=Madiun@123
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      # Tambahkan environment variable lain yang dibutuhkan oleh aplikasi di sini, misalnya:
+      # - JWT_SECRET=rahasia_untuk_jwt_token_anda_yang_sangat_panjang_sekali
+      # - JWT_EXPIRATION_MILLIS=86400000
+      # - CLOUDFLARE_BUCKET=bucket_name
+      # - CLOUDFLARE_ENDPOINT=endpoint_url
+      # - CLOUDFLARE_ACCESS_KEY=access_key
+      # - CLOUDFLARE_SECRET_KEY=secret_key
+      # - CLOUDFLARE_BASE_URL=base_url
+
+networks:
+  pengajuan-kta-network:
+    driver: bridge
+
+volumes:
+  db-data:
