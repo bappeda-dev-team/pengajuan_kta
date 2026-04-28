@@ -211,7 +211,6 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .build();
 
         } catch (Exception e) {
-            System.out.println("ERROR " + e.getMessage());
             throw new RuntimeException("Failed to upload and save file: " + e.getMessage(), e);
         }
     }
