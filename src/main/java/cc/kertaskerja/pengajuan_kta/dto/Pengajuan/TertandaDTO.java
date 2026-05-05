@@ -13,4 +13,5 @@ public class TertandaDTO {
     private String jabatan;
     private String nip;
     private String pangkat;
+    private String tandatangan;
 }

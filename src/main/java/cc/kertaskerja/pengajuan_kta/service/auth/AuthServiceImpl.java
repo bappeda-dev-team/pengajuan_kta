@@ -702,6 +702,7 @@ public class AuthServiceImpl implements AuthService {
               .jabatan(account.getJabatan())
               .status(account.getStatus() != null ? account.getStatus().name() : null)
               .role(account.getRole())
+              .tandatangan(account.getTandatangan())
               .is_assigned(account.getIsAssigned())
               .createdAt(account.getCreatedAt())
               .updatedAt(account.getUpdatedAt())

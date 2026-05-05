@@ -4,6 +4,7 @@ import cc.kertaskerja.pengajuan_kta.dto.Auth.AccountResponse;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FilePendukungDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanReqDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanResDTO;
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.TertandaDTO;
 import cc.kertaskerja.pengajuan_kta.entity.Account;
 import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
 import cc.kertaskerja.pengajuan_kta.entity.FormPengajuan;
@@ -449,13 +450,21 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .orElseThrow(() -> new ResourceNotFoundException("Form pengajuan is not found"));
 
             Account account = accountRepository.findByNik(dto.getNik())
-                  .orElseThrow(() -> new ResourceNotFoundException("NIK not found: " + encryptService.decrypt(dto.getTertanda().getNip())));
+                  .orElseThrow(() -> new ResourceNotFoundException("NIK not found: " + dto.getNik()));
+
+            TertandaDTO tertanda = dto.getTertanda();
+            if (tertanda != null && tertanda.getNip() != null && !tertanda.getNip().isEmpty()) {
+                String encryptedNip = encryptService.encrypt(tertanda.getNip());
+                tertanda.setNip(encryptedNip);
+            }
 
             form.setNomorInduk(dto.getNomor_induk());
             form.setBerlakuDari(dto.getBerlaku_dari());
             form.setBerlakuSampai(dto.getBerlaku_sampai());
             form.setStatus(dto.getStatus() != null ? StatusPengajuanEnum.valueOf(dto.getStatus()) : StatusPengajuanEnum.PENDING_VERIFICATOR);
-            form.setTertanda(dto.getTertanda());
+
+            form.setTertanda(tertanda);
+
             form.setCatatan(dto.getCatatan());
             form.setStatusTanggal(LocalDateTime.now());
 
@@ -470,7 +479,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .berlaku_dari(form.getBerlakuDari())
                   .berlaku_sampai(form.getBerlakuSampai())
                   .status(form.getStatus().name())
-                  .tertanda(dto.getTertanda())
+                  .tertanda(tertanda)
                   .catatan(form.getCatatan())
                   .status_tanggal(form.getStatusTanggal())
                   .build();
