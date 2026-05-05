@@ -71,6 +71,9 @@ public class Account extends BaseAuditable {
     @Column(name = "jabatan")
     private String jabatan;
 
+    @Column(name = "tandatangan")
+    private String tandatangan;
+
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<FormPengajuan> formPengajuan;
 }

@@ -27,7 +27,7 @@ public class EmailService {
             context.setVariable("name", name);
             context.setVariable("otp", otp);
 
-            String htmlContent = templateEngine.process("email-template", context);
+            String htmlContent = templateEngine.process("send-otp", context);
 
             helper.setTo(to);
             helper.setSubject("Kode OTP Verifikasi Akun Anda");
@@ -39,4 +39,23 @@ public class EmailService {
         }
     }
 
+    public void sendAccountVerifiedEmail(String to, String name) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            Context context = new Context();
+            context.setVariable("nama", name);
+
+            String htmlContent = templateEngine.process("account-verified", context);
+
+            helper.setTo(to);
+            helper.setSubject("Verifikasi Akun Berhasil");
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Gagal mengirim email notifikasi verifikasi: " + e.getMessage());
+        }
+    }
 }

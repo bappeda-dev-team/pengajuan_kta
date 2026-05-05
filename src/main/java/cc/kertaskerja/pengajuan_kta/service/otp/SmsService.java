@@ -61,5 +61,43 @@ public class SmsService {
             throw new RuntimeException("Gagal mengirim OTP via WhatsApp");
         }
     }
+
+    public void sendAccountVerified(String nomorTujuan, String nama) {
+        try {
+            String message = String.format(
+                  "Halo *%s* 👋,\n\n" +
+                        "Selamat, akun Anda telah *berhasil diverifikasi*! 🎉\n\n" +
+                        "Silakan login kembali untuk menikmati fitur layanan *Sibunga*.\n\n" +
+                        "Terima kasih 🙏\n" +
+                        "*Dinas Komunikasi, Informatika, Statistik dan Persandian Kabupaten Ngawi*\n" +
+                        "📍Jl. Teuku Umar No.43, Ngawi\n" +
+                        "🌐 www.kominfo.ngawikab.go.id\n" +
+                        "✉️ kominfo@ngawikab.go.id",
+                  nama
+            );
+
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            body.add("target", nomorTujuan);
+            body.add("message", message);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            headers.set("Authorization", whatsAppApiToken);
+
+            HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
+
+            ResponseEntity<String> resp = restTemplate.exchange(
+                  whatsAppApiUrl,
+                  HttpMethod.POST,
+                  entity,
+                  String.class
+            );
+
+            log.info("WhatsApp Verification Success send response: status={} body={}", resp.getStatusCode(), resp.getBody());
+        } catch (Exception e) {
+            log.error("Failed to send WhatsApp Verification Success to {} | Error: {}", nomorTujuan, e.getMessage(), e);
+            throw new RuntimeException("Gagal mengirim notifikasi verifikasi via WhatsApp");
+        }
+    }
 }
 

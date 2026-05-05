@@ -79,6 +79,7 @@ public class AccountResponse {
 
         private Boolean is_assigned;
         private String role;
+        private String tandatangan;
 
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
@@ -161,6 +162,7 @@ public class AccountResponse {
         private String email;
         private String nomorTelepon;
         private String role;
+        private String tandatangan;
     }
 
     @Data

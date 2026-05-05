@@ -51,19 +51,20 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     @Modifying
     @Transactional
     @Query(value = """
-        INSERT INTO account (id, nama, nip, pangkat, jabatan, nik, email, nomor_telepon, password, role)
-        SELECT :id, :nama, :nip, :pangkat, :jabatan, :nik, :email, :nomor_telepon, :password, :role
+        INSERT INTO account (id, nama, nip, pangkat, jabatan, nik, email, nomor_telepon, password, role, tandatangan)
+        SELECT :id, :nama, :nip, :pangkat, :jabatan, :nik, :email, :nomor_telepon, :password, :role, :tandatangan
         WHERE
             :id IS NOT NULL
             OR :nama IS NOT NULL
             OR :nip IS NOT NULL
             OR :pangkat IS NOT NULL
             OR :jabatan IS NOT NULL
-            OR :nip IS NOT NULL
+            OR :nik IS NOT NULL
             OR :email IS NOT NULL
             OR :nomor_telepon IS NOT NULL
             OR :password IS NOT NULL
             OR :role IS NOT NULL
+            OR :tandatangan IS NOT NULL
     """, nativeQuery = true)
     int insertIfAnyPresent(
           @Param("id") Long id,
@@ -75,7 +76,8 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
           @Param("email") String email,
           @Param("nomor_telepon") String nomor_telepon,
           @Param("password") String password,
-          @Param("role") String role
+          @Param("role") String role,
+          @Param("tandatangan") String tandatangan
     );
 
     @Query(value = "SELECT COUNT(*) > 0 FROM account WHERE email = :email", nativeQuery = true)

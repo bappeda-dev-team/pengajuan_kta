@@ -21,8 +21,6 @@ public class RegisterRequest {
     private String nama;
 
     @NotBlank
-    @Size(min = 16, max = 16)
-    @Pattern(regexp = "\\d{16}", message = "NIK must be exactly 16 digits")
     private String nik;
 
     @NotBlank(message = "Email tidak boleh kosong")
@@ -151,6 +149,8 @@ public class RegisterRequest {
 
         private String password;
 
+        private String tandatangan;
+
         @NotBlank(message = "Role harus diisi!")
         private String role;
     }
@@ -182,6 +182,7 @@ public class RegisterRequest {
         private String nomor_telepon;
 
         private String password;
+        private String tandatangan;
 
         @NotBlank(message = "Role harus diisi!")
         private String role;
@@ -194,9 +195,7 @@ public class RegisterRequest {
         @NotBlank(message = "Harap isi nama lengkap Anda")
         private String nama;
 
-        @NotBlank
-        @Size(min = 16, max = 16)
-        @Pattern(regexp = "\\d{16}", message = "NIK must be exactly 16 digits")
+        @NotBlank(message = "NIK tidak boleh kosong")
         private String nik;
 
         @NotBlank(message = "Email tidak boleh kosong")

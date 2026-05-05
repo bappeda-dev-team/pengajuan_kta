@@ -5,12 +5,14 @@ import cc.kertaskerja.pengajuan_kta.dto.Auth.LoginRequest;
 import cc.kertaskerja.pengajuan_kta.dto.Auth.LoginResponse;
 import cc.kertaskerja.pengajuan_kta.dto.Auth.RegisterRequest;
 import cc.kertaskerja.pengajuan_kta.entity.Account;
+import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
 import cc.kertaskerja.pengajuan_kta.enums.StatusAccountEnum;
 import cc.kertaskerja.pengajuan_kta.exception.*;
 import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
 import cc.kertaskerja.pengajuan_kta.service.captcha.CaptchaService;
 import cc.kertaskerja.pengajuan_kta.service.external.EncryptService;
+import cc.kertaskerja.pengajuan_kta.service.global.R2StorageService;
 import cc.kertaskerja.pengajuan_kta.service.otp.EmailService;
 import cc.kertaskerja.pengajuan_kta.service.otp.OtpService;
 import cc.kertaskerja.pengajuan_kta.service.otp.SmsService;
@@ -19,6 +21,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +42,7 @@ public class AuthServiceImpl implements AuthService {
     private final AccountUtils accountUtils;
     private final CaptchaService captchaService;
     private final EncryptService encryptService;
+    private final R2StorageService r2StorageService;
 
     public AuthServiceImpl(AccountRepository accountRepository,
                            PasswordEncoder passwordEncoder,
@@ -49,7 +53,7 @@ public class AuthServiceImpl implements AuthService {
                            SmsService smsService,
                            AccountUtils accountUtils,
                            CaptchaService captchaService,
-                           EncryptService encryptService) {
+                           EncryptService encryptService, R2StorageService r2StorageService) {
         this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
@@ -60,6 +64,7 @@ public class AuthServiceImpl implements AuthService {
         this.accountUtils = accountUtils;
         this.captchaService = captchaService;
         this.encryptService = encryptService;
+        this.r2StorageService = r2StorageService;
     }
 
     @Override
@@ -83,9 +88,6 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String formattedPhone = accountUtils.formatPhoneNumber(request.getNomor_telepon());
-        if (accountRepository.existsByNomorTelepon(formattedPhone)) {
-            conflicts.add("Nomor WhatsApp sudah terdaftar. Silakan gunakan nomor lain.");
-        }
 
         if (!conflicts.isEmpty()) {
             throw new ConflictException(String.join("; ", conflicts));
@@ -262,14 +264,14 @@ public class AuthServiceImpl implements AuthService {
                   request.getEmail(),
                   request.getNomor_telepon(),
                   passwordEncoder.encode(request.getPassword()),
-                  request.getRole()
+                  request.getRole(),
+                  request.getTandatangan()
             );
 
             if (inserted == 0) {
                 throw new IllegalArgumentException("No data inserted (all fields are null)");
             }
 
-            // fetch last inserted admin (example)
             Account saved = accountRepository.findAllAdminAccount()
                   .stream()
                   .findFirst()
@@ -331,6 +333,9 @@ public class AuthServiceImpl implements AuthService {
         if (request.getRole() != null) {
             account.setRole(request.getRole());
         }
+        if (request.getTandatangan() != null) {
+            account.setTandatangan(request.getTandatangan());
+        }
 
         Account saved = accountRepository.save(account);
 
@@ -343,6 +348,7 @@ public class AuthServiceImpl implements AuthService {
               .jabatan(saved.getJabatan())
               .email(saved.getEmail())
               .role(saved.getRole())
+              .tandatangan(saved.getTandatangan())
               .build();
     }
 
@@ -467,6 +473,8 @@ public class AuthServiceImpl implements AuthService {
 
             account.setStatus(newStatus);
             Account saved = accountRepository.save(account);
+            emailService.sendAccountVerifiedEmail(saved.getEmail(), saved.getNama());
+            smsService.sendAccountVerified(saved.getNomorTelepon(), saved.getNama());
 
             return AccountResponse.VerifyAccount.builder()
                   .nama(saved.getNama())
@@ -637,6 +645,7 @@ public class AuthServiceImpl implements AuthService {
                       .pangkat(account.getPangkat())
                       .role(accountRole)
                       .tipeAkun(account.getTipeAkun())
+                      .tandatangan(account.getTandatangan())
                       .createdAt(account.getCreatedAt())
                       .updatedAt(account.getUpdatedAt())
                       .build();

@@ -5,6 +5,7 @@ import cc.kertaskerja.pengajuan_kta.dto.Auth.LoginRequest;
 import cc.kertaskerja.pengajuan_kta.dto.Auth.LoginResponse;
 import cc.kertaskerja.pengajuan_kta.dto.Auth.RegisterRequest;
 import cc.kertaskerja.pengajuan_kta.entity.Account;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
