@@ -67,6 +67,15 @@ public class FormPengajuanResDTO {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class ListAllProfesi {
+        private String profesi;
+
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class SaveDataResponse {
         private UUID uuid;
         private String nomor_induk;

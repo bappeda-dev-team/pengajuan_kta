@@ -24,6 +24,9 @@ public interface FormPengajuanRepository extends JpaRepository<FormPengajuan, Lo
           @Param("statuses") List<StatusPengajuanEnum> statuses
     );
 
+    @Query("SELECT DISTINCT f.profesi FROM FormPengajuan f WHERE f.profesi IS NOT NULL")
+    List<String> findAllDistinctProfesi();
+
     @Query("""
               SELECT f
               FROM FormPengajuan f

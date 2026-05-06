@@ -112,11 +112,22 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                         .created_at(form.getCreatedAt())
                         .build()
                   )
-                  .collect(Collectors.toList()); // <--- FIXED HERE
+                  .collect(Collectors.toList());
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to get all pengajuan: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public List<FormPengajuanResDTO.ListAllProfesi> getAllProfesi() {
+        List<String> profesiList = formPengajuanRepository.findAllDistinctProfesi();
+
+        return profesiList.stream()
+              .map(profesi -> FormPengajuanResDTO.ListAllProfesi.builder()
+                    .profesi(profesi)
+                    .build())
+              .toList();
     }
 
     @Override

@@ -14,6 +14,8 @@ import java.util.UUID;
 public interface FormPengajuanService {
     List<FormPengajuanResDTO> getAllPengajuan(String authHeader);
 
+    List<FormPengajuanResDTO.ListAllProfesi> getAllProfesi();
+
     FormPengajuanResDTO.SaveDataResponse saveData(FormPengajuanReqDTO.SavePengajuan formPengajuanDTO);
 
     FilePendukungDTO uploadAndSaveFile(MultipartFile file, String formUuid, String namaFile);

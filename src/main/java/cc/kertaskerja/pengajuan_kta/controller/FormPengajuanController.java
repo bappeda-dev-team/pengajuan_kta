@@ -39,6 +39,14 @@ public class FormPengajuanController {
         return ResponseEntity.ok(ApiResponse.success(result, "Retrieved " + result.size() + " data pengajuan successfully"));
     }
 
+    @GetMapping("/profesi")
+    @Operation(summary = "Ambil semua daftar profesi/bidang seni yang unik")
+    public ResponseEntity<ApiResponse<List<FormPengajuanResDTO.ListAllProfesi>>> getAllProfesi() {
+        List<FormPengajuanResDTO.ListAllProfesi> result = formPengajuanService.getAllProfesi();
+
+        return ResponseEntity.ok(ApiResponse.success(result, "Retrieved " + result.size() + " profesi successfully"));
+    }
+
     @PostMapping
     @Operation(summary = "Simpan data pengajuan KTA")
     public ResponseEntity<ApiResponse<FormPengajuanResDTO.SaveDataResponse>> saveData(
