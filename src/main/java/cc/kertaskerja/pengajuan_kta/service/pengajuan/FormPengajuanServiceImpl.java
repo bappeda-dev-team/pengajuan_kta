@@ -5,16 +5,10 @@ import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FilePendukungDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanReqDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FormPengajuanResDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.TertandaDTO;
-import cc.kertaskerja.pengajuan_kta.entity.Account;
-import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
-import cc.kertaskerja.pengajuan_kta.entity.FormPengajuan;
-import cc.kertaskerja.pengajuan_kta.entity.Organisasi;
+import cc.kertaskerja.pengajuan_kta.entity.*;
 import cc.kertaskerja.pengajuan_kta.enums.StatusPengajuanEnum;
 import cc.kertaskerja.pengajuan_kta.exception.*;
-import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
-import cc.kertaskerja.pengajuan_kta.repository.FilePendukungRepository;
-import cc.kertaskerja.pengajuan_kta.repository.FormPengajuanRepository;
-import cc.kertaskerja.pengajuan_kta.repository.OrganisasiRepository;
+import cc.kertaskerja.pengajuan_kta.repository.*;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
 import cc.kertaskerja.pengajuan_kta.service.external.EncryptService;
 import cc.kertaskerja.pengajuan_kta.service.global.R2StorageService;
@@ -33,6 +27,7 @@ import java.util.stream.Collectors;
 public class FormPengajuanServiceImpl implements FormPengajuanService {
 
     private final AccountRepository accountRepository;
+    private final JenisOrganisasiRepository jenisRepository;
     private final OrganisasiRepository organisasiRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final FormPengajuanRepository formPengajuanRepository;
@@ -136,11 +131,17 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
         Account account = accountRepository.findByNik(encryptService.encrypt(dto.getNik()))
               .orElseThrow(() -> new ResourceNotFoundException("NIK not found: " + dto.getNik()));
 
+        JenisOrganisasi jenis = null;
         Organisasi organisasi = null;
 
-        if ("Organisasi".equalsIgnoreCase(account.getTipeAkun()) && dto.getOrganisasi_uuid() != null) {
-            organisasi = organisasiRepository.findByUuid(dto.getOrganisasi_uuid())
-                  .orElseThrow(() -> new ResourceNotFoundException("Organisasi not found"));
+        if ("Organisasi".equalsIgnoreCase(account.getTipeAkun())) {
+            jenis = jenisRepository.findByKodeJenisOrganisasi(dto.getKode_jenis_organisasi())
+                  .orElseThrow(() -> new ResourceNotFoundException("Kode jenis organisasi not found: " + dto.getKode_jenis_organisasi()));
+
+            if (dto.getOrganisasi_uuid() != null) {
+                organisasi = organisasiRepository.findByUuid(dto.getOrganisasi_uuid())
+                      .orElseThrow(() -> new ResourceNotFoundException("Organisasi not found"));
+            }
         }
 
         try {
@@ -149,6 +150,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
             if ("Organisasi".equalsIgnoreCase(account.getTipeAkun())) {
                 entity = FormPengajuan.builder()
                       .account(account)
+                      .jenisOrganisasi(jenis) // Variabel 'jenis' sekarang dikenali di sini
                       .uuid(UUID.randomUUID())
                       .organisasi(organisasi)
                       .namaKetua(dto.getNama_ketua())
@@ -357,15 +359,25 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
 
             List<FormPengajuanResDTO.FileOrganisasi> fileOrgList = (org.getFilePendukung() == null) ? List.of() :
                   org.getFilePendukung().stream()
-                        .map(file -> FormPengajuanResDTO.FileOrganisasi.builder()
-                              .id(file.getId())
-                              .organisasi_uuid(org.getUuid().toString())
-                              .file_url(file.getFileUrl())
-                              .nama_file(file.getNamaFile())
-                              .build())
-                        .toList();
+                  .map(file -> FormPengajuanResDTO.FileOrganisasi.builder()
+                               .id(file.getId())
+                               .organisasi_uuid(org.getUuid().toString())
+                               .file_url(file.getFileUrl())
+                               .nama_file(file.getNamaFile())
+                               .build())
+                  .toList();
+
+            String kodeJenisOrganisasi = null;
+            String namaJenisOrganisasi = null;
+
+            if (form.getJenisOrganisasi() != null) {
+                kodeJenisOrganisasi = form.getJenisOrganisasi().getKodeJenisOrganisasi();
+                namaJenisOrganisasi = form.getJenisOrganisasi().getNamaJenisOrganisasi();
+            }
 
             pengajuanBuilder
+                  .kode_jenis_organisasi(kodeJenisOrganisasi)
+                  .nama_jenis_organisasi(namaJenisOrganisasi)
                   .nama_ketua(form.getNamaKetua())
                   .nik_ketua(form.getNikKetua())
                   .nomor_telepon(form.getNomorTelepon())
@@ -378,7 +390,6 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
             pengajuanBuilder.profesi(form.getProfesi());
         }
 
-        // 8. Single Return Point
         return FormPengajuanResDTO.PengajuanWithProfileResponse.builder()
               .pengajuan(pengajuanBuilder.build())
               .profile(profile)

@@ -27,6 +27,8 @@ public class FormPengajuanReqDTO {
         @JsonProperty("nik")
         private String nik;
 
+        private String kode_jenis_organisasi;
+
         @JsonProperty("organisasi_uuid")
         private UUID organisasi_uuid;
 

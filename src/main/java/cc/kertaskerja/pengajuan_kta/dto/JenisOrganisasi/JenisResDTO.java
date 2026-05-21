@@ -1,0 +1,20 @@
+package cc.kertaskerja.pengajuan_kta.dto.JenisOrganisasi;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@JsonInclude(JsonInclude.Include.ALWAYS)
+@JsonIgnoreProperties(ignoreUnknown = true)
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class JenisResDTO {
+    private Long id;
+    private String kode_jenis_organisasi;
+    private String nama_jenis_organisasi;
+}

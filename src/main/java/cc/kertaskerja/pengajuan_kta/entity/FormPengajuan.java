@@ -97,4 +97,9 @@ public class FormPengajuan extends BaseAuditable {
     @JoinColumn(name = "organisasi_uuid", referencedColumnName = "uuid")
     @JsonBackReference
     private Organisasi organisasi;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "kode_jenis_organisasi", referencedColumnName = "kode_jenis_organisasi")
+    @JsonBackReference
+    private JenisOrganisasi jenisOrganisasi;
 }
