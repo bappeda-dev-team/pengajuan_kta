@@ -10,14 +10,14 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "jenis_organisasi")
+@Table(name = "jenis_seni")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Accessors(chain = true)
-public class JenisOrganisasi extends BaseAuditable {
+public class JenisSeni extends BaseAuditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,13 +27,13 @@ public class JenisOrganisasi extends BaseAuditable {
     @Column(nullable = false, unique = true, updatable = false)
     private UUID uuid = UUID.randomUUID();
 
-    @Column(name = "kode_jenis_organisasi", unique = true, nullable = false)
-    private String kodeJenisOrganisasi;
+    @Column(name = "kode_jenis_seni", unique = true, nullable = false)
+    private String kodeJenisSeni;
 
-    @Column(name = "nama_jenis_organisasi", nullable = false)
-    private String namaJenisOrganisasi;
+    @Column(name = "jenis_seni", nullable = false)
+    private String jenisSeni;
 
-    @OneToMany(mappedBy = "jenisOrganisasi", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "jenisSeni", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<FormPengajuan> formPengajuan;
 }

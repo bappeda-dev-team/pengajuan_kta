@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 public class FormPengajuanServiceImpl implements FormPengajuanService {
 
     private final AccountRepository accountRepository;
-    private final JenisOrganisasiRepository jenisRepository;
+    private final JenisSeniRepository jenisRepository;
     private final OrganisasiRepository organisasiRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final FormPengajuanRepository formPengajuanRepository;
@@ -131,12 +131,12 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
         Account account = accountRepository.findByNik(encryptService.encrypt(dto.getNik()))
               .orElseThrow(() -> new ResourceNotFoundException("NIK not found: " + dto.getNik()));
 
-        JenisOrganisasi jenis = null;
+        JenisSeni jenis = null;
         Organisasi organisasi = null;
 
         if ("Organisasi".equalsIgnoreCase(account.getTipeAkun())) {
-            jenis = jenisRepository.findByKodeJenisOrganisasi(dto.getKode_jenis_organisasi())
-                  .orElseThrow(() -> new ResourceNotFoundException("Kode jenis organisasi not found: " + dto.getKode_jenis_organisasi()));
+            jenis = jenisRepository.findByKodeJenisSeni(dto.getKode_jenis_seni())
+                  .orElseThrow(() -> new ResourceNotFoundException("Kode jenis organisasi not found: " + dto.getKode_jenis_seni()));
 
             if (dto.getOrganisasi_uuid() != null) {
                 organisasi = organisasiRepository.findByUuid(dto.getOrganisasi_uuid())
@@ -150,7 +150,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
             if ("Organisasi".equalsIgnoreCase(account.getTipeAkun())) {
                 entity = FormPengajuan.builder()
                       .account(account)
-                      .jenisOrganisasi(jenis) // Variabel 'jenis' sekarang dikenali di sini
+                      .jenisSeni(jenis) // Variabel 'jenis' sekarang dikenali di sini
                       .uuid(UUID.randomUUID())
                       .organisasi(organisasi)
                       .namaKetua(dto.getNama_ketua())
@@ -367,17 +367,17 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                                .build())
                   .toList();
 
-            String kodeJenisOrganisasi = null;
-            String namaJenisOrganisasi = null;
+            String kodeJenisSeni = null;
+            String jenisSeni = null;
 
-            if (form.getJenisOrganisasi() != null) {
-                kodeJenisOrganisasi = form.getJenisOrganisasi().getKodeJenisOrganisasi();
-                namaJenisOrganisasi = form.getJenisOrganisasi().getNamaJenisOrganisasi();
+            if (form.getJenisSeni() != null) {
+                kodeJenisSeni = form.getJenisSeni().getKodeJenisSeni();
+                jenisSeni = form.getJenisSeni().getJenisSeni();
             }
 
             pengajuanBuilder
-                  .kode_jenis_organisasi(kodeJenisOrganisasi)
-                  .nama_jenis_organisasi(namaJenisOrganisasi)
+                  .kode_jenis_seni(kodeJenisSeni)
+                  .jenis_seni(jenisSeni)
                   .nama_ketua(form.getNamaKetua())
                   .nik_ketua(form.getNikKetua())
                   .nomor_telepon(form.getNomorTelepon())
@@ -545,11 +545,6 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
               .orElseThrow(() ->
                     new ResourceNotFoundException("Form pengajuan not found: " + uuid)
               );
-
-        // ❌ Safety rule
-        if (form.getStatus() == StatusPengajuanEnum.APPROVED) {
-            throw new ConflictException("Approved pengajuan cannot be deleted");
-        }
 
         // 1️⃣ Delete files from R2
         if (form.getFilePendukung() != null && !form.getFilePendukung().isEmpty()) {

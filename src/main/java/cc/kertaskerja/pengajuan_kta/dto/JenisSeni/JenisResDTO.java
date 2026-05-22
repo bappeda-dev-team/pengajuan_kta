@@ -1,4 +1,4 @@
-package cc.kertaskerja.pengajuan_kta.dto.JenisOrganisasi;
+package cc.kertaskerja.pengajuan_kta.dto.JenisSeni;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -15,6 +15,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class JenisResDTO {
     private Long id;
-    private String kode_jenis_organisasi;
-    private String nama_jenis_organisasi;
+    private String kode_jenis_seni;
+    private String jenis_seni;
 }

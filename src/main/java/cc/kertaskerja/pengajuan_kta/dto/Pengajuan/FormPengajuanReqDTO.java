@@ -27,7 +27,8 @@ public class FormPengajuanReqDTO {
         @JsonProperty("nik")
         private String nik;
 
-        private String kode_jenis_organisasi;
+        @NotBlank(message = "Kode jenis seni tidak boleh kosong!")
+        private String kode_jenis_seni;
 
         @JsonProperty("organisasi_uuid")
         private UUID organisasi_uuid;

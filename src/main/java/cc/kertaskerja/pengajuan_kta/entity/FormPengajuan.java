@@ -99,7 +99,7 @@ public class FormPengajuan extends BaseAuditable {
     private Organisasi organisasi;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "kode_jenis_organisasi", referencedColumnName = "kode_jenis_organisasi")
+    @JoinColumn(name = "jenis_seni_id", referencedColumnName = "id")
     @JsonBackReference
-    private JenisOrganisasi jenisOrganisasi;
+    private JenisSeni jenisSeni;
 }

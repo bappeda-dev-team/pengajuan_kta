@@ -1,4 +1,4 @@
-package cc.kertaskerja.pengajuan_kta.dto.JenisOrganisasi;
+package cc.kertaskerja.pengajuan_kta.dto.JenisSeni;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -20,12 +20,12 @@ public class JenisReqDTO {
     @Getter
     @Setter
     public static class SaveData {
-        @NotBlank(message = "Kode jenis organisasi wajib diisi!")
-        @JsonProperty("kode_jenis_organisasi")
-        private String kode_jenis_organisasi;
+        @NotBlank(message = "Kode jenis seni wajib diisi!")
+        @JsonProperty("kode_jenis_seni")
+        private String kode_jenis_seni;
 
-        @NotBlank(message = "Nama jenis organisasi wajib diisi!")
-        @JsonProperty("nama_jenis_organisasi")
-        private String nama_jenis_organisasi;
+        @NotBlank(message = "Nama jenis seni wajib diisi!")
+        @JsonProperty("jenis_seni")
+        private String jenis_seni;
     }
 }

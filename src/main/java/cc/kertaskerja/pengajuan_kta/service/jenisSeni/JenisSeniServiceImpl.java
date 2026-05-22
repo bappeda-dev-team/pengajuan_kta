@@ -1,10 +1,10 @@
-package cc.kertaskerja.pengajuan_kta.service.jenisOrganisasi;
+package cc.kertaskerja.pengajuan_kta.service.jenisSeni;
 
-import cc.kertaskerja.pengajuan_kta.dto.JenisOrganisasi.JenisReqDTO;
-import cc.kertaskerja.pengajuan_kta.dto.JenisOrganisasi.JenisResDTO;
-import cc.kertaskerja.pengajuan_kta.entity.JenisOrganisasi;
+import cc.kertaskerja.pengajuan_kta.dto.JenisSeni.JenisReqDTO;
+import cc.kertaskerja.pengajuan_kta.dto.JenisSeni.JenisResDTO;
+import cc.kertaskerja.pengajuan_kta.entity.JenisSeni;
 import cc.kertaskerja.pengajuan_kta.exception.*;
-import cc.kertaskerja.pengajuan_kta.repository.JenisOrganisasiRepository;
+import cc.kertaskerja.pengajuan_kta.repository.JenisSeniRepository;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -18,9 +18,9 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class JenisOrganisasiServiceImpl implements JenisOrganisasiService {
+public class JenisSeniServiceImpl implements JenisSeniService {
 
-    private final JenisOrganisasiRepository jenisOrganisasiRepository;
+    private final JenisSeniRepository jenisSeniRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
@@ -30,17 +30,17 @@ public class JenisOrganisasiServiceImpl implements JenisOrganisasiService {
                 throw new RuntimeException("Missing or invalid Authorization header");
             }
 
-            List<JenisOrganisasi> jenisOrganisasiList = jenisOrganisasiRepository.findAll();
+            List<JenisSeni> jenisSeniList = jenisSeniRepository.findAll();
 
-            if (jenisOrganisasiList == null || jenisOrganisasiList.isEmpty()) {
+            if (jenisSeniList == null || jenisSeniList.isEmpty()) {
                 return Collections.emptyList();
             }
 
-            return jenisOrganisasiList.stream()
+            return jenisSeniList.stream()
                   .map(entity -> JenisResDTO.builder()
                         .id(entity.getId())
-                        .kode_jenis_organisasi(entity.getKodeJenisOrganisasi())
-                        .nama_jenis_organisasi(entity.getNamaJenisOrganisasi())
+                        .kode_jenis_seni(entity.getKodeJenisSeni())
+                        .jenis_seni(entity.getJenisSeni())
                         .build())
                   .collect(Collectors.toList());
 
@@ -59,13 +59,13 @@ public class JenisOrganisasiServiceImpl implements JenisOrganisasiService {
         Map<String, Object> claims = jwtTokenProvider.parseToken(token);
         String userId = String.valueOf(claims.get("uid")); // Parsing token sama seperti contoh Anda
 
-        JenisOrganisasi jenisOrganisasi = jenisOrganisasiRepository.findById(id)
+        JenisSeni jenisSeni = jenisSeniRepository.findById(id)
               .orElseThrow(() -> new ResourceNotFoundException("Jenis Organisasi with ID " + id + " not found"));
 
         return JenisResDTO.builder()
-              .id(jenisOrganisasi.getId())
-              .kode_jenis_organisasi(jenisOrganisasi.getKodeJenisOrganisasi())
-              .nama_jenis_organisasi(jenisOrganisasi.getNamaJenisOrganisasi())
+              .id(jenisSeni.getId())
+              .kode_jenis_seni(jenisSeni.getKodeJenisSeni())
+              .jenis_seni(jenisSeni.getJenisSeni())
               .build();
     }
 
@@ -73,24 +73,24 @@ public class JenisOrganisasiServiceImpl implements JenisOrganisasiService {
     @Transactional
     public JenisResDTO saveData(JenisReqDTO.SaveData dto) {
         // Cek data duplikat (pastikan Anda menambahkan method existsByKodeJenisOrganisasi di Repository)
-        boolean isExist = jenisOrganisasiRepository.existsByKodeJenisOrganisasi(dto.getKode_jenis_organisasi());
+        boolean isExist = jenisSeniRepository.existsByKodeJenisSeni(dto.getKode_jenis_seni());
 
         if (isExist) {
             throw new BadRequestException("Kode Jenis Organisasi sudah terdaftar");
         }
 
         try {
-            JenisOrganisasi entity = JenisOrganisasi.builder()
-                  .kodeJenisOrganisasi(dto.getKode_jenis_organisasi())
-                  .namaJenisOrganisasi(dto.getNama_jenis_organisasi())
+            JenisSeni entity = JenisSeni.builder()
+                  .kodeJenisSeni(dto.getKode_jenis_seni())
+                  .jenisSeni(dto.getJenis_seni())
                   .build();
 
-            JenisOrganisasi saved = jenisOrganisasiRepository.save(entity);
+            JenisSeni saved = jenisSeniRepository.save(entity);
 
             return JenisResDTO.builder()
                   .id(saved.getId())
-                  .kode_jenis_organisasi(saved.getKodeJenisOrganisasi())
-                  .nama_jenis_organisasi(saved.getNamaJenisOrganisasi())
+                  .kode_jenis_seni(saved.getKodeJenisSeni())
+                  .jenis_seni(saved.getJenisSeni())
                   .build();
         } catch (DataIntegrityViolationException e) {
             throw new RuntimeException("Data integrity violation. Please check NOT NULL, UNIQUE, or foreign key constraints.", e);
@@ -110,20 +110,20 @@ public class JenisOrganisasiServiceImpl implements JenisOrganisasiService {
         Map<String, Object> claims = jwtTokenProvider.parseToken(token);
         String userId = String.valueOf(claims.get("uid"));
 
-        JenisOrganisasi jenisOrganisasi = jenisOrganisasiRepository.findById(id)
+        JenisSeni jenisSeni = jenisSeniRepository.findById(id)
               .orElseThrow(() -> new ResourceNotFoundException("Jenis Organisasi with ID " + id + " not found"));
 
         try {
-            jenisOrganisasi
-                  .setKodeJenisOrganisasi(dto.getKode_jenis_organisasi())
-                  .setNamaJenisOrganisasi(dto.getNama_jenis_organisasi());
+            jenisSeni
+                  .setKodeJenisSeni(dto.getKode_jenis_seni())
+                  .setJenisSeni(dto.getJenis_seni());
 
-            JenisOrganisasi saved = jenisOrganisasiRepository.save(jenisOrganisasi);
+            JenisSeni saved = jenisSeniRepository.save(jenisSeni);
 
             return JenisResDTO.builder()
                   .id(saved.getId())
-                  .kode_jenis_organisasi(saved.getKodeJenisOrganisasi())
-                  .nama_jenis_organisasi(saved.getNamaJenisOrganisasi())
+                  .kode_jenis_seni(saved.getKodeJenisSeni())
+                  .jenis_seni(saved.getJenisSeni())
                   .build();
         } catch (Exception e) {
             throw new RuntimeException("Failed to change data jenis organisasi: " + e.getMessage());
@@ -138,9 +138,9 @@ public class JenisOrganisasiServiceImpl implements JenisOrganisasiService {
             throw new UnauthorizedException("Missing or invalid Authorization header");
         }
 
-        JenisOrganisasi jenisOrganisasi = jenisOrganisasiRepository.findById(id)
+        JenisSeni jenisSeni = jenisSeniRepository.findById(id)
               .orElseThrow(() -> new ResourceNotFoundException("Jenis Organisasi with ID " + id + " not found"));
 
-        jenisOrganisasiRepository.delete(jenisOrganisasi);
+        jenisSeniRepository.delete(jenisSeni);
     }
 }
