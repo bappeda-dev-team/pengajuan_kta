@@ -48,6 +48,8 @@ public class OrganisasiResDTO {
     @AllArgsConstructor
     public static class Pengajuan {
         private UUID uuid;
+        private String kode_jenis_seni;
+        private String jenis_seni;
         private String nomor_induk;
         private String nama_ketua;
         private String nik_ketua;

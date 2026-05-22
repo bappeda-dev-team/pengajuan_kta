@@ -150,7 +150,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
             if ("Organisasi".equalsIgnoreCase(account.getTipeAkun())) {
                 entity = FormPengajuan.builder()
                       .account(account)
-                      .jenisSeni(jenis) // Variabel 'jenis' sekarang dikenali di sini
+                      .jenisSeni(jenis)
                       .uuid(UUID.randomUUID())
                       .organisasi(organisasi)
                       .namaKetua(dto.getNama_ketua())
@@ -165,6 +165,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
             } else {
                 entity = FormPengajuan.builder()
                       .account(account)
+                      .jenisSeni(jenis)
                       .uuid(UUID.randomUUID())
                       .namaKetua(dto.getNama_ketua())
                       .nikKetua(dto.getNik_ketua())
@@ -387,7 +388,10 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
                   .jumlah_anggota(form.getJumlahAnggota() != null ? form.getJumlahAnggota().toString() : "0")
                   .file_organisasi(fileOrgList);
         } else {
-            pengajuanBuilder.profesi(form.getProfesi());
+            pengajuanBuilder
+                  .kode_jenis_seni(form.getJenisSeni() != null ? form.getJenisSeni().getKodeJenisSeni() : null)
+                  .jenis_seni(form.getJenisSeni() != null ? form.getJenisSeni().getJenisSeni() : null)
+                  .profesi(form.getProfesi());
         }
 
         return FormPengajuanResDTO.PengajuanWithProfileResponse.builder()
