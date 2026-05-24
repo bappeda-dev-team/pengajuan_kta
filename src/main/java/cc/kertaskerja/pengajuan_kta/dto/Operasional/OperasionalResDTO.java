@@ -37,6 +37,8 @@ public class OperasionalResDTO {
     @AllArgsConstructor
     public static class DetailResponse {
         private UUID uuid;
+        private String kode_jenis_seni;
+        private String jenis_seni;
         private AccountResponse.Detail profile;
         private String induk_organisasi;
         private String bidang_keahlian;

@@ -155,6 +155,8 @@ public class OperasionalServiceImpl implements OperasionalService {
 
         return OperasionalResDTO.DetailResponse.builder()
               .uuid(operasional.getUuid())
+              .kode_jenis_seni(operasional.getFormPengajuan().getJenisSeni().getKodeJenisSeni())
+              .jenis_seni(operasional.getFormPengajuan().getJenisSeni().getJenisSeni())
               .profile(profile)
               .induk_organisasi(operasional.getFormPengajuan().getOrganisasi().getBidangKeahlian())
               .nomor_induk(operasional.getFormPengajuan().getNomorInduk())
