@@ -213,11 +213,11 @@ public class OperasionalServiceImpl implements OperasionalService {
     public OperasionalResDTO.FilePendukung uploadFilePendukung(MultipartFile file, String operasionalUuid, String namaFile) {
         try {
             String fileUrl = r2StorageService.upload(file);
-            String finalNamaFile = namaFile != null ? namaFile : file.getOriginalFilename();
+            String finalNamaFile = (namaFile != null && !namaFile.trim().isEmpty()) ? namaFile : file.getOriginalFilename();
 
             UUID operasionalUuidParsed = UUID.fromString(operasionalUuid);
             IzinOperasional operasional = operasionalRepository.findByUuid(operasionalUuidParsed)
-                  .orElseThrow(() -> new ResourceNotFoundException("Operasional with UUID " + operasionalUuidParsed + " not found"));
+                  .orElseThrow(() -> new ResourceNotFoundException("Operasional with UUID " + operasionalUuid + " not found"));
 
             FilePendukung filePendukung = FilePendukung.builder()
                   .fileUrl(fileUrl)

@@ -83,13 +83,8 @@ logging:
           security: DEBUG
         aop: DEBUG
 
-cloudflare:
-  r2:
-    bucket: ${CLOUDFLARE_BUCKET}
-    endpoint: ${CLOUDFLARE_ENDPOINT}
-    access-key: ${CLOUDFLARE_ACCESS_KEY}
-    secret-key: ${CLOUDFLARE_SECRET_KEY}
-    base-url: ${CLOUDFLARE_BASE_URL}
+storage:
+  location: ./uploads
 
 springdoc:
   api-docs:

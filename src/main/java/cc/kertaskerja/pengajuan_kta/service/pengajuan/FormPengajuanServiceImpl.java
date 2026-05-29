@@ -205,7 +205,7 @@ public class FormPengajuanServiceImpl implements FormPengajuanService {
     public FilePendukungDTO uploadAndSaveFile(MultipartFile file, String formUuid, String namaFile) {
         try {
             String fileUrl = r2StorageService.upload(file);
-            String finalNamaFile = namaFile != null ? namaFile : file.getOriginalFilename();
+            String finalNamaFile = (namaFile != null && !namaFile.trim().isEmpty()) ? namaFile : file.getOriginalFilename();
 
             UUID formUuidParsed = UUID.fromString(formUuid);
             FormPengajuan formPengajuan = formPengajuanRepository.findByUuid(formUuidParsed)

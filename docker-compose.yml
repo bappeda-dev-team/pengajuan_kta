@@ -51,6 +51,12 @@ services:
       - SPRING_DATASOURCE_PASSWORD=Madiun@123
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
+      - MAIL_HOST=smtp.example.com
+      - MAIL_PORT=587
+      - MAIL_USERNAME=user
+      - MAIL_PASSWORD=password
+      - JWT_SECRET=secret
+      - JWT_EXPIRATION_MILLIS=86400000
       # Tambahkan environment variable lain yang dibutuhkan oleh aplikasi di sini, misalnya:
       # - JWT_SECRET=rahasia_untuk_jwt_token_anda_yang_sangat_panjang_sekali
       # - JWT_EXPIRATION_MILLIS=86400000

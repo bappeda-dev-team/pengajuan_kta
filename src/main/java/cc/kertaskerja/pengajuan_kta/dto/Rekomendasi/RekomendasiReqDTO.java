@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Date;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -45,6 +46,9 @@ public class RekomendasiReqDTO {
         @NotNull(message = "Tempat tidak boleh kosong!")
         @JsonProperty("tempat")
         private String tempat;
+
+        @JsonProperty("form_uuid")
+        private UUID formUuid;
 
         private String keterangan;
     }

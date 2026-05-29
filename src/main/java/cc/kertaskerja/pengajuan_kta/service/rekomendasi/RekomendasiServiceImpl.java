@@ -6,11 +6,13 @@ import cc.kertaskerja.pengajuan_kta.dto.Rekomendasi.RekomendasiReqDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Rekomendasi.RekomendasiResDTO;
 import cc.kertaskerja.pengajuan_kta.entity.Account;
 import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
+import cc.kertaskerja.pengajuan_kta.entity.FormPengajuan;
 import cc.kertaskerja.pengajuan_kta.entity.SuratRekomendasi;
 import cc.kertaskerja.pengajuan_kta.enums.StatusPengajuanEnum;
 import cc.kertaskerja.pengajuan_kta.exception.*;
 import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
 import cc.kertaskerja.pengajuan_kta.repository.FilePendukungRepository;
+import cc.kertaskerja.pengajuan_kta.repository.FormPengajuanRepository;
 import cc.kertaskerja.pengajuan_kta.repository.SuratRekomendasiRepository;
 import cc.kertaskerja.pengajuan_kta.security.JwtTokenProvider;
 import cc.kertaskerja.pengajuan_kta.service.external.EncryptService;
@@ -33,6 +35,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
     private final AccountRepository accountRepository;
     private final SuratRekomendasiRepository repository;
     private final FilePendukungRepository filePendukungRepository;
+    private final FormPengajuanRepository formPengajuanRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final EncryptService encryptService;
     private final R2StorageService r2StorageService;
@@ -98,6 +101,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
                         .tujuan(rekom.getTujuan())
                         .tanggal(rekom.getTanggal())
                         .status(rekom.getStatus() != null ? rekom.getStatus().name() : null)
+                        .form_uuid(rekom.getFormPengajuan() != null ? rekom.getFormPengajuan().getUuid() : null)
                         .build()
                   )
                   .toList();
@@ -118,6 +122,12 @@ public class RekomendasiServiceImpl implements RekomendasiService {
         }
 
         try {
+            FormPengajuan formPengajuan = null;
+            if (dto.getFormUuid() != null) {
+                formPengajuan = formPengajuanRepository.findByUuid(dto.getFormUuid())
+                      .orElseThrow(() -> new ResourceNotFoundException("Form pengajuan with UUID " + dto.getFormUuid() + " not found"));
+            }
+
             SuratRekomendasi entity = SuratRekomendasi.builder()
                   .account(account)
                   .uuid(UUID.randomUUID())
@@ -127,6 +137,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
                   .tempat(dto.getTempat())
                   .status(StatusPengajuanEnum.PENDING_VERIFICATOR)
                   .keterangan(dto.getKeterangan())
+                  .formPengajuan(formPengajuan)
                   .build();
 
             SuratRekomendasi saved = repository.save(entity);
@@ -139,6 +150,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
                   .tempat(saved.getTempat())
                   .status(saved.getStatus().name())
                   .keterangan(saved.getKeterangan())
+                  .form_uuid(saved.getFormPengajuan() != null ? saved.getFormPengajuan().getUuid() : null)
                   .build();
         } catch (DataIntegrityViolationException e) {
             throw new RuntimeException("Data integrity violation. Please check NOT NULL, UNIQUE, or foreign key constraints.", e);
@@ -170,13 +182,20 @@ public class RekomendasiServiceImpl implements RekomendasiService {
         }
 
         try {
+            FormPengajuan formPengajuan = null;
+            if (dto.getFormUuid() != null) {
+                formPengajuan = formPengajuanRepository.findByUuid(dto.getFormUuid())
+                      .orElseThrow(() -> new ResourceNotFoundException("Form pengajuan with UUID " + dto.getFormUuid() + " not found"));
+            }
+
             rekomendasi
                   .setNomorInduk(dto.getNomor_induk())
                   .setTujuan(dto.getTujuan())
                   .setTanggal(dto.getTanggal())
                   .setTempat(dto.getTempat())
                   .setStatus(StatusPengajuanEnum.PENDING_VERIFICATOR)
-                  .setKeterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-");
+                  .setKeterangan(dto.getKeterangan() != null ? dto.getKeterangan() : "-")
+                  .setFormPengajuan(formPengajuan);
 
             repository.save(rekomendasi);
 
@@ -188,6 +207,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
                   .tempat(rekomendasi.getTempat())
                   .status(rekomendasi.getStatus().name())
                   .keterangan(rekomendasi.getKeterangan())
+                  .form_uuid(rekomendasi.getFormPengajuan() != null ? rekomendasi.getFormPengajuan().getUuid() : null)
                   .build();
         } catch (Exception e) {
             throw new RuntimeException("Failed to change data pengajuan: " + e.getMessage());
@@ -261,6 +281,8 @@ public class RekomendasiServiceImpl implements RekomendasiService {
 
         RekomendasiResDTO.RekomendasiResponse rekomendasi = RekomendasiResDTO.RekomendasiResponse.builder()
               .uuid(suratRekomendasi.getUuid())
+              .kode_jenis_seni(suratRekomendasi.getFormPengajuan().getJenisSeni().getKodeJenisSeni())
+              .jenis_seni(suratRekomendasi.getFormPengajuan().getJenisSeni().getJenisSeni())
               .nomor_surat(suratRekomendasi.getNomorSurat())
               .nomor_induk(suratRekomendasi.getNomorInduk())
               .tujuan(suratRekomendasi.getTujuan())
@@ -271,6 +293,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
               .status(suratRekomendasi.getStatus() != null ? suratRekomendasi.getStatus().name() : null)
               .tertanda(suratRekomendasi.getTertanda())
               .keterangan(suratRekomendasi.getKeterangan())
+              .form_uuid(suratRekomendasi.getFormPengajuan() != null ? suratRekomendasi.getFormPengajuan().getUuid() : null)
               .file_pendukung(suratRekomendasi.getFilePendukung().stream()
                     .map(file -> RekomendasiResDTO.FilePendukung.builder()
                           .id(file.getId())
@@ -322,6 +345,7 @@ public class RekomendasiServiceImpl implements RekomendasiService {
                   .tertanda(rekomendasi.getTertanda())
                   .catatan(rekomendasi.getCatatan())
                   .tanggal_surat(rekomendasi.getTanggalSurat())
+                  .form_uuid(rekomendasi.getFormPengajuan() != null ? rekomendasi.getFormPengajuan().getUuid() : null)
                   .build();
 
         } catch (ResourceNotFoundException e) {

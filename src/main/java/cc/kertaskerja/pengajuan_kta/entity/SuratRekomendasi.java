@@ -73,12 +73,12 @@ public class SuratRekomendasi extends BaseAuditable {
     @Column(name = "tanggal_surat")
     private LocalDateTime tanggalSurat;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "form_uuid", referencedColumnName = "uuid")
+    @JsonBackReference
+    private FormPengajuan formPengajuan;
+
     @OneToMany(mappedBy = "suratRekomendasi", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<FilePendukung> filePendukung;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organisasi_uuid", referencedColumnName = "uuid")
-    @JsonBackReference
-    private Organisasi organisasi;
 }
