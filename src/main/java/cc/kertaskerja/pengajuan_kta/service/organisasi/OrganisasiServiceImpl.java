@@ -2,7 +2,9 @@ package cc.kertaskerja.pengajuan_kta.service.organisasi;
 
 import cc.kertaskerja.pengajuan_kta.dto.Organisasi.OrganisasiReqDTO;
 import cc.kertaskerja.pengajuan_kta.dto.Organisasi.OrganisasiResDTO;
+import cc.kertaskerja.pengajuan_kta.dto.Pengajuan.FilePendukungDTO;
 import cc.kertaskerja.pengajuan_kta.entity.FilePendukung;
+import cc.kertaskerja.pengajuan_kta.entity.FormPengajuan;
 import cc.kertaskerja.pengajuan_kta.entity.Organisasi;
 import cc.kertaskerja.pengajuan_kta.exception.*;
 import cc.kertaskerja.pengajuan_kta.repository.AccountRepository;
@@ -154,11 +156,11 @@ public class OrganisasiServiceImpl implements OrganisasiService {
     public OrganisasiResDTO.FilePendukung uploadFilePendukung(MultipartFile file, String organisasiUuid, String namaFile) {
         try {
             String fileUrl = r2StorageService.upload(file);
-            String finalNamaFile = namaFile != null ? namaFile : file.getOriginalFilename();
+            String finalNamaFile = (namaFile != null && !namaFile.trim().isEmpty()) ? namaFile : file.getOriginalFilename();
 
-            UUID rekomUuidParsed = UUID.fromString(organisasiUuid);
-            Organisasi organisasi = organisasiRepository.findByUuid(rekomUuidParsed)
-                  .orElseThrow(() -> new ResourceNotFoundException("Organisasi with UUID " + rekomUuidParsed + " not found"));
+            UUID orgUuidParsed = UUID.fromString(organisasiUuid);
+            Organisasi organisasi = organisasiRepository.findByUuid(orgUuidParsed)
+                  .orElseThrow(() -> new ResourceNotFoundException("Organisasi with UUID " + organisasiUuid + " not found"));
 
             FilePendukung filePendukung = FilePendukung.builder()
                   .fileUrl(fileUrl)
@@ -173,6 +175,7 @@ public class OrganisasiServiceImpl implements OrganisasiService {
                   .file_url(savedFile.getFileUrl())
                   .nama_file(savedFile.getNamaFile())
                   .build();
+
         } catch (Exception e) {
             throw new RuntimeException("Failed to upload and save file: " + e.getMessage(), e);
         }

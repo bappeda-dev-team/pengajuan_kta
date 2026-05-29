@@ -82,17 +82,11 @@ public class ExternalAPIController {
           @PathVariable Long fileId
     ) {
         try {
-            // 1. Panggil service
             FileDownloadDTO.DownloadRes fileData = r2FileService.downloadFilePendukung(token, fileId);
-
-            // 2. Buat Resource
             ByteArrayResource resource = new ByteArrayResource(fileData.getData());
 
-            // 3. Handle Content Type (Jaga-jaga jika null)
-            String contentTypeString = fileData.getContentType();
-            if (contentTypeString == null || contentTypeString.isBlank()) {
-                contentTypeString = "application/octet-stream"; // Default type
-            }
+            // FIX: Deteksi paksa tipe file berdasarkan ekstensi nama file agar terbuka di new tab
+            String contentTypeString = getContentTypeByFilename(fileData.getContentType(), fileData.getFilename());
 
             return ResponseEntity.ok()
                   .contentType(MediaType.parseMediaType(contentTypeString))
@@ -100,10 +94,7 @@ public class ExternalAPIController {
                   .body(resource);
 
         } catch (Exception e) {
-            // Log error ke console server agar terbaca
             e.printStackTrace();
-
-            // Kembalikan error yang bisa dibaca di Postman/Browser
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -114,7 +105,6 @@ public class ExternalAPIController {
           @RequestParam("file") MultipartFile file
     ) {
         try {
-            // Check if file is empty
             if (file.isEmpty()) {
                 return ResponseEntity.badRequest().body(
                       ApiResponse.builder()
@@ -126,15 +116,11 @@ public class ExternalAPIController {
                 );
             }
 
-            // 1. Call service to upload
             String fileUrl = r2FileService.uploadFile(token, file);
-
-            // 2. Return the URL wrapped in ApiResponse
             return ResponseEntity.ok(ApiResponse.success(fileUrl, "File uploaded successfully"));
 
         } catch (Exception e) {
             e.printStackTrace();
-
             return ResponseEntity.internalServerError().body(
                   ApiResponse.builder()
                         .success(false)
@@ -152,20 +138,12 @@ public class ExternalAPIController {
           @RequestParam(name = "url") String fileUrl
     ) {
         try {
-            // 1. Panggil service menggunakan URL
             FileDownloadDTO.DownloadRes fileData = r2FileService.downloadFileByUrl(token, fileUrl);
-
-            // 2. Buat Resource
             ByteArrayResource resource = new ByteArrayResource(fileData.getData());
 
-            // 3. Handle Content Type
-            String contentTypeString = fileData.getContentType();
-            if (contentTypeString == null || contentTypeString.isBlank()) {
-                contentTypeString = "application/octet-stream";
-            }
+            // FIX: Deteksi paksa tipe file berdasarkan ekstensi nama file agar terbuka di new tab
+            String contentTypeString = getContentTypeByFilename(fileData.getContentType(), fileData.getFilename());
 
-            // Gunakan inline agar gambar langsung tampil di browser (tidak auto-download)
-            // Jika ingin auto-download, ganti "inline" menjadi "attachment"
             return ResponseEntity.ok()
                   .contentType(MediaType.parseMediaType(contentTypeString))
                   .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileData.getFilename() + "\"")
@@ -175,5 +153,22 @@ public class ExternalAPIController {
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    // --- HELPER FUNCTION ---
+    private String getContentTypeByFilename(String currentContentType, String filename) {
+        if (currentContentType == null || currentContentType.isBlank() || currentContentType.equals("application/octet-stream")) {
+            if (filename == null) return "application/octet-stream";
+
+            String lowerCaseFilename = filename.toLowerCase();
+            if (lowerCaseFilename.endsWith(".pdf")) {
+                return "application/pdf";
+            } else if (lowerCaseFilename.endsWith(".jpg") || lowerCaseFilename.endsWith(".jpeg")) {
+                return "image/jpeg";
+            } else if (lowerCaseFilename.endsWith(".png")) {
+                return "image/png";
+            }
+        }
+        return currentContentType != null ? currentContentType : "application/octet-stream";
     }
 }

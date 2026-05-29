@@ -30,6 +30,8 @@ public class RekomendasiResDTO {
         @JsonProperty("nama")
         private String nama;
 
+        private String kode_jenis_seni;
+        private String jenis_seni;
         private String nomor_surat;
         private String nomor_induk;
         private String tujuan;
@@ -40,6 +42,7 @@ public class RekomendasiResDTO {
         private String status;
         private TertandaDTO tertanda;
         private String keterangan;
+        private UUID form_uuid;
         private List<FilePendukung> file_pendukung;
         private LocalDateTime created_at;
     }
@@ -65,6 +68,7 @@ public class RekomendasiResDTO {
         private String tempat;
         private String status;
         private String keterangan;
+        private UUID form_uuid;
     }
 
     @Data
@@ -90,5 +94,6 @@ public class RekomendasiResDTO {
         private String status;
         private TertandaDTO tertanda;
         private String catatan;
+        private UUID form_uuid;
     }
 }

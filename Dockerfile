@@ -4,7 +4,7 @@ WORKDIR /app
 RUN gradle bootJar
 
 # Runtime stage
-FROM openjdk:21-jdk-slim
+FROM eclipse-temurin:21-jdk-alpine
 WORKDIR /app
 COPY --from=builder /app/build/libs/*.jar app.jar
 CMD ["java", "-jar", "app.jar"]

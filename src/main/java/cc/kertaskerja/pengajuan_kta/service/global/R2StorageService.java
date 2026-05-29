@@ -1,124 +1,114 @@
 package cc.kertaskerja.pengajuan_kta.service.global;
 
-import cc.kertaskerja.pengajuan_kta.config.CloudFlareProperties;
 import cc.kertaskerja.pengajuan_kta.dto.external.FileDownloadDTO;
+import cc.kertaskerja.pengajuan_kta.service.storage.LocalStorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.core.ResponseBytes;
-import software.amazon.awssdk.core.sync.ResponseTransformer;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.file.Files;
 
 @Service
 public class R2StorageService {
 
-    private final S3Client r2Client;
-    private final CloudFlareProperties props;
+    private final LocalStorageService localStorageService;
 
-    public R2StorageService(S3Client r2Client, CloudFlareProperties props) {
-        this.r2Client = r2Client;
-        this.props = props;
+    public R2StorageService(LocalStorageService localStorageService) {
+        this.localStorageService = localStorageService;
     }
 
     public String upload(MultipartFile file) throws IOException {
-        String key = file.getOriginalFilename();
-
-        r2Client.putObject(
-              PutObjectRequest.builder()
-                    .bucket(props.getBucket())
-                    .key(key)
-                    .contentType(file.getContentType())
-                    .build(),
-              software.amazon.awssdk.core.sync.RequestBody.fromBytes(file.getBytes())
-        );
-
-        return String.format("%s/%s", props.getBaseUrl(), key);
+        return localStorageService.upload(file);
     }
 
     public byte[] getObject(String key) {
-        return r2Client.getObject(
-              GetObjectRequest.builder()
-                    .bucket(props.getBucket())
-                    .key(key)
-                    .build(),
-              ResponseTransformer.toBytes()
-        ).asByteArray();
+        if (isRemoteUrl(key)) {
+            return downloadFromUrl(key).getData();
+        }
+        return localStorageService.download(key);
     }
 
-
-    // ======================
-    // DELETE FILE
-    // ======================
     public void delete(String fileUrl) {
         if (fileUrl == null || fileUrl.isBlank()) {
             return;
         }
-
-        String key = extractKeyFromUrl(fileUrl);
-
-        r2Client.deleteObject(
-              DeleteObjectRequest.builder()
-                    .bucket(props.getBucket())
-                    .key(key)
-                    .build()
-        );
-    }
-
-    // ======================
-    // DOWNLOAD / READ FILE
-    // ======================
-    public FileDownloadDTO.DownloadRes download(String fileUrl) {
-        String key = extractKeyFromUrl(fileUrl);
-
-        try {
-            // Use getObjectAsBytes to retrieve both the content and the response metadata
-            ResponseBytes<GetObjectResponse> objectBytes = r2Client.getObjectAsBytes(
-                  GetObjectRequest.builder()
-                        .bucket(props.getBucket())
-                        .key(key)
-                        .build()
-            );
-
-            return FileDownloadDTO.DownloadRes.builder()
-                  .data(objectBytes.asByteArray()) // The actual file content
-                  .filename(key)
-                  .contentType(objectBytes.response().contentType()) // e.g., "application/pdf"
-                  .build();
-
-        } catch (NoSuchKeyException e) {
-            throw new RuntimeException("File not found in storage: " + key);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to download file from R2: " + e.getMessage(), e);
+        if (isRemoteUrl(fileUrl)) {
+            // Cannot delete remote legacy files from local backend. Skip gracefully.
+            return;
         }
+        localStorageService.delete(fileUrl);
     }
 
-    // ======================
-    // HELPER
-    // ======================
-    private String extractKeyFromUrl(String fileUrl) {
+    public FileDownloadDTO.DownloadRes download(String fileUrl) {
+        // Intercept remote URLs and download them via HTTP stream
+        if (isRemoteUrl(fileUrl)) {
+            return downloadFromUrl(fileUrl);
+        }
+
+        byte[] data = localStorageService.download(fileUrl);
+        String contentType = detectContentType(fileUrl);
+        return FileDownloadDTO.DownloadRes.builder()
+              .data(data)
+              .filename(fileUrl)
+              .contentType(contentType)
+              .build();
+    }
+
+    private boolean isRemoteUrl(String url) {
+        return url != null && (url.startsWith("http://") || url.startsWith("https://"));
+    }
+
+    private FileDownloadDTO.DownloadRes downloadFromUrl(String fileUrl) {
         try {
-            // skip if not url
-            if (!fileUrl.startsWith("http://") && !fileUrl.startsWith("https://")) {
-                return fileUrl;
+            URL url = new URL(fileUrl);
+            URLConnection connection = url.openConnection();
+
+            // FIX: Set timeout 10 detik agar tidak hang selamanya jika R2 down/diblokir
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(10000);
+
+            // Tambahkan User-Agent, beberapa bucket menolak request tanpa User-Agent
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0");
+
+            byte[] data;
+            try (InputStream in = connection.getInputStream()) {
+                data = in.readAllBytes();
             }
 
-            String sanitized = fileUrl.replace(" ", "%20");
-            URI uri = URI.create(sanitized);
-            String path = uri.getPath(); // /KTA%20NGAWI%20Belakang%208,5x5,5.png
+            // Ekstrak nama file dan Content-Type langsung dari HTTP Headers jika memungkinkan
+            String filename = fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
+            String contentType = connection.getContentType();
 
-            String keyEncoded = path.startsWith("/") ? path.substring(1) : path;
+            if (contentType == null) {
+                contentType = URLConnection.guessContentTypeFromName(filename);
+            }
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
 
-            // Decode %20 -> space, so it matches the original S3 key
-            return URLDecoder.decode(keyEncoded, StandardCharsets.UTF_8);
-
+            return FileDownloadDTO.DownloadRes.builder()
+                  .data(data)
+                  .filename(filename)
+                  .contentType(contentType)
+                  .build();
         } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid R2 file URL: " + fileUrl, e);
+            // Jika terjadi timeout atau error koneksi, akan dilempar sebagai RuntimeException
+            // sehingga Spring Boot mengembalikan HTTP 500, BUKAN loading selamanya.
+            throw new RuntimeException("Gagal mengunduh file eksternal dari URL: " + fileUrl + " | Pesan: " + e.getMessage(), e);
         }
     }
 
+    private String detectContentType(String filename) {
+        try {
+            String ct = Files.probeContentType(
+                  localStorageService.getRootLocation().resolve(filename));
+            return ct != null ? ct : "application/octet-stream";
+        } catch (Exception e) {
+            return "application/octet-stream";
+        }
+    }
 }

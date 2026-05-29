@@ -43,9 +43,5 @@ public class Organisasi extends BaseAuditable {
 
     @OneToMany(mappedBy = "organisasi", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference
-    private List<SuratRekomendasi> suratRekomendasi;
-
-    @OneToMany(mappedBy = "organisasi", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
     private List<FilePendukung> filePendukung;
 }
