@@ -717,15 +717,16 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("CAPTCHA yang Anda masukkan salah. Silakan coba lagi.");
         }
 
-        Account account = accountRepository.findByNik(encryptService.encrypt(dto.getNik()))
-              .orElseThrow(() -> new ResourceNotFoundException("NIK tidak ditemukan: " + dto.getNik()));
+        Account account = accountRepository.findByEmail(dto.getEmail())
+              .orElseThrow(() -> new ResourceNotFoundException("Email tidak ditemukan: " + dto.getEmail()));
 
-        if (authAttempService.sendOtpBlocked(account.getNomorTelepon())) {
+        if (authAttempService.sendOtpBlocked(account.getEmail())) {
             throw new RateLimitException("Terlalu banyak percobaan. Silakan coba lagi dalam 1 menit");
         }
 
         String otp = otpService.generateOtp(account.getEmail(), account.getNomorTelepon());
         smsService.sendOtpWhatsApp(account.getNomorTelepon(), otp, account.getNama());
+        emailService.sendOtpEmail(account.getEmail(), otp, account.getNama());
 
         authAttempService.sendOtpSucceeded(account.getNomorTelepon());
 
@@ -735,8 +736,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public String resetPassword(RegisterRequest.ResetPassword dto) {
-        Account account = accountRepository.findByNik(encryptService.encrypt(dto.getNik()))
-              .orElseThrow(() -> new ResourceNotFoundException("NIK tidak ditemukan: " + dto.getNik()));
+        Account account = accountRepository.findByEmail(dto.getEmail())
+              .orElseThrow(() -> new ResourceNotFoundException("Email tidak ditemukan: " + dto.getEmail()));
 
         boolean validOtpByEmail = otpService.validateOtp(account.getEmail(), dto.getOtp_code());
         boolean validOtpByPhone = otpService.validateOtp(account.getNomorTelepon(), dto.getOtp_code());
