@@ -90,8 +90,8 @@ public class RegisterRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SendOtpForgotPassword {
-        @NotBlank(message = "NIK tidak boleh kosong")
-        private String nik;
+        @NotBlank(message = "Email tidak boleh kosong")
+        private String email;
         private String captcha_token;
         private String captcha_code;
     }
@@ -100,8 +100,8 @@ public class RegisterRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ResetPassword {
-        @NotBlank(message = "NIK tidak boleh kosong!")
-        private String nik;
+        @NotBlank(message = "Email tidak boleh kosong!")
+        private String email;
 
         @NotBlank(message = "Password baru tidak boleh kosong")
         private String password;
